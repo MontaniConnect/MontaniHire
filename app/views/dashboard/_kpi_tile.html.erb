@@ -1,0 +1,13 @@
+<div class="card" style="padding: 1rem; margin: 0;">
+  <div style="font-size: 1.5rem; font-weight: 700; color: #1a1a1a;">
+    <% if value.nil? %>
+      —
+    <% else %>
+      <%= value %><% if local_assigns[:suffix] %><span style="font-size: 0.9rem; font-weight: 500; color: #888; margin-left: 1px;"><%= suffix %></span><% end %>
+    <% end %>
+  </div>
+  <div style="font-size: 0.75rem; font-weight: 600; color: #555; margin-top: 0.25rem;"><%= label %></div>
+  <% if local_assigns[:note] && note.present? %>
+    <div style="font-size: 0.7rem; color: #aaa; margin-top: 0.15rem;"><%= note %></div>
+  <% end %>
+</div>

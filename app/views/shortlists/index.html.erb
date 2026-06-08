@@ -1,0 +1,53 @@
+<div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem;">
+  <h1 style="margin: 0;">Shortlists</h1>
+  <%= link_to "+ New shortlist", new_shortlist_path, class: "btn" %>
+</div>
+
+<% if @shortlists.none? %>
+  <div class="card">
+    <p class="empty" style="padding: 1.5rem 0;">
+      No shortlists yet. Create one to start sharing candidates with clients.
+    </p>
+  </div>
+<% else %>
+  <div class="card" style="padding: 0;">
+    <div class="table-wrapper">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Title</th>
+            <th>Client</th>
+            <th>Candidates</th>
+            <th>Created</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <% @shortlists.each do |shortlist| %>
+            <tr>
+              <td>
+                <%= link_to shortlist.title, shortlist_path(shortlist),
+                      style: "font-weight: 500; color: #1a1a1a; text-decoration: none;" %>
+              </td>
+              <td style="color: #555; font-size: 0.88rem;"><%= shortlist.client_email %></td>
+              <td><%= shortlist.shortlist_items.count %></td>
+              <td style="color: #888; font-size: 0.85rem;">
+                <%= shortlist.created_at.strftime("%b %-d, %Y") %>
+              </td>
+              <td style="text-align: right; white-space: nowrap;">
+                <%= link_to "View", shortlist_path(shortlist),
+                      style: "font-size: 0.85rem; color: #555; text-decoration: none; margin-right: 0.75rem;" %>
+                <%= link_to "Edit", edit_shortlist_path(shortlist),
+                      style: "font-size: 0.85rem; color: #555; text-decoration: none; margin-right: 0.75rem;" %>
+                <%= button_to "Delete", shortlist_path(shortlist),
+                      method: :delete,
+                      data: { turbo_confirm: "Delete \"#{shortlist.title}\"? This cannot be undone." },
+                      style: "background: none; border: none; padding: 0; cursor: pointer; font-size: 0.85rem; color: #dc2626;" %>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+<% end %>

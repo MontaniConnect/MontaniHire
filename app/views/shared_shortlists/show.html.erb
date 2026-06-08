@@ -1,0 +1,80 @@
+<% if flash[:notice] %>
+  <div class="alert alert-notice"><%= flash[:notice] %></div>
+<% end %>
+<% if flash[:alert] %>
+  <div class="alert alert-alert"><%= flash[:alert] %></div>
+<% end %>
+
+<% unless verified? %>
+  <%# ── Email gate ── %>
+  <div style="max-width: 480px; margin: 3rem auto;">
+    <div class="card">
+      <h1 style="font-size: 1.3rem; margin-bottom: 0.35rem;">Access shortlist</h1>
+      <p style="font-size: 0.9rem; color: #666; margin-bottom: 1.5rem;">
+        Enter the email address you were given access with to view the candidates.
+      </p>
+      <%= form_with url: verify_shared_shortlist_path(@shortlist.token), method: :post do |f| %>
+        <div class="form-group">
+          <%= f.label :email, "Your email address" %>
+          <%= f.text_field :email, type: "email", placeholder: "you@company.com", autofocus: true %>
+        </div>
+        <%= f.submit "Verify access", class: "btn", style: "width: 100%;" %>
+      <% end %>
+    </div>
+  </div>
+
+<% else %>
+  <%# ── Candidate list ── %>
+  <div style="margin-bottom: 1.5rem;">
+    <h1 style="margin: 0 0 0.35rem;"><%= @shortlist.title %></h1>
+    <% if @shortlist.message.present? %>
+      <p style="font-size: 0.9rem; color: #666; margin-top: 0.4rem; line-height: 1.6;"><%= @shortlist.message %></p>
+    <% end %>
+  </div>
+
+  <% status_labels = { "pending" => "🤔 Hold", "approved" => "👍 Advance", "rejected" => "👎 Reject" } %>
+  <% status_badge  = { "pending" => "badge-pending", "approved" => "badge-approved", "rejected" => "badge-rejected" } %>
+
+  <% if @items.none? %>
+    <p class="empty">No candidates have been added yet.</p>
+  <% else %>
+    <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+      <% @items.each do |item| %>
+        <%= link_to shared_shortlist_item_path(@shortlist.token, item),
+              style: "text-decoration: none; color: inherit;" do %>
+          <div style="background: #fff; border: 1px solid #e5e5e5; border-radius: 8px; padding: 1rem 1.25rem;
+                      display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;
+                      transition: box-shadow 0.15s, border-color 0.15s;"
+               onmouseover="this.style.boxShadow='0 2px 8px rgba(0,0,0,0.08)'; this.style.borderColor='#ccc';"
+               onmouseout="this.style.boxShadow=''; this.style.borderColor='#e5e5e5';">
+
+            <%# Name + meta %>
+            <div style="flex: 1; min-width: 0;">
+              <div style="font-weight: 600; font-size: 0.97rem; margin-bottom: 0.2rem;">
+                <%= item.candidate_name %>
+              </div>
+              <div style="display: flex; gap: 0.4rem; flex-wrap: wrap;">
+                <% item.kind.split(" + ").each do |k| %>
+                  <span class="badge <%= k == "CV" ? "badge-cv" : "badge-video" %>"><%= k %></span>
+                <% end %>
+                <% if item.job_role %>
+                  <span class="badge" style="background: #f0f0f0; color: #555; font-size: 0.72rem; padding: 0.15rem 0.5rem;">
+                    <%= item.job_role.title %>
+                  </span>
+                <% end %>
+              </div>
+            </div>
+
+            <%# Status + arrow %>
+            <div style="display: flex; align-items: center; gap: 0.75rem; flex-shrink: 0;">
+              <span class="badge <%= status_badge[item.client_status] %>">
+                <%= status_labels[item.client_status] %>
+              </span>
+              <span style="color: #bbb; font-size: 1rem;">›</span>
+            </div>
+          </div>
+        <% end %>
+      <% end %>
+    </div>
+  <% end %>
+<% end %>

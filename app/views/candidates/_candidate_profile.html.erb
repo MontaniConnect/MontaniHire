@@ -1,0 +1,223 @@
+<% cv_fb      = candidate.cv_analysis.structured_feedback || {} %>
+<% va_fb      = candidate.video_analysis.structured_feedback || {} %>
+<% jd_fit     = va_fb["jd_fit_score"]&.to_f %>
+<% ep_score   = candidate.episode_score %>
+<% jd_tier    = candidate.jd_fit_tier %>
+<% ep_tier    = candidate.episode_tier %>
+<% drift      = candidate.domain_drift? %>
+<% gap        = candidate.cv_interview_gap? %>
+
+<% tier_style = {
+  "Shortlist"  => "background:#d4edda; color:#155724;",
+  "Borderline" => "background:#fff3cd; color:#856404;",
+  "Archive"    => "background:#f8d7da; color:#721c24;"
+} %>
+<% tier_border = { "Shortlist" => "#16a34a", "Borderline" => "#f59e0b", "Archive" => "#dc2626" } %>
+<% dim_labels = {
+  "elaboration_quality"  => ["Elaboration Quality",  "25%"],
+  "ownership_language"   => ["Ownership Language",   "20%"],
+  "outcome_orientation"  => ["Outcome Orientation",  "20%"],
+  "directness"           => ["Directness",           "15%"],
+  "stakeholder_fluency"  => ["Stakeholder Fluency",  "10%"],
+  "relevance_discipline" => ["Relevance Discipline",  "5%"],
+  "adaptability_signal"  => ["Adaptability Signal",   "5%"]
+} %>
+<% level_display = {
+  "rich"            => "Rich & Specific",  "adequate"        => "Adequate",
+  "surface_level"   => "Surface-level",    "absent"          => "Absent",
+  "clear_ownership" => "Clear Ownership",  "shared_credit"   => "Shared Credit",
+  "diffused"        => "Diffused",         "outcome_led"     => "Outcome-led",
+  "outcome_aware"   => "Outcome-aware",    "activity_focused"=> "Activity-focused",
+  "effort_focused"  => "Effort-focused",   "direct"          => "Direct",
+  "mostly_direct"   => "Mostly Direct",    "circuitous"      => "Circuitous",
+  "evasive"         => "Evasive",          "strong"          => "Strong",
+  "thin"            => "Thin",             "disciplined"     => "Disciplined",
+  "mostly_relevant" => "Mostly Relevant",  "padded"          => "Padded",
+  "scattered"       => "Scattered",        "adaptive"        => "Adaptive",
+  "flexible"        => "Flexible",         "fixed"           => "Fixed",
+  "rigid"           => "Rigid"
+} %>
+<% level_value = Candidate::EPISODE_LEVEL_VALUES %>
+
+<div class="card" style="border-left: 4px solid <%= tier_border[jd_tier] || "#e5e5e5" %>;">
+
+  <%# Header %>
+  <div style="display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.1rem;">
+    <div style="font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: #aaa;">Candidate Profile</div>
+    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center;">
+      <% if drift %>
+        <span style="font-size: 0.75rem; font-weight: 700; background:#fff3cd; color:#92400e; border-radius:6px; padding:0.2rem 0.65rem;">⚠ Domain Drift</span>
+      <% end %>
+      <% if gap %>
+        <span style="font-size: 0.75rem; font-weight: 700; background:#e0f2fe; color:#075985; border-radius:6px; padding:0.2rem 0.65rem;">↕ CV stronger than interview</span>
+      <% end %>
+    </div>
+  </div>
+
+  <%# Two score columns %>
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.1rem;">
+    <%# JD Fit %>
+    <div style="border: 1px solid #e5e5e5; border-radius: 8px; padding: 1rem;">
+      <div style="font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: #8b5cf6; margin-bottom: 0.4rem;">JD Fit — what they demonstrated</div>
+      <div style="display: flex; align-items: baseline; gap: 0.5rem; margin-bottom: 0.5rem;">
+        <span style="font-size: 1.4rem; font-weight: 700; color: #1a1a1a;"><%= jd_fit&.round(1) || "—" %><span style="font-size: 0.8rem; color: #999; font-weight: 400;">/10</span></span>
+        <% if jd_tier %>
+          <span style="font-size: 0.78rem; font-weight: 700; padding: 0.15rem 0.6rem; border-radius: 99px; <%= tier_style[jd_tier] %>"><%= jd_tier %></span>
+        <% end %>
+      </div>
+      <% [["≥ 7.5", "Shortlist"], ["5.0–7.4", "Borderline"], ["< 5.0", "Archive"]].each do |range, label| %>
+        <span style="font-size: 0.7rem; padding: 0.15rem 0.45rem; border-radius: 4px; margin-right: 0.25rem;
+                     <%= jd_tier == label ? tier_style[label] + " font-weight:700;" : "background:#f5f5f5; color:#bbb;" %>">
+          <%= range %> <%= label %>
+        </span>
+      <% end %>
+    </div>
+
+    <%# Episode Score %>
+    <div style="border: 1px solid #e5e5e5; border-radius: 8px; padding: 1rem;">
+      <div style="font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: #3b82f6; margin-bottom: 0.4rem;">Episode Score — how they demonstrated it</div>
+      <div style="display: flex; align-items: baseline; gap: 0.5rem; margin-bottom: 0.5rem;">
+        <span style="font-size: 1.4rem; font-weight: 700; color: #1a1a1a;"><%= ep_score || "—" %><span style="font-size: 0.8rem; color: #999; font-weight: 400;">/10</span></span>
+        <% if ep_tier %>
+          <span style="font-size: 0.78rem; font-weight: 700; padding: 0.15rem 0.6rem; border-radius: 99px; <%= tier_style[ep_tier] %>"><%= ep_tier %></span>
+        <% end %>
+      </div>
+      <% [["≥ 7.5", "Shortlist"], ["5.0–7.4", "Borderline"], ["< 5.0", "Archive"]].each do |range, label| %>
+        <span style="font-size: 0.7rem; padding: 0.15rem 0.45rem; border-radius: 4px; margin-right: 0.25rem;
+                     <%= ep_tier == label ? tier_style[label] + " font-weight:700;" : "background:#f5f5f5; color:#bbb;" %>">
+          <%= range %> <%= label %>
+        </span>
+      <% end %>
+    </div>
+  </div>
+
+  <%# Flags — detail %>
+  <% if drift && va_fb["domain_drift_explanation"].present? %>
+    <div style="background:#fffbeb; border:1px solid #fde68a; border-radius:6px; padding:0.55rem 0.85rem; font-size:0.82rem; color:#92400e; margin-bottom:0.85rem;">
+      <strong>Domain Drift:</strong> <%= va_fb["domain_drift_explanation"] %>
+    </div>
+  <% end %>
+  <% if gap %>
+    <% cv_fit_val = cv_fb["cv_fit_score"].to_f %>
+    <% jd_fit_val = va_fb["jd_fit_score"].to_f %>
+    <div style="background:#f0f9ff; border:1px solid #bae6fd; border-radius:6px; padding:0.55rem 0.85rem; font-size:0.82rem; color:#075985; margin-bottom:0.85rem;">
+      CV Fit Score (<strong><%= cv_fit_val %></strong>) is <%= (cv_fit_val - jd_fit_val).round(1) %> points above JD Fit Score (<strong><%= jd_fit_val %></strong>) — the CV presented stronger than the interview demonstrated.
+    </div>
+  <% end %>
+
+  <%# 3-line summary %>
+  <% lines = candidate.profile_summary_lines %>
+  <% if lines.any? %>
+    <div style="border-top:1px solid #f0f0f0; padding-top:0.85rem; margin-bottom:1.1rem;">
+      <% lines.each_with_index do |line, i| %>
+        <p style="font-size:0.88rem; line-height:1.65; margin-bottom:<%= i == lines.size - 1 ? "0" : "0.35rem" %>;
+                  color:<%= i == lines.size - 1 ? "#1a1a1a" : "#555" %>;
+                  font-weight:<%= i == lines.size - 1 ? "600" : "400" %>;"><%= line %></p>
+      <% end %>
+    </div>
+  <% end %>
+
+  <%# Episode dimension breakdown %>
+  <% dims = va_fb["episode_dimensions"] %>
+  <% if dims.present? %>
+    <div style="margin-bottom:1.25rem;">
+      <div style="font-size:0.72rem; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color:#aaa; margin-bottom:0.65rem;">Episode Breakdown</div>
+      <div style="display:flex; flex-direction:column; gap:0.5rem;">
+        <% Candidate::EPISODE_WEIGHTS.each do |dim, weight| %>
+          <% level = dims[dim] %>
+          <% next unless level.present? %>
+          <% val   = Candidate::EPISODE_LEVEL_VALUES.dig(dim, level) || 0 %>
+          <% label, wt_label = dim_labels[dim] %>
+          <% bar_color = val >= 1.0 ? "#16a34a" : val >= 0.7 ? "#3b82f6" : val >= 0.4 ? "#f59e0b" : "#dc2626" %>
+          <div style="display:flex; align-items:center; gap:0.75rem;">
+            <div style="font-size:0.78rem; color:#555; width:170px; flex-shrink:0;"><%= label %></div>
+            <div style="flex:1; background:#f0f0f0; border-radius:99px; height:6px; overflow:hidden;">
+              <div style="width:<%= (val * 100).round %>%; height:100%; background:<%= bar_color %>; border-radius:99px;"></div>
+            </div>
+            <div style="font-size:0.75rem; color:#777; width:110px; flex-shrink:0;"><%= level_display[level] || level %></div>
+            <div style="font-size:0.7rem; color:#bbb; width:28px; text-align:right; flex-shrink:0;"><%= wt_label %></div>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  <% end %>
+
+  <%# CV Fit + JD Fit requirements side by side %>
+  <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem; border-top:1px solid #f0f0f0; padding-top:1rem;">
+    <div>
+      <div style="font-size:0.7rem; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color:#8b5cf6; margin-bottom:0.5rem;">
+        CV Requirements Coverage
+        <% if cv_fb["cv_fit_score"].present? %><span style="font-weight:400; color:#888;"> · <%= cv_fb["cv_fit_score"] %>/10</span><% end %>
+        <% if cv_fb["cv_fit_score_raw"].present? && cv_fb["cv_fit_score_raw"] != cv_fb["cv_fit_score"] %>
+          <span style="font-weight:400; color:#bbb;"> (base <%= cv_fb["cv_fit_score_raw"] %>)</span>
+        <% end %>
+      </div>
+      <% Array(cv_fb["cv_requirements_coverage"]).each do |req| %>
+        <% dot = { "evidenced" => "#16a34a", "partial" => "#f59e0b", "not evidenced" => "#dc2626" }[req["coverage"]] || "#aaa" %>
+        <div style="display:flex; align-items:flex-start; gap:0.4rem; padding:0.25rem 0; border-bottom:1px solid #f8f8f8;">
+          <span style="font-size:0.6rem; margin-top:0.25rem; color:<%= dot %>; flex-shrink:0;">●</span>
+          <span style="font-size:0.77rem; color:#444; line-height:1.4;"><%= req["requirement"] %></span>
+        </div>
+      <% end %>
+      <% adj = cv_fb["cv_fit_adjustments"] %>
+      <% if adj.present? %>
+        <% nonzero = adj.reject { |_, v| v.to_f.zero? } %>
+        <% if nonzero.any? %>
+          <div style="margin-top:0.6rem; padding:0.5rem 0.65rem; background:#fafafa; border-radius:6px; border:1px solid #f0f0f0;">
+            <div style="font-size:0.68rem; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; color:#aaa; margin-bottom:0.35rem;">Score adjustments</div>
+            <% adj_labels = { "trajectory_bonus" => "Trajectory", "scope_bonus" => "Scope", "recency_modifier" => "Recency", "implied_competency_bonus" => "Implied competency", "tenure_penalty" => "Tenure", "density_penalty" => "Density" } %>
+            <% nonzero.each do |key, val| %>
+              <% v = val.to_f %>
+              <div style="display:flex; justify-content:space-between; font-size:0.75rem; padding:0.1rem 0;">
+                <span style="color:#555;"><%= adj_labels[key] || key %></span>
+                <span style="font-weight:700; color:<%= v > 0 ? "#16a34a" : "#dc2626" %>"><%= v > 0 ? "+#{v}" : v %></span>
+              </div>
+            <% end %>
+          </div>
+        <% end %>
+      <% end %>
+      <%# Contextual signals %>
+      <% if cv_fb["career_trajectory_alignment"].present? || cv_fb["industry_proximity"].present? || cv_fb["recency_of_relevant_experience"].present? %>
+        <div style="margin-top:0.6rem; display:flex; flex-wrap:wrap; gap:0.3rem;">
+          <% traj_color = { "toward_role" => "#d4edda;color:#155724", "lateral" => "#f5f5f5;color:#555", "away_from_role" => "#f8d7da;color:#721c24" }[cv_fb["career_trajectory_alignment"]] %>
+          <% if traj_color %>
+            <span style="font-size:0.7rem; padding:0.15rem 0.5rem; border-radius:4px; background:<%= traj_color.split(";").first %>; <%= traj_color.split(";").last %>;">
+              <%= cv_fb["career_trajectory_alignment"]&.tr("_", " ")&.capitalize %>
+            </span>
+          <% end %>
+          <% prox_color = { "direct" => "#d4edda;color:#155724", "adjacent" => "#cfe2ff;color:#084298", "transferable" => "#fff3cd;color:#856404", "none" => "#f8d7da;color:#721c24" }[cv_fb["industry_proximity"]] %>
+          <% if prox_color %>
+            <span style="font-size:0.7rem; padding:0.15rem 0.5rem; border-radius:4px; background:<%= prox_color.split(";").first %>; <%= prox_color.split(";").last %>;">
+              <%= cv_fb["industry_proximity"]&.capitalize %> industry
+            </span>
+          <% end %>
+          <% rec_color = { "current" => "#d4edda;color:#155724", "within_3_years" => "#fff3cd;color:#856404", "older_than_3_years" => "#f8d7da;color:#721c24" }[cv_fb["recency_of_relevant_experience"]] %>
+          <% if rec_color %>
+            <span style="font-size:0.7rem; padding:0.15rem 0.5rem; border-radius:4px; background:<%= rec_color.split(";").first %>; <%= rec_color.split(";").last %>;">
+              <%= cv_fb["recency_of_relevant_experience"]&.tr("_", " ")&.capitalize %>
+            </span>
+          <% end %>
+          <% if cv_fb["scope_indicators"]&.dig("scope_note").present? %>
+            <span style="font-size:0.7rem; padding:0.15rem 0.5rem; border-radius:4px; background:#f5f5f5; color:#555;">
+              <%= cv_fb["scope_indicators"]["scope_note"] %>
+            </span>
+          <% end %>
+        </div>
+      <% end %>
+    </div>
+    <div>
+      <div style="font-size:0.7rem; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color:#3b82f6; margin-bottom:0.5rem;">
+        JD Requirements Coverage
+        <% if va_fb["jd_fit_score"].present? %><span style="font-weight:400; color:#888;"> · <%= va_fb["jd_fit_score"] %>/10</span><% end %>
+      </div>
+      <% Array(va_fb["jd_requirements_coverage"]).each do |req| %>
+        <% dot = { "addressed" => "#16a34a", "partial" => "#f59e0b", "not addressed" => "#dc2626" }[req["coverage"]] || "#aaa" %>
+        <div style="display:flex; align-items:flex-start; gap:0.4rem; padding:0.25rem 0; border-bottom:1px solid #f8f8f8;">
+          <span style="font-size:0.6rem; margin-top:0.25rem; color:<%= dot %>; flex-shrink:0;">●</span>
+          <span style="font-size:0.77rem; color:#444; line-height:1.4;"><%= req["requirement"] %></span>
+        </div>
+      <% end %>
+    </div>
+  </div>
+
+</div>

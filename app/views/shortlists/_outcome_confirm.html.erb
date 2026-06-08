@@ -1,0 +1,26 @@
+<% if candidate.outcome_confirmed? %>
+  <span style="font-size: 0.72rem; color: #166534; background: #f0fdf4; border: 1px solid #86efac;
+               border-radius: 4px; padding: 0.15rem 0.45rem;">
+    ✓ Confirmed
+  </span>
+  <% if candidate.outcome_note.present? %>
+    <span style="font-size: 0.72rem; color: #6b7280; font-style: italic;" title="<%= candidate.outcome_note %>">
+      "<%= candidate.outcome_note.truncate(40) %>"
+    </span>
+  <% end %>
+  <%= button_to "Unconfirm", confirm_outcome_candidate_path(candidate),
+        method: :post,
+        style: "background: none; border: 1px solid #d1d5db; border-radius: 4px; padding: 0.15rem 0.45rem;
+                cursor: pointer; font-size: 0.72rem; color: #6b7280; white-space: nowrap;" %>
+<% else %>
+  <%= form_with url: confirm_outcome_candidate_path(candidate), method: :post,
+        style: "display: flex; gap: 0.35rem; align-items: center; flex-wrap: nowrap;" do |f| %>
+    <%= f.text_field :outcome_note,
+          placeholder: "Note for AI (optional)",
+          style: "font-size: 0.72rem; border: 1px solid #d1d5db; border-radius: 4px; padding: 0.15rem 0.45rem;
+                  width: 160px; outline: none; color: #374151;" %>
+    <%= f.submit "Confirm outcome",
+          style: "background: none; border: 1px solid #16a34a; border-radius: 4px; padding: 0.15rem 0.45rem;
+                  cursor: pointer; font-size: 0.72rem; color: #16a34a; white-space: nowrap;" %>
+  <% end %>
+<% end %>

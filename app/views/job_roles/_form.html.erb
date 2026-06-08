@@ -1,0 +1,233 @@
+<%= form_with model: job_role do |f| %>
+  <div class="form-group">
+    <%= f.label :title, "Job Title" %>
+    <%= f.text_field :title, placeholder: "e.g. Senior Software Engineer" %>
+  </div>
+
+  <div class="form-group">
+    <%= f.label :experience_level, "Experience Level" %>
+    <%= f.select :experience_level,
+          [["Junior", "junior"], ["Mid-level", "mid"], ["Senior", "senior"], ["Executive", "executive"]] %>
+  </div>
+
+  <div class="form-group">
+    <%= f.label :required_skills, "Required Skills" %>
+    <small style="display: block; color: #999; font-size: 0.8rem; margin-bottom: 0.4rem;">
+      Use the toolbar to add bullet points, headings, and bold text.
+    </small>
+    <%= f.rich_text_area :required_skills %>
+  </div>
+
+  <div class="form-group">
+    <%= f.label :responsibilities, "Responsibilities" %>
+    <small style="display: block; color: #999; font-size: 0.8rem; margin-bottom: 0.4rem;">
+      Use the toolbar to add bullet points, headings, and bold text.
+    </small>
+    <%= f.rich_text_area :responsibilities %>
+  </div>
+
+  <div class="form-group">
+    <%= f.label :description, "Additional Context (optional)" %>
+    <%= f.text_area :description, rows: 3,
+          placeholder: "Team size, company stage, culture notes, anything extra for the evaluator..." %>
+  </div>
+
+  <%# Must-Have Requirements %>
+  <div class="form-group">
+    <div style="display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 0.3rem;">
+      <label style="font-weight: 600;">Must-Have Requirements</label>
+      <% if job_role.persisted? %>
+        <%= link_to "Extract from JD →", extract_requirements_job_role_path(job_role),
+              data: { turbo_method: :post },
+              style: "font-size: 0.78rem; padding: 0.2rem 0.65rem; background: #f5f5f5;
+                      color: #555; border: 1px solid #ddd; border-radius: 6px; cursor: pointer;
+                      text-decoration: none;" %>
+      <% end %>
+    </div>
+    <small style="display: block; color: #999; font-size: 0.8rem; margin-bottom: 0.6rem;">
+      One requirement per line. When saved, every CV and interview analysis for this role will score against this exact list — no drift between runs.
+      <% if job_role.requirements_locked? %>
+        <span style="color: #166534; font-weight: 600;"> · <%= job_role.must_have_requirements.size %> requirements locked.</span>
+      <% end %>
+    </small>
+    <div id="req-list" style="display: flex; flex-direction: column; gap: 0.4rem; margin-bottom: 0.5rem;">
+      <% reqs = job_role.must_have_requirements.presence || [""] %>
+      <% reqs.each_with_index do |req, i| %>
+        <div style="display: flex; align-items: center; gap: 0.4rem;">
+          <span style="font-size: 0.72rem; color: #bbb; min-width: 1.2rem; text-align: right; flex-shrink: 0;"><%= i + 1 %>.</span>
+          <input type="text" name="job_role[must_have_requirements][]" value="<%= req %>"
+                 placeholder="e.g. 3+ years Salesforce Sales Cloud experience"
+                 style="flex: 1; padding: 0.4rem 0.6rem; border: 1px solid #ddd; border-radius: 6px;
+                        font-size: 0.88rem; font-family: inherit;">
+          <button type="button" onclick="this.closest('div').remove(); renumberReqs();"
+                  style="font-size: 0.8rem; color: #bbb; background: none; border: none; cursor: pointer; padding: 0 0.2rem;">✕</button>
+        </div>
+      <% end %>
+    </div>
+    <button type="button" onclick="addReq()"
+            style="font-size: 0.78rem; color: #555; background: #f5f5f5; border: 1px solid #ddd;
+                   border-radius: 6px; padding: 0.25rem 0.7rem; cursor: pointer;">+ Add requirement</button>
+
+    <div id="req-warning" style="display: none; margin-top: 0.65rem; font-size: 0.8rem; border-radius: 6px; padding: 0.5rem 0.75rem;"></div>
+  </div>
+
+  <%# Nice-to-Have Requirements %>
+  <div class="form-group">
+    <div style="display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 0.3rem;">
+      <label style="font-weight: 600;">Nice-to-Have Requirements</label>
+    </div>
+    <small style="display: block; color: #999; font-size: 0.8rem; margin-bottom: 0.6rem;">
+      Preferred skills that strengthen a candidacy. Each evidenced item adds +0.50 (partial +0.25), capped at +1.50 bonus.
+      <% if job_role.nice_to_have_requirements.present? %>
+        <span style="color: #1e40af; font-weight: 600;"> · <%= job_role.nice_to_have_requirements.size %> saved.</span>
+      <% end %>
+    </small>
+    <div id="nth-list" style="display: flex; flex-direction: column; gap: 0.4rem; margin-bottom: 0.5rem;">
+      <% nth_reqs = job_role.nice_to_have_requirements.presence || [""] %>
+      <% nth_reqs.each_with_index do |req, i| %>
+        <div style="display: flex; align-items: center; gap: 0.4rem;">
+          <span style="font-size: 0.72rem; color: #bbb; min-width: 1.2rem; text-align: right; flex-shrink: 0;"><%= i + 1 %>.</span>
+          <input type="text" name="job_role[nice_to_have_requirements][]" value="<%= req %>"
+                 placeholder="e.g. Salesforce CPQ or Billing experience"
+                 style="flex: 1; padding: 0.4rem 0.6rem; border: 1px solid #ddd; border-radius: 6px;
+                        font-size: 0.88rem; font-family: inherit;">
+          <button type="button" onclick="this.closest('div').remove(); renumberNth();"
+                  style="font-size: 0.8rem; color: #bbb; background: none; border: none; cursor: pointer; padding: 0 0.2rem;">✕</button>
+        </div>
+      <% end %>
+    </div>
+    <button type="button" onclick="addNth()"
+            style="font-size: 0.78rem; color: #555; background: #f5f5f5; border: 1px solid #ddd;
+                   border-radius: 6px; padding: 0.25rem 0.7rem; cursor: pointer;">+ Add nice-to-have</button>
+
+    <div id="nth-warning" style="display: none; margin-top: 0.65rem; font-size: 0.8rem; border-radius: 6px; padding: 0.5rem 0.75rem;"></div>
+  </div>
+
+  <script>
+    const REQ_MIN = 6, REQ_MAX = 12;
+    const NTH_MIN = 2, NTH_MAX = 8;
+
+    function countFilledReqs() {
+      return Array.from(document.querySelectorAll('#req-list input[type=text]'))
+                  .filter(i => i.value.trim() !== '').length;
+    }
+
+    function updateReqWarning() {
+      const n = countFilledReqs();
+      const el = document.getElementById('req-warning');
+      if (n === 0) {
+        el.style.display = 'none';
+      } else if (n < REQ_MIN) {
+        el.style.display = 'block';
+        el.style.background = '#fef9c3';
+        el.style.color = '#854d0e';
+        el.style.border = '1px solid #fde047';
+        el.textContent = `${n} requirement${n === 1 ? '' : 's'} — below the recommended minimum of ${REQ_MIN}. Each requirement carries ${(7.0 / n).toFixed(2)} points; too few requirements create large score swings between candidates.`;
+      } else if (n > REQ_MAX) {
+        el.style.display = 'block';
+        el.style.background = '#fef9c3';
+        el.style.color = '#854d0e';
+        el.style.border = '1px solid #fde047';
+        el.textContent = `${n} requirements — above the recommended maximum of ${REQ_MAX}. Check for overlapping requirements that could give the same skill double credit.`;
+      } else {
+        el.style.display = 'block';
+        el.style.background = '#f0fdf4';
+        el.style.color = '#166534';
+        el.style.border = '1px solid #86efac';
+        el.textContent = `${n} requirements — within the recommended range (${REQ_MIN}–${REQ_MAX}).`;
+      }
+    }
+
+    function countFilledNth() {
+      return Array.from(document.querySelectorAll('#nth-list input[type=text]'))
+                  .filter(i => i.value.trim() !== '').length;
+    }
+
+    function updateNthWarning() {
+      const n = countFilledNth();
+      const el = document.getElementById('nth-warning');
+      if (n === 0) {
+        el.style.display = 'none';
+      } else if (n < NTH_MIN) {
+        el.style.display = 'block';
+        el.style.background = '#fef9c3';
+        el.style.color = '#854d0e';
+        el.style.border = '1px solid #fde047';
+        el.textContent = `${n} nice-to-have${n === 1 ? '' : 's'} — below the recommended minimum of ${NTH_MIN}.`;
+      } else if (n > NTH_MAX) {
+        el.style.display = 'block';
+        el.style.background = '#fef9c3';
+        el.style.color = '#854d0e';
+        el.style.border = '1px solid #fde047';
+        el.textContent = `${n} nice-to-haves — above the recommended maximum of ${NTH_MAX}. Consider trimming overlapping items.`;
+      } else {
+        el.style.display = 'block';
+        el.style.background = '#eff6ff';
+        el.style.color = '#1e40af';
+        el.style.border = '1px solid #bfdbfe';
+        el.textContent = `${n} nice-to-haves — within the recommended range (${NTH_MIN}–${NTH_MAX}).`;
+      }
+    }
+
+    function addNth() {
+      const list = document.getElementById('nth-list');
+      const idx = list.children.length + 1;
+      const div = document.createElement('div');
+      div.style.cssText = 'display:flex;align-items:center;gap:0.4rem;';
+      div.innerHTML = `<span style="font-size:0.72rem;color:#bbb;min-width:1.2rem;text-align:right;flex-shrink:0;">${idx}.</span>
+        <input type="text" name="job_role[nice_to_have_requirements][]" placeholder="e.g. experience with enterprise SaaS platforms"
+               oninput="updateNthWarning()"
+               style="flex:1;padding:0.4rem 0.6rem;border:1px solid #ddd;border-radius:6px;font-size:0.88rem;font-family:inherit;">
+        <button type="button" onclick="this.closest('div').remove();renumberNth();updateNthWarning();"
+                style="font-size:0.8rem;color:#bbb;background:none;border:none;cursor:pointer;padding:0 0.2rem;">✕</button>`;
+      list.appendChild(div);
+      updateNthWarning();
+    }
+
+    function renumberNth() {
+      document.querySelectorAll('#nth-list > div').forEach((row, i) => {
+        row.querySelector('span').textContent = (i + 1) + '.';
+      });
+    }
+
+    document.querySelectorAll('#nth-list input[type=text]').forEach(input => {
+      input.addEventListener('input', updateNthWarning);
+    });
+    updateNthWarning();
+
+    function addReq() {
+      const list = document.getElementById('req-list');
+      const idx = list.children.length + 1;
+      const div = document.createElement('div');
+      div.style.cssText = 'display:flex;align-items:center;gap:0.4rem;';
+      div.innerHTML = `<span style="font-size:0.72rem;color:#bbb;min-width:1.2rem;text-align:right;flex-shrink:0;">${idx}.</span>
+        <input type="text" name="job_role[must_have_requirements][]" placeholder="e.g. REST/SOAP API integration"
+               oninput="updateReqWarning()"
+               style="flex:1;padding:0.4rem 0.6rem;border:1px solid #ddd;border-radius:6px;font-size:0.88rem;font-family:inherit;">
+        <button type="button" onclick="this.closest('div').remove();renumberReqs();updateReqWarning();"
+                style="font-size:0.8rem;color:#bbb;background:none;border:none;cursor:pointer;padding:0 0.2rem;">✕</button>`;
+      list.appendChild(div);
+      updateReqWarning();
+    }
+
+    function renumberReqs() {
+      document.querySelectorAll('#req-list > div').forEach((row, i) => {
+        row.querySelector('span').textContent = (i + 1) + '.';
+      });
+    }
+
+    document.querySelectorAll('#req-list input[type=text]').forEach(input => {
+      input.addEventListener('input', updateReqWarning);
+    });
+    document.querySelectorAll('#req-list button').forEach(btn => {
+      const orig = btn.getAttribute('onclick') || '';
+      if (orig.includes('remove')) {
+        btn.setAttribute('onclick', orig.replace('renumberReqs();', 'renumberReqs();updateReqWarning();'));
+      }
+    });
+    updateReqWarning();
+  </script>
+
+  <%= f.submit "Save Role", class: "btn" %>
+  <%= link_to "Cancel", job_roles_path, style: "margin-left: 1rem; color: #555; font-size: 0.9rem;" %>
+<% end %>

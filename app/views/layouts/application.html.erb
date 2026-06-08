@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="turbo-refresh-method" content="morph">
+    <title>Video Analysis</title>
+    <%= csrf_meta_tags %>
+    <%= javascript_importmap_tags %>
+    <%= stylesheet_link_tag "actiontext" %>
+    <style>
+      *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        background: #f5f5f5;
+        color: #1a1a1a;
+        line-height: 1.5;
+      }
+
+      .nav {
+        background: #1a1a1a;
+        padding: 0 2rem;
+        display: flex;
+        align-items: center;
+        height: 56px;
+        gap: 2rem;
+      }
+      .nav a { color: #fff; text-decoration: none; font-weight: 600; font-size: 1rem; }
+      .nav a.brand { font-size: 1.1rem; letter-spacing: -0.02em; }
+      .nav a:not(.brand) { color: #aaa; font-weight: 400; font-size: 0.9rem; }
+
+      .container { max-width: 1200px; margin: 2rem auto; padding: 0 1.5rem; }
+
+      .card {
+        background: #fff;
+        border: 1px solid #e5e5e5;
+        border-radius: 8px;
+        padding: 1.5rem;
+        margin-bottom: 1.25rem;
+      }
+
+      h1 { font-size: 1.5rem; font-weight: 700; margin-bottom: 1.25rem; }
+      h2 { font-size: 1.1rem; font-weight: 600; margin-bottom: 0.75rem; color: #333; }
+
+      .form-group { margin-bottom: 1rem; }
+      label { display: block; font-size: 0.85rem; font-weight: 500; color: #555; margin-bottom: 0.35rem; }
+      input[type="text"] {
+        width: 100%; padding: 0.6rem 0.75rem;
+        border: 1px solid #ddd; border-radius: 6px;
+        font-size: 0.95rem; outline: none;
+        transition: border-color 0.15s;
+      }
+      input[type="text"]:focus { border-color: #555; }
+
+      select {
+        width: 100%; padding: 0.6rem 0.75rem;
+        border: 1px solid #ddd; border-radius: 6px;
+        font-size: 0.95rem; outline: none; background: #fff;
+        transition: border-color 0.15s;
+      }
+      select:focus { border-color: #555; }
+      textarea {
+        width: 100%; padding: 0.6rem 0.75rem;
+        border: 1px solid #ddd; border-radius: 6px;
+        font-size: 0.95rem; outline: none; resize: vertical;
+        transition: border-color 0.15s; font-family: inherit;
+      }
+      textarea:focus { border-color: #555; }
+
+      .btn {
+        display: inline-block; padding: 0.6rem 1.25rem;
+        background: #1a1a1a; color: #fff;
+        border: none; border-radius: 6px;
+        font-size: 0.9rem; font-weight: 500;
+        cursor: pointer; text-decoration: none;
+        transition: background 0.15s;
+      }
+      .btn:hover { background: #333; }
+      .btn:disabled { background: #999; cursor: not-allowed; }
+
+      .badge {
+        display: inline-block; padding: 0.2rem 0.6rem;
+        border-radius: 99px; font-size: 0.75rem; font-weight: 600;
+      }
+      .badge-pending    { background: #fff3cd; color: #856404; }
+      .badge-downloading { background: #cfe2ff; color: #084298; }
+      .badge-transcribing { background: #cfe2ff; color: #084298; }
+      .badge-analyzing  { background: #d1ecf1; color: #0c5460; }
+      .badge-completed  { background: #d4edda; color: #155724; }
+      .badge-failed     { background: #f8d7da; color: #721c24; }
+
+      .score-ring {
+        width: 72px; height: 72px; border-radius: 50%;
+        background: conic-gradient(#1a1a1a var(--pct), #e5e5e5 0);
+        display: flex; align-items: center; justify-content: center;
+        position: relative;
+      }
+      .score-ring::before {
+        content: ""; position: absolute; inset: 8px;
+        background: #fff; border-radius: 50%;
+      }
+      .score-value {
+        position: relative; z-index: 1;
+        font-size: 1rem; font-weight: 700;
+      }
+
+      .feedback-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+      .feedback-col h3 { font-size: 0.85rem; font-weight: 600; color: #555; margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.05em; }
+      .feedback-col ul { list-style: none; }
+      .feedback-col ul li { font-size: 0.9rem; padding: 0.3rem 0; border-bottom: 1px solid #f0f0f0; }
+      .feedback-col ul li::before { content: "• "; color: #999; }
+
+      .list-item {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 0.75rem 0; border-bottom: 1px solid #f0f0f0;
+      }
+      .list-item:last-child { border-bottom: none; }
+      .list-item-meta { font-size: 0.8rem; color: #999; }
+
+      .transcript {
+        background: #fafafa; border: 1px solid #eee; border-radius: 6px;
+        padding: 1rem; font-size: 0.88rem; line-height: 1.7;
+        max-height: 300px; overflow-y: auto; white-space: pre-wrap;
+      }
+
+      .error-box {
+        background: #fff5f5; border: 1px solid #fca5a5;
+        border-radius: 6px; padding: 0.75rem 1rem;
+        font-size: 0.88rem; color: #dc2626;
+      }
+
+      .empty { color: #999; font-size: 0.9rem; text-align: center; padding: 2rem 0; }
+
+      .rich-text-content { font-size: 0.95rem; line-height: 1.75; color: #333; }
+      .rich-text-content h1 { font-size: 1.1rem; font-weight: 700; margin: 1rem 0 0.4rem; }
+      .rich-text-content h2 { font-size: 1rem; font-weight: 600; margin: 0.85rem 0 0.35rem; }
+      .rich-text-content ul, .rich-text-content ol { padding-left: 1.4rem; margin: 0.4rem 0; }
+      .rich-text-content li { margin-bottom: 0.2rem; }
+      .rich-text-content strong { font-weight: 600; }
+      .rich-text-content p { margin: 0.35rem 0; }
+
+      .table-wrapper { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+      .data-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; min-width: 700px; }
+      .data-table thead { background: #fafafa; }
+      .data-table th { padding: 0.65rem 1.25rem; text-align: left; font-size: 0.75rem; font-weight: 600; color: #888; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid #e5e5e5; white-space: nowrap; }
+      .data-table td { padding: 0.85rem 1.25rem; border-bottom: 1px solid #f0f0f0; vertical-align: middle; }
+      .data-table tbody tr:last-child td { border-bottom: none; }
+      .data-table tbody tr:hover { background: #fafafa; }
+
+      .drop-zone {
+        display: block; border: 2px dashed #ddd; border-radius: 8px;
+        padding: 2rem; text-align: center; cursor: pointer;
+        transition: border-color 0.15s; margin-bottom: 1rem;
+      }
+      .drop-zone:hover { border-color: #999; }
+
+      .no-print { }
+      .print-only { display: none; }
+
+      details[open] > summary [data-toggle-icon] { transform: rotate(90deg); }
+      details > summary { list-style: none; }
+      details > summary::-webkit-details-marker { display: none; }
+      .tab-nav {
+        display: flex; gap: 0; border-bottom: 2px solid #e5e5e5;
+        margin-bottom: 1.25rem;
+      }
+      .tab-link {
+        padding: 0.55rem 1.1rem; font-size: 0.88rem; font-weight: 500;
+        color: #777; text-decoration: none; border-bottom: 2px solid transparent;
+        margin-bottom: -2px; transition: color 0.15s, border-color 0.15s;
+      }
+      .tab-link:hover { color: #1a1a1a; }
+      .tab-link.active { color: #1a1a1a; border-bottom-color: #1a1a1a; }
+
+      @media print {
+        * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        body { background: #fff; font-size: 11pt; }
+        .nav { display: none !important; }
+        .no-print { display: none !important; }
+        .print-only { display: block !important; }
+        .flash-notice { display: none !important; }
+        .container { max-width: 100%; margin: 0; padding: 0 1cm; }
+        .card { border: 1px solid #ddd; border-radius: 0; margin-bottom: 0.6cm; page-break-inside: avoid; }
+        h1 { font-size: 16pt; margin-bottom: 0.3cm; }
+        h2 { font-size: 12pt; }
+        .score-ring { width: 60px; height: 60px; }
+        .score-value { font-size: 0.9rem; }
+        .transcript { max-height: none; overflow: visible; }
+        .feedback-grid { grid-template-columns: 1fr 1fr; }
+        a { color: inherit; text-decoration: none; }
+        .btn { display: none !important; }
+      }
+    </style>
+  </head>
+  <body>
+    <nav class="nav">
+      <%= link_to "HireAI", root_path, class: "brand" %>
+      <%= link_to "Dashboard", dashboard_path %>
+      <%= link_to "Candidates", candidates_path %>
+      <%= link_to "CV Analysis", cv_analyses_path %>
+      <%= link_to "Video Interviews", video_analyses_path %>
+      <%= link_to "Job Roles", job_roles_path %>
+      <%= link_to "Shortlists", shortlists_path %>
+    </nav>
+    <div class="container">
+      <% if notice %>
+        <div class="flash-notice" style="background: #d4edda; color: #155724; border: 1px solid #c3e6cb; border-radius: 6px; padding: 0.65rem 1rem; margin-bottom: 1rem; font-size: 0.88rem;">
+          <%= notice %>
+        </div>
+      <% end %>
+      <% if alert %>
+        <div class="flash-notice" style="background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; border-radius: 6px; padding: 0.65rem 1rem; margin-bottom: 1rem; font-size: 0.88rem;">
+          <%= alert %>
+        </div>
+      <% end %>
+      <%= yield %>
+    </div>
+
+    <%# Compliance intercept modal %>
+    <div id="compliance-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.55); z-index:200; align-items:center; justify-content:center; padding:1rem;">
+      <div style="background:#fff; border-radius:10px; padding:1.5rem; max-width:440px; width:100%; box-shadow:0 8px 32px rgba(0,0,0,0.18);">
+        <div style="font-size:0.72rem; font-weight:700; text-transform:uppercase; letter-spacing:0.07em; color:#991b1b; margin-bottom:0.4rem;">Compliance Check Required</div>
+        <h3 style="margin:0 0 0.45rem; font-size:1rem; color:#1a1a1a;">This candidate has flagged items</h3>
+        <p style="font-size:0.85rem; color:#555; margin-bottom:0.85rem; line-height:1.55;">Review the flags below before adding to shortlist. You must acknowledge them to proceed.</p>
+        <ul id="compliance-flags-list" style="list-style:none; padding:0; margin:0 0 1.1rem; display:flex; flex-direction:column; gap:0.4rem;"></ul>
+        <div style="display:flex; gap:0.5rem; justify-content:flex-end;">
+          <button id="compliance-cancel" type="button" class="btn" style="background:#e5e5e5; color:#1a1a1a;">Cancel</button>
+          <button id="compliance-confirm" type="button" class="btn" style="background:#dc2626;">I've reviewed — add anyway</button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+    (function () {
+      var pendingForm = null;
+      var modal       = document.getElementById('compliance-modal');
+      var flagsList   = document.getElementById('compliance-flags-list');
+
+      document.addEventListener('submit', function (e) {
+        var form      = e.target;
+        var flagsAttr = form.dataset.complianceFlags;
+        if (!flagsAttr || form.dataset.flagsAcknowledged) return;
+        var flags;
+        try { flags = JSON.parse(flagsAttr); } catch (_) { return; }
+        if (!flags || !flags.length) return;
+
+        e.preventDefault();
+        e.stopPropagation();
+        pendingForm = form;
+
+        flagsList.innerHTML = flags.map(function (f) {
+          return '<li style="background:#fff5f5;border:1px solid #fca5a5;border-radius:6px;padding:0.5rem 0.75rem;font-size:0.85rem;color:#991b1b;">' + f + '</li>';
+        }).join('');
+        modal.style.display = 'flex';
+      }, true);
+
+      document.getElementById('compliance-cancel').addEventListener('click', function () {
+        modal.style.display = 'none';
+        pendingForm = null;
+      });
+
+      document.getElementById('compliance-confirm').addEventListener('click', function () {
+        modal.style.display = 'none';
+        if (!pendingForm) return;
+        pendingForm.dataset.flagsAcknowledged = 'true';
+        var inp = document.createElement('input');
+        inp.type = 'hidden'; inp.name = 'flags_acknowledged'; inp.value = 'true';
+        pendingForm.appendChild(inp);
+        pendingForm.requestSubmit();
+        pendingForm = null;
+      });
+
+      modal.addEventListener('click', function (e) {
+        if (e.target === modal) { modal.style.display = 'none'; pendingForm = null; }
+      });
+    })();
+    </script>
+  </body>
+</html>

@@ -1,0 +1,37 @@
+<div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem;">
+  <h1 style="margin: 0;">Job Roles</h1>
+  <%= link_to "+ New Role", new_job_role_path, class: "btn" %>
+</div>
+
+<% if @job_roles.any? %>
+  <% @job_roles.each do |role| %>
+    <div class="card" style="margin-bottom: 1rem;">
+      <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem;">
+        <div style="flex: 1;">
+          <div style="margin-bottom: 0.4rem;">
+            <%= link_to role.title, job_role_path(role),
+                  style: "font-weight: 600; font-size: 1rem; color: #1a1a1a; text-decoration: none;" %>
+          </div>
+          <span class="badge badge-analyzing" style="text-transform: capitalize; margin-bottom: 0.75rem; display: inline-block;">
+            <%= role.experience_level %>
+          </span>
+          <div style="font-size: 0.85rem; color: #777; margin-top: 0.25rem;">
+            <%= role.video_analyses.count + role.cv_analyses.count %> candidate(s) evaluated
+          </div>
+        </div>
+        <div style="display: flex; gap: 0.5rem; flex-shrink: 0;">
+          <%= link_to "View", job_role_path(role), class: "btn", style: "padding: 0.35rem 0.75rem; font-size: 0.8rem; background: #555;" %>
+          <%= link_to "Edit", edit_job_role_path(role), class: "btn", style: "padding: 0.35rem 0.75rem; font-size: 0.8rem; background: #555;" %>
+          <%= button_to "Delete", job_role_path(role), method: :delete,
+                data: { turbo_confirm: "Delete \"#{role.title}\"? This cannot be undone." },
+                class: "btn",
+                style: "padding: 0.35rem 0.75rem; font-size: 0.8rem; background: #dc2626;" %>
+        </div>
+      </div>
+    </div>
+  <% end %>
+<% else %>
+  <div class="card">
+    <p class="empty">No job roles yet. Create one to start evaluating candidates.</p>
+  </div>
+<% end %>

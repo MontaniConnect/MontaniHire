@@ -1,0 +1,461 @@
+<%# Print-only report header %>
+<div class="print-only" style="margin-bottom: 1.25rem; padding-bottom: 0.75rem; border-bottom: 2px solid #1a1a1a;">
+  <div style="font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: #888; margin-bottom: 0.3rem;">HireAI — CV Screening Report</div>
+  <div style="font-size: 1.3rem; font-weight: 700; margin-bottom: 0.2rem;"><%= @cv_analysis.display_name %></div>
+  <div style="font-size: 0.85rem; color: #555;">
+    <% if @cv_analysis.job_role %><%= @cv_analysis.job_role.title %> · <% end %>
+    Exported <%= Date.today.strftime("%B %d, %Y") %>
+  </div>
+</div>
+
+<%# Header %>
+<div class="no-print" style="display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; margin-bottom: 1.25rem; flex-wrap: wrap;">
+  <div>
+    <h1 style="margin: 0 0 0.4rem;"><%= @cv_analysis.display_name %></h1>
+    <div style="display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;">
+      <% if @cv_analysis.job_role %>
+        <%= link_to @cv_analysis.job_role.title, job_role_path(@cv_analysis.job_role),
+              class: "badge badge-analyzing",
+              style: "text-decoration: none; font-size: 0.8rem;" %>
+      <% end %>
+      <span class="badge badge-<%= @cv_analysis.status %>"><%= @cv_analysis.status %></span>
+      <% if @cv_analysis.completed? %>
+        <% current_cv = @cv_analysis.prompt_version == CvClaudeAnalysisService::PROMPT_VERSION %>
+        <span style="font-size: 0.72rem; color: <%= current_cv ? "#166534" : "#92400e" %>;
+                     background: <%= current_cv ? "#dcfce7" : "#fef3c7" %>;
+                     border-radius: 99px; padding: 0.15rem 0.55rem; font-weight: 600;">
+          <%= current_cv ? "prompt current" : "prompt stale#{@cv_analysis.prompt_version.present? ? " · #{@cv_analysis.prompt_version}" : ""}" %>
+        </span>
+      <% end %>
+    </div>
+  </div>
+
+  <%# Action buttons %>
+  <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: flex-start;">
+    <% if @cv_analysis.completed? %>
+      <button onclick="window.print()"
+              class="btn"
+              style="background: #555; padding: 0.45rem 0.9rem; font-size: 0.85rem;">
+        ↓ Export PDF
+      </button>
+    <% end %>
+    <%# Pipeline actions (only shown when analysis is complete and candidate is in cv_review) %>
+    <% if @candidate && @candidate.pipeline_stage == "cv_review" && @cv_analysis.completed? %>
+      <%= button_to "Advance to Interview →", advance_candidate_path(@candidate),
+            method: :post, class: "btn",
+            style: "padding: 0.45rem 1rem; font-size: 0.85rem;" %>
+
+    <% end %>
+    <% if @cv_analysis.extracted_text.present? %>
+      <%= button_to "↺ Re-analyse", reanalyse_cv_analysis_path(@cv_analysis),
+            method: :post,
+            class: "btn", style: "background: #555; padding: 0.45rem 0.9rem; font-size: 0.85rem;" %>
+    <% end %>
+
+  </div>
+</div>
+
+<%# Processing state %>
+<% unless @cv_analysis.completed? || @cv_analysis.failed? %>
+  <div class="card no-print" data-controller="poll" data-poll-url-value="<%= cv_analysis_path(@cv_analysis) %>">
+    <p style="color: #555; font-size: 0.9rem;">Analysing CV… this page will update automatically.</p>
+  </div>
+<% end %>
+
+<% if @cv_analysis.failed? %>
+  <div class="error-box no-print" style="margin-bottom: 1.25rem;">
+    <strong>Processing failed:</strong> <%= @cv_analysis.error_message %>
+  </div>
+<% end %>
+
+<%# Score card — 3 panels %>
+<% if @cv_analysis.score.present? %>
+  <% fb       = @cv_analysis.structured_feedback %>
+  <% adj      = fb["cv_fit_adjustments"] || {} %>
+  <% reqs     = Array(fb["cv_requirements_coverage"]) %>
+  <% nh_reqs  = Array(fb["nice_to_have_requirements_coverage"]) %>
+  <% nh_bonus = fb["nice_to_have_bonus"]&.to_f || 0.0 %>
+  <%
+    n_ev         = reqs.count { |r| r["coverage"] == "evidenced" }
+    n_par        = reqs.count { |r| r["coverage"] == "partial" }
+    n_mis        = reqs.count { |r| r["coverage"] == "not evidenced" }
+    n_tot        = reqs.size
+    raw_sum      = n_ev * 1.0 + n_par * 0.5
+    is_v4        = @cv_analysis.prompt_version.to_s >= "2026-06-08"
+    multiplier   = is_v4 ? 7.0 : 10.0
+    computed_raw = fb["cv_fit_score_raw"]&.to_f || (n_tot > 0 ? (raw_sum / n_tot * multiplier).round(1) : 0.0)
+    adj_meta = {
+      "trajectory_bonus"         => "Career Trajectory",
+      "scope_bonus"              => "Scope",
+      "recency_bonus"            => "Recency",
+      "recency_modifier"         => "Recency",
+      "implied_competency_bonus" => "Implied Competency",
+      "tenure_bonus"             => "Tenure",
+      "tenure_penalty"           => "Tenure",
+      "density_bonus"            => "Responsibility Density",
+      "density_penalty"          => "Responsibility Density"
+    }
+    total_adj   = adj.values.sum(&:to_f)
+    recomputed  = [[computed_raw + total_adj, 10.0].min, 0.0].max.round(1)
+    final_score = fb["cv_fit_score"]&.to_f || recomputed
+    final_tier  = final_score >= 7.5 ? "Shortlist" : final_score >= 5.0 ? "Borderline" : "Archive"
+    tier_color  = { "Shortlist" => "#166534", "Borderline" => "#854d0e", "Archive" => "#991b1b" }[final_tier]
+    tier_bg     = { "Shortlist" => "#dcfce7", "Borderline" => "#fef9c3", "Archive" => "#fee2e2" }[final_tier]
+    ev_pct      = n_tot > 0 ? (n_ev.to_f  / n_tot * 100).round(1) : 0
+    par_pct     = n_tot > 0 ? (n_par.to_f / n_tot * 100).round(1) : 0
+    mis_pct     = [100 - ev_pct - par_pct, 0].max
+  %>
+  <div class="card" style="padding: 0; overflow: hidden;">
+    <div style="display: flex; flex-wrap: wrap;">
+
+      <%# Panel 1: CV Fit Score (narrow, left) %>
+      <% cv_fit_pct = (final_score / 10.0 * 100).round %>
+      <div style="flex: 0 0 auto; width: 160px; padding: 1.25rem 1.2rem; background: #fafafa; border-right: 1px solid #f0f0f0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;">
+        <div style="font-size: 0.63rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #bbb; margin-bottom: 0.2rem; width: 100%;">CV Fit Score</div>
+        <div style="font-size: 0.7rem; color: #bbb; margin-bottom: 0.85rem; line-height: 1.3;">Formula-derived fit against must-have requirements</div>
+        <div class="score-ring" style="--pct: <%= cv_fit_pct %>%">
+          <span class="score-value"><%= final_score %></span>
+        </div>
+        <div style="margin-top: 0.65rem;">
+          <span style="font-size: 0.72rem; font-weight: 700; color: <%= tier_color %>; background: <%= tier_bg %>; border-radius: 99px; padding: 0.2rem 0.6rem;"><%= final_tier %></span>
+        </div>
+        <div style="margin-top: 0.9rem; width: 100%; display: flex; flex-direction: column; gap: 0.3rem;">
+          <div style="display: flex; justify-content: space-between; font-size: 0.7rem;">
+            <span style="color: #bbb;">Baseline</span>
+            <span style="font-weight: 600; color: #555; font-variant-numeric: tabular-nums;"><%= computed_raw %></span>
+          </div>
+          <div style="display: flex; justify-content: space-between; font-size: 0.7rem;">
+            <span style="color: #bbb;">Adjusted</span>
+            <span style="font-weight: 600; color: <%= total_adj >= 0 ? "#166534" : "#991b1b" %>; font-variant-numeric: tabular-nums;"><%= total_adj >= 0 ? "+#{total_adj.round(2)}" : total_adj.round(2) %></span>
+          </div>
+          <% if nh_bonus > 0 %>
+          <div style="display: flex; justify-content: space-between; font-size: 0.7rem;">
+            <span style="color: #bbb;">N-t-H Bonus</span>
+            <span style="font-weight: 600; color: #1e40af; font-variant-numeric: tabular-nums;">+<%= nh_bonus %></span>
+          </div>
+          <% end %>
+        </div>
+      </div>
+
+      <%# Panel 2: Base Score %>
+      <div style="flex: 1; min-width: 200px; padding: 1.25rem 1.4rem; border-right: 1px solid #f0f0f0;">
+        <div style="font-size: 0.63rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #bbb; margin-bottom: 0.8rem;">Base Score</div>
+        <% if reqs.any? %>
+          <div style="display: flex; flex-direction: column; gap: 0; margin-bottom: 0.6rem;">
+            <% reqs.each do |req| %>
+              <% cov       = req["coverage"] %>
+              <% req_val   = { "evidenced" => 1.0, "partial" => 0.5, "not evidenced" => 0.0 }[cov] || 0.0 %>
+              <% req_color = { "evidenced" => "#166534", "partial" => "#854d0e", "not evidenced" => "#aaa" }[cov] || "#aaa" %>
+              <div style="display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; font-size: 0.78rem; padding: 0.26rem 0; border-bottom: 1px solid #f5f5f5;">
+                <span style="color: #666; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"><%= truncate(req["requirement"], length: 44) %></span>
+                <span style="font-weight: 600; color: <%= req_color %>; font-variant-numeric: tabular-nums; min-width: 28px; text-align: right; flex-shrink: 0;"><%= req_val %></span>
+              </div>
+            <% end %>
+          </div>
+          <div style="font-size: 0.72rem; color: #aaa; font-variant-numeric: tabular-nums; margin-bottom: 0.2rem;">
+            (<%= n_ev %> + <%= (n_par * 0.5).round(1) %>) ÷ <%= n_tot %> × <%= multiplier.to_i %>
+          </div>
+          <div style="font-size: 1.6rem; font-weight: 700; color: #1a1a1a; font-variant-numeric: tabular-nums; line-height: 1;">
+            <%= computed_raw %><span style="font-size: 0.82rem; color: #bbb; font-weight: 400;"> / <%= multiplier.to_i %></span>
+          </div>
+        <% else %>
+          <div style="font-size: 1.6rem; font-weight: 700; color: #1a1a1a;"><%= fb["cv_fit_score_raw"] || "—" %></div>
+        <% end %>
+      </div>
+
+      <%# Panel 3: Adjustments %>
+      <div style="flex: 1; min-width: 200px; padding: 1.25rem 1.4rem; border-right: 1px solid #f0f0f0;">
+        <div style="font-size: 0.63rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #bbb; margin-bottom: 0.8rem;">Adjustments</div>
+        <% if adj.any? %>
+          <div style="display: flex; flex-direction: column; gap: 0; margin-bottom: 0.6rem;">
+            <% adj_meta.each do |key, label| %>
+              <% val = adj[key]&.to_f %>
+              <% next unless val %>
+              <% adj_color = val > 0 ? "#166534" : val < 0 ? "#991b1b" : "#aaa" %>
+              <div style="display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; font-size: 0.78rem; padding: 0.26rem 0; border-bottom: 1px solid #f5f5f5;">
+                <span style="color: #666;"><%= label %></span>
+                <span style="font-weight: 600; color: <%= adj_color %>; font-variant-numeric: tabular-nums; min-width: 36px; text-align: right;"><%= val > 0 ? "+#{val}" : val == 0.0 ? "0.0" : val %></span>
+              </div>
+            <% end %>
+          </div>
+          <% adj_color_t = total_adj > 0 ? "#166534" : total_adj < 0 ? "#991b1b" : "#aaa" %>
+          <div style="font-size: 0.72rem; color: #aaa; margin-bottom: 0.2rem;">Total</div>
+          <div style="font-size: 1.6rem; font-weight: 700; color: <%= adj_color_t %>; font-variant-numeric: tabular-nums; line-height: 1;">
+            <%= total_adj > 0 ? "+#{total_adj.round(2)}" : total_adj.round(2) %>
+          </div>
+        <% else %>
+          <div style="font-size: 0.85rem; color: #bbb;">No adjustments</div>
+        <% end %>
+      </div>
+
+      <%# Panel 4: Flags %>
+      <div style="flex: 1; min-width: 200px; padding: 1.25rem 1.4rem;">
+        <div style="font-size: 0.63rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #bbb; margin-bottom: 0.8rem;">Flags</div>
+        <% if fb["skill_evidence_gaps"].present? || fb["credential_flags"].present? %>
+          <% if fb["skill_evidence_gaps"].present? %>
+            <div style="<%= fb["credential_flags"].present? ? "margin-bottom: 0.75rem;" : "" %>">
+              <div style="font-size: 0.72rem; font-weight: 600; color: #854d0e; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 0.35rem;">Skills without role-level evidence</div>
+              <ul style="margin: 0; padding-left: 1rem; display: flex; flex-direction: column; gap: 0.2rem;">
+                <% Array(fb["skill_evidence_gaps"]).each do |s| %>
+                  <li style="font-size: 0.8rem; color: #555; line-height: 1.4;"><%= s %></li>
+                <% end %>
+              </ul>
+            </div>
+          <% end %>
+          <% if fb["credential_flags"].present? %>
+            <div>
+              <div style="font-size: 0.72rem; font-weight: 600; color: #991b1b; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 0.35rem;">Credential / consistency flags</div>
+              <ul style="margin: 0; padding-left: 1rem; display: flex; flex-direction: column; gap: 0.2rem;">
+                <% Array(fb["credential_flags"]).each do |s| %>
+                  <li style="font-size: 0.8rem; color: #555; line-height: 1.4;"><%= s %></li>
+                <% end %>
+              </ul>
+            </div>
+          <% end %>
+        <% else %>
+          <div style="font-size: 0.85rem; color: #bbb;">No flags</div>
+        <% end %>
+      </div>
+
+    </div>
+  </div>
+<% end %>
+
+<%# Contextual CV Signals %>
+<% fb = @cv_analysis.structured_feedback %>
+<%
+  _scope_val  = fb.dig("scope_indicators", "scope_match")
+  _scope_note = fb.dig("scope_indicators", "scope_note")
+
+  signals = [
+    { label: "Career Trajectory",
+      desc:   "Recent roles moving toward, level with, or away from this position",
+      val:    fb["career_trajectory_alignment"],
+      colors: { "toward_role" => ["#166534","#dcfce7"], "lateral" => ["#854d0e","#fef3c7"], "away_from_role" => ["#991b1b","#fee2e2"] },
+      note:   fb["career_trajectory_alignment_note"] },
+    { label: "Scope",
+      desc:   "Scale of past work — company size, team, geography — relative to role requirements",
+      val:    _scope_val,
+      colors: { "strong_match" => ["#166534","#dcfce7"], "partial_match" => ["#1e40af","#dbeafe"], "no_match" => ["#555","#f3f4f6"] },
+      note:   _scope_note },
+    { label: "Recency",
+      desc:   "How recently the candidate's most relevant experience was active",
+      val:    fb["recency_of_relevant_experience"],
+      colors: { "current" => ["#166534","#dcfce7"], "within_3_years" => ["#854d0e","#fef3c7"], "older_than_3_years" => ["#991b1b","#fee2e2"] },
+      note:   fb["recency_of_relevant_experience_note"] },
+    { label: "Implied Competency",
+      desc:   "What the employer's known profile implies about the candidate's competencies",
+      val:    fb["implied_competency_from_employer"],
+      colors: { "strongly_implied" => ["#166534","#dcfce7"], "consistent" => ["#1e40af","#dbeafe"], "no_signal" => ["#555","#f3f4f6"] },
+      note:   fb["implied_competency_from_employer_note"] },
+    { label: "Tenure",
+      desc:   "Whether the candidate stayed long enough in relevant roles to build meaningful depth",
+      val:    fb["tenure_pattern"],
+      colors: { "sufficient" => ["#166534","#dcfce7"], "short_in_relevant_roles" => ["#991b1b","#fee2e2"] },
+      note:   fb["tenure_pattern_note"] },
+    { label: "Responsibility Density",
+      desc:   "Share of role description content that maps directly to JD responsibilities",
+      val:    fb["responsibility_density"],
+      colors: { "high" => ["#166534","#dcfce7"], "medium" => ["#854d0e","#fef3c7"], "low" => ["#991b1b","#fee2e2"] },
+      note:   fb["responsibility_density_note"] }
+  ].select { |s| s[:val].present? }
+%>
+<% if signals.any? %>
+  <div class="card">
+    <h2>Contextual CV Signals</h2>
+    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 0.6rem;">
+      <% signals.each do |s| %>
+        <% color, bg = s[:colors][s[:val]] || ["#555", "#f3f4f6"] %>
+        <div style="border: 1px solid #e5e5e5; border-radius: 6px; padding: 0.6rem 0.8rem; background: #fafafa;">
+          <div style="display: flex; align-items: center; gap: 0.4rem; margin-bottom: 0.2rem;">
+            <span style="font-size: 0.78rem; font-weight: 600; color: #555;"><%= s[:label] %></span>
+            <span style="font-size: 0.72rem; color: #ccc;">—</span>
+            <span style="font-size: 0.75rem; font-weight: 700; color: <%= color %>; background: <%= bg %>; border-radius: 4px; padding: 0.1rem 0.4rem;"><%= s[:val].gsub("_", " ").capitalize %></span>
+          </div>
+          <% if s[:desc].present? %>
+            <div style="font-size: 0.73rem; color: #aaa; line-height: 1.4; margin-bottom: <%= s[:note].present? ? "0.3rem" : "0" %>;"><%= s[:desc] %></div>
+          <% end %>
+          <% if s[:note].present? %>
+            <div style="font-size: 0.78rem; color: #666; line-height: 1.45;"><%= s[:note] %></div>
+          <% end %>
+        </div>
+      <% end %>
+    </div>
+  </div>
+<% end %>
+
+<%# Nice-to-Have Requirements Coverage %>
+<% fb = @cv_analysis.structured_feedback %>
+<% nh_cov = Array(fb["nice_to_have_requirements_coverage"]) %>
+<% if nh_cov.any? %>
+  <% nh_ev  = nh_cov.count { |r| r["coverage"] == "evidenced" } %>
+  <% nh_par = nh_cov.count { |r| r["coverage"] == "partial" } %>
+  <% nh_no  = nh_cov.count { |r| r["coverage"] == "not evidenced" } %>
+  <% nh_b   = fb["nice_to_have_bonus"]&.to_f || 0.0 %>
+  <div class="card">
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.85rem; flex-wrap: wrap; gap: 0.5rem;">
+      <h2 style="margin: 0;">Nice-to-Have Coverage</h2>
+      <div style="display: flex; gap: 0.5rem; font-size: 0.8rem; align-items: center;">
+        <% if nh_ev > 0 %>
+          <span style="color: #166534; background: #dcfce7; border-radius: 4px; padding: 0.15rem 0.5rem; font-weight: 600;"><%= nh_ev %> evidenced</span>
+        <% end %>
+        <% if nh_par > 0 %>
+          <span style="color: #854d0e; background: #fef9c3; border-radius: 4px; padding: 0.15rem 0.5rem; font-weight: 600;"><%= nh_par %> partial</span>
+        <% end %>
+        <% if nh_no > 0 %>
+          <span style="color: #aaa; background: #f3f4f6; border-radius: 4px; padding: 0.15rem 0.5rem; font-weight: 600;"><%= nh_no %> not evidenced</span>
+        <% end %>
+        <span style="color: #1e40af; background: #eff6ff; border-radius: 4px; padding: 0.15rem 0.5rem; font-weight: 700;">+<%= nh_b %> bonus</span>
+      </div>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+      <% nh_cov.each do |req| %>
+        <% cov = req["coverage"].to_s %>
+        <% nh_val   = { "evidenced" => "+0.50", "partial" => "+0.25", "not evidenced" => "0.00" }[cov] || "0.00" %>
+        <% nh_vcol  = { "evidenced" => "#166534", "partial" => "#854d0e", "not evidenced" => "#aaa" }[cov] || "#aaa" %>
+        <% border_color = { "evidenced" => "#86efac", "partial" => "#fde047", "not evidenced" => "#e5e5e5" }[cov] || "#e5e5e5" %>
+        <% bg_color     = { "evidenced" => "#f0fdf4", "partial" => "#fefce8", "not evidenced" => "#fafafa" }[cov] || "#fafafa" %>
+        <div style="border: 1px solid <%= border_color %>; background: <%= bg_color %>; border-radius: 6px; padding: 0.65rem 0.85rem; display: flex; gap: 0.75rem; align-items: flex-start;">
+          <span style="font-size: 0.82rem; font-weight: 700; color: <%= nh_vcol %>; white-space: nowrap; min-width: 38px; padding-top: 0.15rem; font-variant-numeric: tabular-nums;"><%= nh_val %></span>
+          <div style="flex: 1; min-width: 0;">
+            <div style="font-size: 0.88rem; font-weight: 500; color: #1a1a1a; margin-bottom: 0.2rem;"><%= req["requirement"] %></div>
+            <% if req["evidence"].present? %>
+              <div style="font-size: 0.8rem; color: #666; line-height: 1.5; font-style: italic;"><%= req["evidence"] %></div>
+            <% end %>
+          </div>
+        </div>
+      <% end %>
+    </div>
+  </div>
+<% end %>
+
+<%# CV Requirements Coverage (structured, formula-driven) %>
+<% fb = @cv_analysis.structured_feedback %>
+<% if Array(fb["cv_requirements_coverage"]).any? %>
+  <div class="card">
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.85rem; flex-wrap: wrap; gap: 0.5rem;">
+      <h2 style="margin: 0;">CV Requirements Coverage</h2>
+      <% total      = fb["cv_requirements_coverage"].size %>
+      <% evidenced  = fb["cv_requirements_coverage"].count { |r| r["coverage"] == "evidenced" } %>
+      <% partial    = fb["cv_requirements_coverage"].count { |r| r["coverage"] == "partial" } %>
+      <% missing    = fb["cv_requirements_coverage"].count { |r| r["coverage"] == "not evidenced" } %>
+      <div style="display: flex; gap: 0.5rem; font-size: 0.8rem;">
+        <span style="color: #166534; background: #dcfce7; border-radius: 4px; padding: 0.15rem 0.5rem; font-weight: 600;"><%= evidenced %> evidenced</span>
+        <% if partial > 0 %>
+          <span style="color: #854d0e; background: #fef9c3; border-radius: 4px; padding: 0.15rem 0.5rem; font-weight: 600;"><%= partial %> partial</span>
+        <% end %>
+        <% if missing > 0 %>
+          <span style="color: #991b1b; background: #fee2e2; border-radius: 4px; padding: 0.15rem 0.5rem; font-weight: 600;"><%= missing %> missing</span>
+        <% end %>
+      </div>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+      <% fb["cv_requirements_coverage"].each do |req| %>
+        <% cov         = req["coverage"].to_s %>
+        <% req_val     = { "evidenced" => "1.0", "partial" => "0.5", "not evidenced" => "0.0" }[cov] || "0.0" %>
+        <% val_color   = { "evidenced" => "#166534", "partial" => "#854d0e", "not evidenced" => "#aaa" }[cov] || "#aaa" %>
+        <% border_color = { "evidenced" => "#86efac", "partial" => "#fde047", "not evidenced" => "#fca5a5" }[cov] || "#e5e5e5" %>
+        <% bg_color     = { "evidenced" => "#f0fdf4", "partial" => "#fefce8", "not evidenced" => "#fff5f5" }[cov] || "#fafafa" %>
+        <div style="border: 1px solid <%= border_color %>; background: <%= bg_color %>; border-radius: 6px; padding: 0.65rem 0.85rem; display: flex; gap: 0.75rem; align-items: flex-start;">
+          <span style="font-size: 0.82rem; font-weight: 700; color: <%= val_color %>; white-space: nowrap; min-width: 28px; padding-top: 0.15rem; font-variant-numeric: tabular-nums;"><%= req_val %></span>
+          <div style="flex: 1; min-width: 0;">
+            <div style="font-size: 0.88rem; font-weight: 500; color: #1a1a1a; margin-bottom: 0.2rem;"><%= req["requirement"] %></div>
+            <% if req["evidence"].present? %>
+              <div style="font-size: 0.8rem; color: #666; line-height: 1.5; font-style: italic;"><%= req["evidence"] %></div>
+            <% end %>
+          </div>
+        </div>
+      <% end %>
+    </div>
+  </div>
+<% end %>
+
+<%# Requirements fit (flat lists — shown for older records without cv_requirements_coverage) %>
+<% fb = @cv_analysis.structured_feedback %>
+<% if Array(fb["cv_requirements_coverage"]).empty? && (fb["matched_skills"].present? || fb["missing_skills"].present? || fb["preferred_skills_present"].present?) %>
+  <div class="card">
+    <h2>Requirements Fit</h2>
+    <div class="feedback-grid">
+      <div class="feedback-col">
+        <h3>Must-haves met</h3>
+        <ul><% Array(fb["matched_skills"]).each do |s| %><li><%= s %></li><% end %></ul>
+      </div>
+      <div class="feedback-col">
+        <h3>Must-haves missing</h3>
+        <ul><% Array(fb["missing_skills"]).each do |s| %><li><%= s %></li><% end %></ul>
+      </div>
+    </div>
+    <% if fb["preferred_skills_present"].present? %>
+      <div style="margin-top: 1rem;">
+        <h3 style="font-size: 0.85rem; font-weight: 600; color: #555; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem;">Preferred / Bonus</h3>
+        <div style="display: flex; flex-wrap: wrap; gap: 0.4rem;">
+          <% Array(fb["preferred_skills_present"]).each do |s| %>
+            <span class="badge badge-analyzing" style="font-size: 0.82rem; padding: 0.25rem 0.65rem;"><%= s %></span>
+          <% end %>
+        </div>
+      </div>
+    <% end %>
+  </div>
+<% end %>
+
+
+<%# Interview questions %>
+<% if Array(fb["interview_questions"]).any? %>
+  <% focus_badge = {
+       "gap in must-have"            => ["badge-failed",       "Gap"],
+       "validate claimed experience" => ["badge-transcribing", "Validate"],
+       "skill evidence gap"          => ["badge-pending",      "Evidence gap"]
+     } %>
+  <% sorted_questions = Array(fb["interview_questions"]).sort_by { |q| q["priority"] == "must ask" ? 0 : 1 } %>
+  <div class="card">
+    <div style="display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 0.25rem; flex-wrap: wrap; gap: 0.5rem;">
+      <h2>Suggested Interview Questions</h2>
+      <% must_ask_count = sorted_questions.count { |q| q["priority"] == "must ask" } %>
+      <% if must_ask_count > 0 %>
+        <span style="font-size: 0.78rem; color: #991b1b; font-weight: 500;"><%= must_ask_count %> must ask</span>
+      <% end %>
+    </div>
+    <p style="font-size: 0.82rem; color: #999; margin-bottom: 1rem;">Sorted by priority. Use these to help the candidate expand on gaps or substantiate claimed experience.</p>
+    <ol style="list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.85rem;">
+      <% sorted_questions.each_with_index do |q, i| %>
+        <% badge_class, badge_label = focus_badge[q["focus"]] || ["badge-pending", q["focus"]] %>
+        <% must_ask = q["priority"] == "must ask" %>
+        <li style="border: 1px solid <%= must_ask ? '#fca5a5' : '#e5e5e5' %>; border-radius: 6px; padding: 0.85rem 1rem; background: <%= must_ask ? '#fff9f9' : '#fff' %>;">
+          <div style="display: flex; align-items: flex-start; gap: 0.75rem;">
+            <span style="font-size: 0.78rem; font-weight: 700; color: #bbb; min-width: 1.1rem; padding-top: 0.1rem;"><%= i + 1 %></span>
+            <div style="flex: 1;">
+              <p style="font-size: 0.93rem; color: #1a1a1a; font-weight: 500; line-height: 1.55; margin-bottom: 0.4rem;"><%= q["question"] %></p>
+              <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+                <% if must_ask %>
+                  <span class="badge" style="background: #fee2e2; color: #991b1b; font-size: 0.72rem;">Must ask</span>
+                <% else %>
+                  <span class="badge" style="background: #f3f4f6; color: #666; font-size: 0.72rem;">If time allows</span>
+                <% end %>
+                <span class="badge <%= badge_class %>" style="font-size: 0.72rem;"><%= badge_label %></span>
+                <% if q["reason"].present? %>
+                  <span style="font-size: 0.8rem; color: #888;"><%= q["reason"] %></span>
+                <% end %>
+              </div>
+            </div>
+          </div>
+        </li>
+      <% end %>
+    </ol>
+  </div>
+<% end %>
+
+<%# Extracted CV Text %>
+<% if @cv_analysis.extracted_text.present? %>
+  <div class="card no-print">
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem;">
+      <h2 style="margin: 0;">Extracted CV Text</h2>
+      <%= link_to "↓ Download", extracted_text_cv_analysis_path(@cv_analysis),
+            style: "font-size: 0.85rem; color: #555;" %>
+    </div>
+    <div class="transcript"><%= @cv_analysis.extracted_text %></div>
+  </div>
+<% end %>
+
+<div class="no-print" style="margin-top: 0.5rem;">
+  <%= link_to "← Back to candidates", cv_analyses_path, style: "color: #555; font-size: 0.9rem;" %>
+</div>

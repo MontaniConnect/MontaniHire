@@ -1,0 +1,403 @@
+<% stage_label = {
+  "cv_review"             => "CV Review",
+  "preliminary_interview" => "Preliminary Interview",
+  "client_interview"      => "Shortlisted",
+  "final_interview"       => "Final Interview",
+  "not_invited"           => "Not Invited",
+  "rejected"              => "Rejected",
+  "hired"                 => "Hired",
+  "offer_declined"        => "Offer Declined",
+  "not_selected"          => "Not Selected"
+} %>
+<% stage_badge = {
+  "cv_review"             => "badge-pending",
+  "preliminary_interview" => "badge-transcribing",
+  "client_interview"      => "badge-completed",
+  "final_interview"       => "badge-analyzing",
+  "not_invited"           => "badge-pending",
+  "rejected"              => "badge-failed",
+  "hired"                 => "badge-completed",
+  "offer_declined"        => "badge-pending",
+  "not_selected"          => "badge-failed"
+} %>
+
+<%# ── Header ── %>
+<div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; flex-wrap: wrap; margin-bottom: 1.25rem;">
+  <div>
+    <h1 style="margin: 0 0 0.3rem;"><%= @candidate.name %></h1>
+    <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+      <span class="badge <%= stage_badge[@candidate.pipeline_stage] %>">
+        <%= stage_label[@candidate.pipeline_stage] %>
+      </span>
+      <% job_roles = current_user.job_roles.order(:title) %>
+      <% if job_roles.any? %>
+        <%= form_with model: @candidate, style: "display: inline-flex; align-items: center; gap: 0.4rem;" do |f| %>
+          <%= f.select :job_role_id,
+                job_roles.map { |jr| [jr.title, jr.id] },
+                {},
+                style: "font-size: 0.82rem; color: #555; border: 1px solid #ddd; border-radius: 6px;
+                        padding: 0.2rem 0.5rem; background: #fff; outline: none;" %>
+          <%= f.submit "Save", style: "font-size: 0.78rem; padding: 0.2rem 0.6rem; background: #1a1a1a;
+                                      color: #fff; border: none; border-radius: 6px; cursor: pointer;" %>
+        <% end %>
+      <% elsif @candidate.job_role %>
+        <span style="font-size: 0.85rem; color: #777;"><%= @candidate.job_role.title %></span>
+      <% end %>
+    </div>
+  </div>
+
+  <%# Stage actions %>
+  <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+    <% if @candidate.pipeline_stage == "cv_review" %>
+      <%= button_to "Advance to Interview →", advance_candidate_path(@candidate),
+            method: :post, class: "btn",
+            style: "padding: 0.45rem 1rem; font-size: 0.85rem;" %>
+      <%= button_to "✕ Not Selected", not_selected_candidate_path(@candidate),
+            method: :post,
+            data: { turbo_confirm: "Mark #{@candidate.name} as not selected?" },
+            class: "btn", style: "background: #6b7280; padding: 0.45rem 1rem; font-size: 0.85rem;" %>
+    <% elsif @candidate.pipeline_stage == "preliminary_interview" %>
+      <%= button_to @candidate.no_show? ? "✓ Undo No Show" : "⚠ No Show",
+            toggle_no_show_candidate_path(@candidate),
+            method: :post,
+            class: "btn",
+            style: "background: #{@candidate.no_show? ? '#6b7280' : '#f59e0b'}; padding: 0.45rem 1rem; font-size: 0.85rem;" %>
+      <%= button_to "← Revert to CV Review", revert_candidate_path(@candidate),
+            method: :post,
+            data: { turbo_confirm: "Revert #{@candidate.name} back to CV Review?" },
+            class: "btn", style: "background: #555; padding: 0.45rem 1rem; font-size: 0.85rem;" %>
+      <% if @candidate.video_analysis.nil? %>
+        <%= link_to "Upload Interview Video", new_video_analysis_path(candidate_id: @candidate.id),
+              class: "btn", style: "padding: 0.45rem 1rem; font-size: 0.85rem;" %>
+      <% end %>
+      <% if @candidate.cv_analysis&.completed? && @candidate.video_analysis&.completed? && @shortlist_item.nil? %>
+        <% _shortlists = current_user.shortlists.order(:title) %>
+        <% _va_fb = @candidate.video_analysis.structured_feedback || {} %>
+        <% _cv_fb = @candidate.cv_analysis.structured_feedback || {} %>
+        <% _compliance_flags = [] %>
+        <% if _va_fb["cv_interview_consistency"] == "significant inconsistencies" %>
+          <% _compliance_flags << "Significant CV–interview inconsistencies detected." %>
+        <% end %>
+        <% Array(_cv_fb["credential_flags"]).each { |f| _compliance_flags << "Credential flag: #{f}" } %>
+        <% if _shortlists.any? %>
+          <details style="position: relative; display: inline-block;">
+            <summary style="list-style: none; cursor: pointer;" class="btn">＋ Shortlist</summary>
+            <div style="position: absolute; right: 0; top: calc(100% + 4px); background: #fff; border: 1px solid #e5e5e5; border-radius: 8px; padding: 1rem; min-width: 260px; z-index: 50; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+              <form action="<%= shortlist_shortlist_items_path(_shortlists.first) %>" method="post"
+                    id="sl-add-cand-<%= @candidate.id %>"
+                    data-compliance-flags="<%= _compliance_flags.to_json %>">
+                <%= hidden_field_tag :authenticity_token, form_authenticity_token %>
+                <%= hidden_field_tag :candidate_id, @candidate.id %>
+                <div style="margin-bottom: 0.65rem;">
+                  <label style="font-size: 0.78rem; font-weight: 500; color: #555; display: block; margin-bottom: 0.3rem;">Shortlist</label>
+                  <select style="width: 100%; padding: 0.45rem 0.6rem; border: 1px solid #ddd; border-radius: 6px; font-size: 0.88rem; background: #fff;"
+                          onchange="document.getElementById('sl-add-cand-<%= @candidate.id %>').action='/shortlists/'+this.value+'/shortlist_items'">
+                    <% _shortlists.each do |sl| %>
+                      <option value="<%= sl.id %>"><%= sl.title %></option>
+                    <% end %>
+                  </select>
+                </div>
+                <button type="submit" class="btn" style="width: 100%; padding: 0.45rem; font-size: 0.85rem;">Add to shortlist</button>
+              </form>
+              <div style="text-align: center; margin-top: 0.5rem;">
+                <%= link_to "+ New shortlist", new_shortlist_path,
+                      style: "font-size: 0.8rem; color: #888; text-decoration: none;" %>
+              </div>
+            </div>
+          </details>
+        <% else %>
+          <%= link_to "＋ Shortlist", new_shortlist_path,
+                class: "btn", style: "background: #555; padding: 0.45rem 0.9rem; font-size: 0.85rem;" %>
+        <% end %>
+      <% end %>
+      <%= button_to "✕ Not Selected", not_selected_candidate_path(@candidate),
+            method: :post,
+            data: { turbo_confirm: "Mark #{@candidate.name} as not selected?" },
+            class: "btn", style: "background: #6b7280; padding: 0.45rem 1rem; font-size: 0.85rem;" %>
+    <% elsif @candidate.pipeline_stage == "client_interview" %>
+      <%= button_to "✓ Final Interview", final_interview_candidate_path(@candidate),
+            method: :post, class: "btn",
+            style: "background: #16a34a; padding: 0.45rem 1rem; font-size: 0.85rem;" %>
+      <%= button_to "✕ Not Invited", not_invited_candidate_path(@candidate),
+            method: :post,
+            data: { turbo_confirm: "Mark #{@candidate.name} as not invited?" },
+            class: "btn", style: "background: #dc2626; padding: 0.45rem 1rem; font-size: 0.85rem;" %>
+      <%= button_to "← Revert to Interview", revert_candidate_path(@candidate),
+            method: :post,
+            data: { turbo_confirm: "Revert #{@candidate.name} back to Preliminary Interview?" },
+            class: "btn", style: "background: #555; padding: 0.45rem 1rem; font-size: 0.85rem;" %>
+    <% elsif @candidate.pipeline_stage == "final_interview" %>
+      <%= button_to @candidate.no_show? ? "✓ Undo No Show" : "⚠ No Show",
+            toggle_no_show_candidate_path(@candidate),
+            method: :post,
+            class: "btn",
+            style: "background: #{@candidate.no_show? ? '#6b7280' : '#f59e0b'}; padding: 0.45rem 1rem; font-size: 0.85rem;" %>
+      <%= button_to "✓ Hired", hire_candidate_path(@candidate),
+            method: :post,
+            data: { turbo_confirm: "Mark #{@candidate.name} as hired?" },
+            class: "btn", style: "background: #16a34a; padding: 0.45rem 1rem; font-size: 0.85rem;" %>
+      <%= button_to "✕ Offer Declined", offer_declined_candidate_path(@candidate),
+            method: :post,
+            data: { turbo_confirm: "Mark #{@candidate.name} as offer declined?" },
+            class: "btn", style: "background: #dc2626; padding: 0.45rem 1rem; font-size: 0.85rem;" %>
+      <%= button_to "✕ Not Selected", not_selected_candidate_path(@candidate),
+            method: :post,
+            data: { turbo_confirm: "Mark #{@candidate.name} as not selected?" },
+            class: "btn", style: "background: #6b7280; padding: 0.45rem 1rem; font-size: 0.85rem;" %>
+      <%= button_to "← Revert to Shortlisted", revert_candidate_path(@candidate),
+            method: :post,
+            data: { turbo_confirm: "Revert #{@candidate.name} back to Shortlisted?" },
+            class: "btn", style: "background: #555; padding: 0.45rem 1rem; font-size: 0.85rem;" %>
+    <% elsif @candidate.pipeline_stage == "not_invited" %>
+      <%= button_to "← Revert to Shortlisted", revert_candidate_path(@candidate),
+            method: :post,
+            data: { turbo_confirm: "Move #{@candidate.name} back to Shortlisted?" },
+            class: "btn", style: "background: #555; padding: 0.45rem 1rem; font-size: 0.85rem;" %>
+    <% elsif @candidate.pipeline_stage == "hired" %>
+      <%= button_to "← Revert to Final Interview", revert_candidate_path(@candidate),
+            method: :post,
+            data: { turbo_confirm: "Revert #{@candidate.name} back to Final Interview?" },
+            class: "btn", style: "background: #555; padding: 0.45rem 1rem; font-size: 0.85rem;" %>
+    <% elsif @candidate.pipeline_stage == "offer_declined" %>
+      <%= button_to "← Revert to Final Interview", revert_candidate_path(@candidate),
+            method: :post,
+            data: { turbo_confirm: "Move #{@candidate.name} back to Final Interview?" },
+            class: "btn", style: "background: #555; padding: 0.45rem 1rem; font-size: 0.85rem;" %>
+    <% elsif @candidate.pipeline_stage == "not_selected" %>
+      <%= button_to "← Revert to Final Interview", revert_candidate_path(@candidate),
+            method: :post,
+            data: { turbo_confirm: "Move #{@candidate.name} back to Final Interview?" },
+            class: "btn", style: "background: #555; padding: 0.45rem 1rem; font-size: 0.85rem;" %>
+    <% end %>
+
+  </div>
+</div>
+
+<% if @candidate.pipeline_stage == "preliminary_interview" %>
+  <% _c_name   = @candidate.name %>
+  <% _c_role   = @candidate.job_role&.title || "the position" %>
+  <% _cal_text = ERB::Util.url_encode("Preliminary Interview — #{_c_name}") %>
+  <% _cal_det  = ERB::Util.url_encode("Candidate: #{_c_name}\nRole: #{_c_role}") %>
+  <% _cal_url  = "https://calendar.google.com/calendar/render?action=TEMPLATE&text=#{_cal_text}&details=#{_cal_det}" %>
+  <% _first    = _c_name.split.first %>
+  <% _mail_sub = ERB::Util.url_encode("Interview Invitation — #{_c_name}") %>
+  <% _mail_bdy = ERB::Util.url_encode("Dear #{_first},\n\nWe would like to invite you to a preliminary interview for the #{_c_role} position.\n\nPlease confirm your availability.\n\nBest regards") %>
+  <% _mail_url = "https://mail.google.com/mail/?view=cm&fs=1&su=#{_mail_sub}&body=#{_mail_bdy}" %>
+  <div style="display: flex; gap: 0.5rem; margin-bottom: 1.25rem; flex-wrap: wrap;">
+    <%= link_to _cal_url, target: "_blank", rel: "noopener",
+          style: "display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.82rem;
+                  padding: 0.35rem 0.75rem; border: 1px solid #ddd; border-radius: 6px;
+                  color: #555; text-decoration: none; background: #fff; white-space: nowrap;" do %>
+      📅 Schedule on Calendar
+    <% end %>
+    <%= link_to _mail_url, target: "_blank", rel: "noopener",
+          style: "display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.82rem;
+                  padding: 0.35rem 0.75rem; border: 1px solid #ddd; border-radius: 6px;
+                  color: #555; text-decoration: none; background: #fff; white-space: nowrap;" do %>
+      ✉️ Send Invite Email
+    <% end %>
+  </div>
+<% end %>
+
+<% _tier_color = { "Shortlist" => "#166534", "Borderline" => "#854d0e", "Archive" => "#991b1b" } %>
+<% _tier_bg    = { "Shortlist" => "#dcfce7",  "Borderline" => "#fef9c3",  "Archive" => "#fee2e2" } %>
+
+<% if %w[client_interview final_interview].include?(@candidate.pipeline_stage) %>
+  <%# ══════════════════════════════════════════════
+      CLIENT PREVIEW — shown for shortlisted candidates
+  ══════════════════════════════════════════════ %>
+
+  <% cv = @candidate.cv_analysis %>
+  <% va = @candidate.video_analysis %>
+  <% fb = @candidate.structured_feedback %>
+  <%# Video player %>
+  <% if va&.video&.attached? %>
+    <div class="card" style="padding: 1rem 1.25rem;">
+      <div style="font-size: 0.72rem; color: #888; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.75rem;">
+        Preliminary Interview
+      </div>
+      <video controls preload="metadata"
+             style="width: 100%; border-radius: 6px; background: #000; max-height: 360px;">
+        <source src="<%= url_for(va.video) %>">
+        Your browser does not support video playback.
+      </video>
+      <div style="margin-top: 0.5rem; text-align: right;">
+        <%= link_to "Full interview analysis →", video_analysis_path(va),
+              style: "font-size: 0.82rem; color: #555; text-decoration: none;" %>
+      </div>
+    </div>
+  <% end %>
+
+  <%# CV Analysis card %>
+  <% if cv %>
+    <%= link_to cv_analysis_path(cv), style: "text-decoration: none; color: inherit; display: block;" do %>
+      <div class="card" style="cursor: pointer; transition: box-shadow 0.15s;">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem; flex-wrap: wrap; gap: 0.5rem;">
+          <div style="display: flex; align-items: center; gap: 0.75rem;">
+            <% if cv.cv_fit_score %>
+              <div class="score-ring" style="--pct: <%= (cv.cv_fit_score / 10.0 * 100).round %>%; width: 44px; height: 44px; flex-shrink: 0;">
+                <span class="score-value" style="font-size: 0.75rem;"><%= cv.cv_fit_score %></span>
+              </div>
+            <% end %>
+            <div>
+              <h2 style="margin: 0;">CV Analysis</h2>
+              <% if cv.cv_fit_tier %>
+                <span style="font-size: 0.7rem; font-weight: 700; color: <%= _tier_color[cv.cv_fit_tier] %>; background: <%= _tier_bg[cv.cv_fit_tier] %>; border-radius: 99px; padding: 0.1rem 0.45rem; margin-top: 0.2rem; display: inline-block;"><%= cv.cv_fit_tier %></span>
+              <% end %>
+            </div>
+          </div>
+          <span class="badge badge-<%= cv.status %>"><%= cv.status %></span>
+        </div>
+        <% if cv.summary.present? %>
+          <p style="font-size: 0.92rem; color: #444; line-height: 1.7; margin: 0;"><%= cv.summary %></p>
+        <% else %>
+          <p style="color: #aaa; font-size: 0.88rem; margin: 0;">Analysis pending…</p>
+        <% end %>
+      </div>
+    <% end %>
+  <% end %>
+
+  <%# Preliminary Interview card %>
+  <% if va %>
+    <%= link_to video_analysis_path(va), style: "text-decoration: none; color: inherit; display: block;" do %>
+      <div class="card" style="cursor: pointer; transition: box-shadow 0.15s;">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem; flex-wrap: wrap; gap: 0.5rem;">
+          <div style="display: flex; align-items: center; gap: 0.75rem;">
+            <% if va.episode_score %>
+              <div class="score-ring" style="--pct: <%= (va.episode_score / 10.0 * 100).round %>%; width: 44px; height: 44px; flex-shrink: 0;">
+                <span class="score-value" style="font-size: 0.75rem;"><%= va.episode_score %></span>
+              </div>
+            <% end %>
+            <div>
+              <h2 style="margin: 0;">Preliminary Interview</h2>
+              <% if va.episode_tier %>
+                <span style="font-size: 0.7rem; font-weight: 700; color: <%= _tier_color[va.episode_tier] %>; background: <%= _tier_bg[va.episode_tier] %>; border-radius: 99px; padding: 0.1rem 0.45rem; margin-top: 0.2rem; display: inline-block;"><%= va.episode_tier %></span>
+              <% end %>
+            </div>
+          </div>
+          <span class="badge badge-<%= va.status %>"><%= va.status %></span>
+        </div>
+        <% if va.summary.present? %>
+          <p style="font-size: 0.92rem; color: #444; line-height: 1.7; margin: 0;"><%= va.summary %></p>
+        <% else %>
+          <p style="color: #aaa; font-size: 0.88rem; margin: 0;">Analysis pending…</p>
+        <% end %>
+      </div>
+    <% end %>
+  <% end %>
+
+
+<% else %>
+  <%# ══════════════════════════════════════════════
+      RECRUITER VIEW — cv_review / preliminary_interview
+  ══════════════════════════════════════════════ %>
+
+  <%# CV Analysis panel %>
+  <% if @candidate.cv_analysis %>
+    <% cv = @candidate.cv_analysis %>
+    <%= link_to cv_analysis_path(cv), style: "text-decoration: none; color: inherit; display: block;" do %>
+      <div class="card" style="cursor: pointer; transition: box-shadow 0.15s;">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem; flex-wrap: wrap; gap: 0.5rem;">
+          <div style="display: flex; align-items: center; gap: 0.75rem;">
+            <% if cv.cv_fit_score %>
+              <div class="score-ring" style="--pct: <%= (cv.cv_fit_score / 10.0 * 100).round %>%; width: 44px; height: 44px; flex-shrink: 0;">
+                <span class="score-value" style="font-size: 0.75rem;"><%= cv.cv_fit_score %></span>
+              </div>
+            <% end %>
+            <div>
+              <h2 style="margin: 0;">CV Analysis</h2>
+              <% if cv.cv_fit_tier %>
+                <span style="font-size: 0.7rem; font-weight: 700; color: <%= _tier_color[cv.cv_fit_tier] %>; background: <%= _tier_bg[cv.cv_fit_tier] %>; border-radius: 99px; padding: 0.1rem 0.45rem; margin-top: 0.2rem; display: inline-block;"><%= cv.cv_fit_tier %></span>
+              <% end %>
+            </div>
+          </div>
+          <span class="badge badge-<%= cv.status %>"><%= cv.status %></span>
+        </div>
+        <% if cv.summary.present? %>
+          <p style="font-size: 0.92rem; color: #444; line-height: 1.7; margin: 0;"><%= cv.summary %></p>
+        <% else %>
+          <p style="color: #aaa; font-size: 0.88rem; margin: 0;">Analysis pending…</p>
+        <% end %>
+      </div>
+    <% end %>
+  <% end %>
+
+  <%# Suggested interview questions (cv_review stage only) %>
+  <% if @candidate.pipeline_stage == "cv_review" %>
+    <% cv_fb = @candidate.cv_analysis&.structured_feedback || {} %>
+    <% if Array(cv_fb["interview_questions"]).any? %>
+      <% focus_badge = {
+           "gap in must-have"            => ["badge-failed",       "Gap"],
+           "validate claimed experience" => ["badge-transcribing", "Validate"],
+           "skill evidence gap"          => ["badge-pending",      "Evidence gap"]
+         } %>
+      <div class="card">
+        <h2>Suggested Interview Questions</h2>
+        <p style="font-size: 0.82rem; color: #999; margin-bottom: 1rem;">Use these to help the candidate expand on gaps or substantiate claimed experience.</p>
+        <ol style="list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.85rem;">
+          <% Array(cv_fb["interview_questions"]).each_with_index do |q, i| %>
+            <% badge_class, badge_label = focus_badge[q["focus"]] || ["badge-pending", q["focus"]] %>
+            <li style="border: 1px solid #e5e5e5; border-radius: 6px; padding: 0.85rem 1rem;">
+              <div style="display: flex; align-items: flex-start; gap: 0.75rem;">
+                <span style="font-size: 0.78rem; font-weight: 700; color: #bbb; min-width: 1.1rem; padding-top: 0.1rem;"><%= i + 1 %></span>
+                <div style="flex: 1;">
+                  <p style="font-size: 0.93rem; color: #1a1a1a; font-weight: 500; line-height: 1.55; margin-bottom: 0.4rem;"><%= q["question"] %></p>
+                  <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+                    <span class="badge <%= badge_class %>" style="font-size: 0.72rem;"><%= badge_label %></span>
+                    <% if q["reason"].present? %>
+                      <span style="font-size: 0.8rem; color: #888;"><%= q["reason"] %></span>
+                    <% end %>
+                  </div>
+                </div>
+              </div>
+            </li>
+          <% end %>
+        </ol>
+      </div>
+    <% end %>
+  <% end %>
+
+  <%# Video Analysis panel %>
+  <% if @candidate.video_analysis %>
+    <% va = @candidate.video_analysis %>
+    <%= link_to video_analysis_path(va), style: "text-decoration: none; color: inherit; display: block;" do %>
+      <div class="card" style="cursor: pointer; transition: box-shadow 0.15s;">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem; flex-wrap: wrap; gap: 0.5rem;">
+          <div style="display: flex; align-items: center; gap: 0.75rem;">
+            <% if va.episode_score %>
+              <div class="score-ring" style="--pct: <%= (va.episode_score / 10.0 * 100).round %>%; width: 44px; height: 44px; flex-shrink: 0;">
+                <span class="score-value" style="font-size: 0.75rem;"><%= va.episode_score %></span>
+              </div>
+            <% end %>
+            <div>
+              <h2 style="margin: 0;">Preliminary Interview</h2>
+              <% if va.episode_tier %>
+                <span style="font-size: 0.7rem; font-weight: 700; color: <%= _tier_color[va.episode_tier] %>; background: <%= _tier_bg[va.episode_tier] %>; border-radius: 99px; padding: 0.1rem 0.45rem; margin-top: 0.2rem; display: inline-block;"><%= va.episode_tier %></span>
+              <% end %>
+            </div>
+          </div>
+          <span class="badge badge-<%= va.status %>"><%= va.status %></span>
+        </div>
+        <% if va.summary.present? %>
+          <p style="font-size: 0.92rem; color: #444; line-height: 1.7; margin: 0;"><%= va.summary %></p>
+        <% else %>
+          <p style="color: #aaa; font-size: 0.88rem; margin: 0;">Analysis pending…</p>
+        <% end %>
+      </div>
+    <% end %>
+  <% elsif @candidate.pipeline_stage == "preliminary_interview" %>
+    <div class="card" style="border-style: dashed; background: #fafafa;">
+      <p style="color: #888; font-size: 0.9rem; text-align: center; padding: 0.5rem 0;">
+        Interview video not uploaded yet.
+        <%= link_to "Upload now →", new_video_analysis_path(candidate_id: @candidate.id),
+              style: "color: #1a1a1a; font-weight: 600;" %>
+      </p>
+    </div>
+  <% end %>
+
+
+<% end %>
+
+<div style="margin-top: 1rem;">
+  <%= link_to "← All candidates", candidates_path, style: "color: #555; font-size: 0.9rem;" %>
+</div>

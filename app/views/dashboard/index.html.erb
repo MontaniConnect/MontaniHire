@@ -1,0 +1,91 @@
+<%# ── Header ── %>
+<div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 0.75rem;">
+  <h1 style="margin: 0;">Recruitment Dashboard</h1>
+  <% if @job_roles.any? %>
+    <%= form_with url: dashboard_path, method: :get, style: "display: flex; gap: 0.5rem; align-items: center;" do |f| %>
+      <select name="job_role_id"
+              style="padding: 0.45rem 0.75rem; border: 1px solid #ddd; border-radius: 6px;
+                     font-size: 0.85rem; background: #fff; color: #555; outline: none;">
+        <option value="">All roles</option>
+        <% @job_roles.each do |jr| %>
+          <option value="<%= jr.id %>" <%= "selected" if @job_role_id == jr.id.to_s %>><%= jr.title %></option>
+        <% end %>
+      </select>
+      <%= f.submit "Filter", class: "btn", style: "padding: 0.45rem 0.9rem; font-size: 0.85rem;" %>
+      <% if @job_role_id.present? %>
+        <%= link_to "Clear", dashboard_path,
+              style: "font-size: 0.85rem; color: #555; text-decoration: none; padding: 0.45rem 0.75rem;
+                      border: 1px solid #ddd; border-radius: 6px; background: #fff;" %>
+      <% end %>
+    <% end %>
+  <% end %>
+</div>
+
+<%# ── Funnel strip ── %>
+<div class="card" style="padding: 1.25rem 1.5rem; margin-bottom: 1.25rem;">
+  <div style="font-size: 0.72rem; font-weight: 700; color: #888; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 1rem;">Pipeline Funnel</div>
+  <div style="display: flex; align-items: center; gap: 0; flex-wrap: wrap;">
+    <% [
+         [@total_applicants, "Applicants",    "#1a1a1a", "#f5f5f5"],
+         [@screened,         "Screened",      "#1d4ed8", "#dbeafe"],
+         [@total_interviews, "Interviewed",   "#7c3aed", "#ede9fe"],
+         [@submitted,        "Submitted",     "#0369a1", "#e0f2fe"],
+         [@hired_count,      "Hired",         "#15803d", "#dcfce7"]
+       ].each_with_index do |(count, label, tc, bg), i| %>
+      <% if i > 0 %>
+        <div style="color: #ccc; font-size: 1.1rem; padding: 0 0.4rem;">›</div>
+      <% end %>
+      <div style="background: <%= bg %>; border-radius: 6px; padding: 0.6rem 1rem; text-align: center; min-width: 90px;">
+        <div style="font-size: 1.35rem; font-weight: 700; color: <%= tc %>;"><%= count %></div>
+        <div style="font-size: 0.72rem; font-weight: 600; color: <%= tc %>; opacity: 0.8; margin-top: 0.1rem;"><%= label %></div>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<%# ── Helpers ── %>
+<% def_val = "—" %>
+
+<%# ── Section: Volume ── %>
+<div style="font-size: 0.72rem; font-weight: 700; color: #888; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 0.65rem;">Volume</div>
+<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 0.75rem; margin-bottom: 1.5rem;">
+  <%= render "dashboard/kpi_tile", label: "Total Applicants",    value: @total_applicants,  note: nil %>
+  <%= render "dashboard/kpi_tile", label: "Screened",           value: @screened,           note: "CV analysis done" %>
+  <%= render "dashboard/kpi_tile", label: "Total Interviews",   value: @total_interviews,   note: "scheduled" %>
+  <%= render "dashboard/kpi_tile", label: "Show Up",            value: @show_up_count,      note: "video completed" %>
+  <%= render "dashboard/kpi_tile", label: "No Show",            value: @no_show_count,      note: "flagged" %>
+</div>
+
+<%# ── Section: Conversion Rates ── %>
+<div style="font-size: 0.72rem; font-weight: 700; color: #888; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 0.65rem;">Conversion Rates</div>
+<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 0.75rem; margin-bottom: 1.5rem;">
+  <%= render "dashboard/kpi_tile", label: "App-to-Screen",        value: @app_to_screen_rate,    suffix: "%", note: "screened / applicants" %>
+  <%= render "dashboard/kpi_tile", label: "No Show Rate",         value: @no_show_rate,          suffix: "%", note: "no shows / interviews" %>
+  <%= render "dashboard/kpi_tile", label: "Screen-to-Submittal",  value: @screen_to_submit_rate, suffix: "%", note: "submitted / screened" %>
+  <%= render "dashboard/kpi_tile", label: "Submittal-to-Hire",    value: @submit_to_hire_rate,   suffix: "%", note: "hired / submitted" %>
+  <%= render "dashboard/kpi_tile", label: "Interview-to-Offer",   value: @interview_to_offer_rate, suffix: "%", note: "offers / submitted" %>
+  <%= render "dashboard/kpi_tile", label: "Screens to Hire",      value: @screens_to_hire,       suffix: "x", note: "screened per hire" %>
+</div>
+
+<%# ── Section: Offers & Hires ── %>
+<div style="font-size: 0.72rem; font-weight: 700; color: #888; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 0.65rem;">Offers &amp; Hires</div>
+<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 0.75rem; margin-bottom: 1.5rem;">
+  <%= render "dashboard/kpi_tile", label: "Submitted to Client",  value: @submitted,             note: "shortlisted" %>
+  <%= render "dashboard/kpi_tile", label: "Total Offers",         value: @total_offers,          note: nil %>
+  <%= render "dashboard/kpi_tile", label: "Accepted Offer",       value: @hired_count,           note: nil %>
+  <%= render "dashboard/kpi_tile", label: "Declined Offer",       value: @offer_declined_count,  note: nil %>
+  <%= render "dashboard/kpi_tile", label: "Offer Acceptance Rate", value: @offer_acceptance_rate, suffix: "%", note: "accepted / total offers" %>
+  <%= render "dashboard/kpi_tile", label: "Offer Declined Rate",   value: @offer_declined_rate,  suffix: "%", note: "declined / total offers" %>
+</div>
+
+<%# ── Section: Time Metrics ── %>
+<div style="font-size: 0.72rem; font-weight: 700; color: #888; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 0.65rem;">Time to Hire</div>
+<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 0.75rem; margin-bottom: 1.5rem;">
+  <%= render "dashboard/kpi_tile", label: "Avg Time to Interview", value: @avg_time_to_interview, suffix: "d", note: "upload to video done" %>
+  <%= render "dashboard/kpi_tile", label: "Avg Time to Hire",      value: @avg_time_to_hire,      suffix: "d", note: "upload to hired" %>
+  <div class="card" style="padding: 1rem; margin: 0; opacity: 0.45;">
+    <div style="font-size: 1.5rem; font-weight: 700; color: #1a1a1a;">—</div>
+    <div style="font-size: 0.75rem; font-weight: 600; color: #555; margin-top: 0.25rem;">Cost / Hire</div>
+    <div style="font-size: 0.72rem; color: #aaa; margin-top: 0.2rem;">not tracked</div>
+  </div>
+</div>

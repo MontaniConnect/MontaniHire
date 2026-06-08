@@ -1,0 +1,279 @@
+<%# Print-only report header %>
+<div class="print-only" style="margin-bottom: 1.25rem; padding-bottom: 0.75rem; border-bottom: 2px solid #1a1a1a;">
+  <div style="font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: #888; margin-bottom: 0.3rem;">HireAI — Interview Analysis Report</div>
+  <div style="font-size: 1.3rem; font-weight: 700; margin-bottom: 0.2rem;"><%= @video_analysis.display_name %></div>
+  <div style="font-size: 0.85rem; color: #555;">
+    <% if @video_analysis.job_role %><%= @video_analysis.job_role.title %> · <% end %>
+    Exported <%= Date.today.strftime("%B %d, %Y") %>
+  </div>
+</div>
+
+<%# Header %>
+<div class="no-print" style="display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; margin-bottom: 1.25rem; flex-wrap: wrap;">
+  <div>
+    <h1 style="margin: 0 0 0.4rem;"><%= @video_analysis.display_name %></h1>
+    <div style="display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;">
+      <% if @video_analysis.job_role %>
+        <%= link_to @video_analysis.job_role.title, job_role_path(@video_analysis.job_role),
+              class: "badge badge-analyzing",
+              style: "text-decoration: none; font-size: 0.8rem;" %>
+      <% end %>
+      <span class="badge badge-<%= @video_analysis.status %>"><%= @video_analysis.status %></span>
+      <% if @video_analysis.completed? %>
+        <% current_va = @video_analysis.prompt_version == ClaudeAnalysisService::PROMPT_VERSION %>
+        <span style="font-size: 0.72rem; color: <%= current_va ? "#166534" : "#92400e" %>;
+                     background: <%= current_va ? "#dcfce7" : "#fef3c7" %>;
+                     border-radius: 99px; padding: 0.15rem 0.55rem; font-weight: 600;">
+          <%= current_va ? "prompt current" : "prompt stale#{@video_analysis.prompt_version.present? ? " · #{@video_analysis.prompt_version}" : ""}" %>
+        </span>
+      <% end %>
+    </div>
+  </div>
+
+  <%# Action buttons %>
+  <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: flex-start;">
+    <% if @video_analysis.completed? %>
+      <button onclick="window.print()"
+              class="btn"
+              style="background: #555; padding: 0.45rem 0.9rem; font-size: 0.85rem;">
+        ↓ Export PDF
+      </button>
+    <% end %>
+    <% if @video_analysis.transcript.present? %>
+      <%= button_to "↺ Re-analyse", reanalyse_video_analysis_path(@video_analysis),
+            method: :post,
+            class: "btn", style: "background: #555; padding: 0.45rem 0.9rem; font-size: 0.85rem;" %>
+    <% end %>
+
+    <%# Add to shortlist %>
+    <% shortlists = current_user.shortlists.order(:title) %>
+    <% _linked_candidate = @video_analysis.candidate %>
+    <% _use_candidate_path = _linked_candidate&.cv_analysis&.completed? %>
+    <% if shortlists.any? %>
+      <% _va_fb = @video_analysis.structured_feedback || {} %>
+      <% _compliance_flags = [] %>
+      <% if _va_fb["cv_interview_consistency"] == "significant inconsistencies" %>
+        <% _compliance_flags << "Significant CV–interview inconsistencies detected." %>
+      <% end %>
+      <% _linked_cv_fb = _linked_candidate&.cv_analysis&.structured_feedback || {} %>
+      <% Array(_linked_cv_fb["credential_flags"]).each { |f| _compliance_flags << "Credential flag: #{f}" } %>
+      <details style="position: relative; display: inline-block;">
+        <summary style="list-style: none; cursor: pointer;" class="btn">＋ Shortlist</summary>
+        <div style="position: absolute; right: 0; top: calc(100% + 4px); background: #fff; border: 1px solid #e5e5e5; border-radius: 8px; padding: 1rem; min-width: 260px; z-index: 50; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+          <form action="<%= shortlist_shortlist_items_path(shortlists.first) %>" method="post"
+                id="sl-add-va-<%= @video_analysis.id %>"
+                data-compliance-flags="<%= _compliance_flags.to_json %>">
+            <%= hidden_field_tag :authenticity_token, form_authenticity_token %>
+            <% if _use_candidate_path %>
+              <%= hidden_field_tag :candidate_id, _linked_candidate.id %>
+            <% else %>
+              <%= hidden_field_tag :shareable_type, "VideoAnalysis" %>
+              <%= hidden_field_tag :shareable_id, @video_analysis.id %>
+            <% end %>
+            <div style="margin-bottom: 0.65rem;">
+              <label style="font-size: 0.78rem; font-weight: 500; color: #555; display: block; margin-bottom: 0.3rem;">Shortlist</label>
+              <select style="width: 100%; padding: 0.45rem 0.6rem; border: 1px solid #ddd; border-radius: 6px; font-size: 0.88rem; background: #fff;"
+                      onchange="document.getElementById('sl-add-va-<%= @video_analysis.id %>').action='/shortlists/'+this.value+'/shortlist_items'">
+                <% shortlists.each do |sl| %>
+                  <option value="<%= sl.id %>"><%= sl.title %></option>
+                <% end %>
+              </select>
+            </div>
+            <% unless _use_candidate_path %>
+              <% cv_analyses = current_user.cv_analyses.where(status: "completed").order(:candidate_name) %>
+              <% if cv_analyses.any? %>
+                <div style="margin-bottom: 0.65rem;">
+                  <label style="font-size: 0.78rem; font-weight: 500; color: #555; display: block; margin-bottom: 0.3rem;">
+                    Also attach CV (optional)
+                  </label>
+                  <select name="companion_cv_analysis_id"
+                          style="width: 100%; padding: 0.45rem 0.6rem; border: 1px solid #ddd; border-radius: 6px; font-size: 0.88rem; background: #fff;">
+                    <option value="">— none —</option>
+                    <% cv_analyses.each do |cv| %>
+                      <option value="<%= cv.id %>"><%= cv.display_name %></option>
+                    <% end %>
+                  </select>
+                </div>
+              <% end %>
+            <% end %>
+            <button type="submit" class="btn" style="width: 100%; padding: 0.45rem; font-size: 0.85rem;">Add to shortlist</button>
+          </form>
+          <div style="text-align: center; margin-top: 0.5rem;">
+            <%= link_to "+ New shortlist", new_shortlist_path(type: "VideoAnalysis", candidate_id: @video_analysis.id),
+                  style: "font-size: 0.8rem; color: #888; text-decoration: none;" %>
+          </div>
+        </div>
+      </details>
+    <% else %>
+      <%= link_to "＋ Shortlist", new_shortlist_path(type: "VideoAnalysis", candidate_id: @video_analysis.id),
+            class: "btn", style: "background: #555; padding: 0.45rem 0.9rem; font-size: 0.85rem;" %>
+    <% end %>
+
+
+  </div>
+</div>
+
+<%# Processing state %>
+<% if @video_analysis.awaiting_cv? %>
+  <div class="card no-print" style="border-left: 4px solid #f59e0b; background: #fffbeb;">
+    <p style="color: #92400e; font-size: 0.9rem; margin: 0;">
+      <strong>Waiting for CV analysis.</strong>
+      Interview analysis will start automatically once the CV screening is complete.
+      <% if @candidate %>
+        <%= link_to "Run CV analysis →", new_cv_analysis_path(candidate_id: @candidate.id), style: "color: #92400e; font-weight: 600;" %>
+      <% end %>
+    </p>
+  </div>
+<% elsif !@video_analysis.completed? && !@video_analysis.failed? %>
+  <div class="card no-print" data-controller="poll" data-poll-url-value="<%= video_analysis_path(@video_analysis) %>">
+    <p style="color: #555; font-size: 0.9rem;">Processing interview… this page will update automatically.</p>
+  </div>
+<% end %>
+
+<% if @video_analysis.failed? %>
+  <div class="error-box no-print" style="margin-bottom: 1.25rem;">
+    <strong>Processing failed:</strong> <%= @video_analysis.error_message %>
+  </div>
+<% end %>
+
+<%# fb must be set before any section that uses it %>
+<% fb = @video_analysis.structured_feedback || {} %>
+
+<%# Video player %>
+<% if @video_analysis.video.attached? %>
+  <div class="card no-print" style="padding: 0; overflow: hidden;">
+    <video controls preload="metadata"
+           style="width: 100%; max-height: 480px; display: block; background: #000;">
+      <source src="<%= url_for(@video_analysis.video) %>" type="<%= @video_analysis.video.content_type %>">
+    </video>
+  </div>
+<% end %>
+
+<%# Score card — Episode Score %>
+<% ep_dims  = fb["episode_dimensions"] || {} %>
+<% ep_score = @video_analysis.episode_score %>
+<% ep_tier  = @video_analysis.episode_tier %>
+<% if ep_score.present? || ep_dims.any? %>
+  <%
+    dim_meta = {
+      "relevance_discipline"  => { label: "Relevance Discipline",  desc: "Every answer directly addresses the question with zero rambling",              weight: 0.20 },
+      "ownership_language"    => { label: "Ownership Language",    desc: "First-person active grammar throughout — I designed, I led, I decided",         weight: 0.20 },
+      "outcome_orientation"   => { label: "Outcome Orientation",   desc: "Leads with results, metrics, and business impact — not just activity",           weight: 0.20 },
+      "adaptability_signal"   => { label: "Adaptability Signal",   desc: "Explicit strategy pivots when constraints changed — not just awareness",          weight: 0.20 },
+      "communication_clarity" => { label: "Communication Clarity", desc: "Logically structured and coherent; no crutch words or fragmented delivery",       weight: 0.20 }
+    }
+    shared_levels = { "meets" => "Meets", "partially_meets" => "Partially Meets", "vague" => "Vague", "does_not_meet" => "Does Not Meet" }
+    level_labels = Hash.new(shared_levels).merge(dim_meta.keys.index_with { shared_levels })
+    dim_values = Candidate::EPISODE_LEVEL_VALUES
+  %>
+  <% _cv = @candidate&.cv_analysis %>
+  <% _cv_fit = _cv&.cv_fit_score %>
+  <div class="card" style="display: flex; align-items: flex-start; gap: 2rem; flex-wrap: wrap;">
+
+    <%# Left: stacked score rings %>
+    <div style="display: flex; flex-direction: column; align-items: center; gap: 1.5rem; min-width: 120px;">
+      <%# Episode Score ring %>
+      <% if ep_score.present? %>
+        <% ep_pct = (ep_score / 10.0 * 100).round %>
+        <% tier_color = { "Shortlist" => "#166534", "Borderline" => "#854d0e", "Archive" => "#991b1b" }[ep_tier] %>
+        <% tier_bg    = { "Shortlist" => "#dcfce7", "Borderline" => "#fef9c3", "Archive" => "#fee2e2" }[ep_tier] %>
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 0.45rem;">
+          <div style="font-size: 0.63rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #bbb;">Episode Score</div>
+          <div class="score-ring" style="--pct: <%= ep_pct %>%">
+            <span class="score-value"><%= ep_score %></span>
+          </div>
+          <% if ep_tier.present? %>
+            <span style="font-size: 0.72rem; font-weight: 700; color: <%= tier_color %>; background: <%= tier_bg %>; border-radius: 99px; padding: 0.15rem 0.55rem;"><%= ep_tier %></span>
+          <% end %>
+        </div>
+      <% end %>
+
+      <%# CV Fit Score ring %>
+      <% if _cv_fit %>
+        <% _cv_tier   = _cv.cv_fit_tier %>
+        <% _cv_pct    = (_cv_fit / 10.0 * 100).round %>
+        <% _tier_color = { "Shortlist" => "#166534", "Borderline" => "#854d0e", "Archive" => "#991b1b" }[_cv_tier] %>
+        <% _tier_bg    = { "Shortlist" => "#dcfce7", "Borderline" => "#fef9c3", "Archive" => "#fee2e2" }[_cv_tier] %>
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 0.45rem;">
+          <div style="font-size: 0.63rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #bbb;">CV Fit Score</div>
+          <div class="score-ring" style="--pct: <%= _cv_pct %>%">
+            <span class="score-value"><%= _cv_fit %></span>
+          </div>
+          <span style="font-size: 0.72rem; font-weight: 700; color: <%= _tier_color %>; background: <%= _tier_bg %>; border-radius: 99px; padding: 0.15rem 0.55rem;"><%= _cv_tier %></span>
+          <%= link_to "View CV →", cv_analysis_path(_cv), style: "font-size: 0.72rem; color: #aaa; text-decoration: none;" %>
+        </div>
+      <% end %>
+    </div>
+
+    <%# Right: computation table %>
+    <div style="flex: 1; min-width: 300px;">
+      <div style="font-size: 0.78rem; color: #777; margin-bottom: 0.9rem;">Weighted average across 5 behavioral dimensions</div>
+      <% if ep_dims.any? %>
+        <%
+          total_contrib = 0.0
+          total_weight  = 0.0
+        %>
+        <div style="display: flex; flex-direction: column; gap: 0;">
+          <% dim_meta.each do |dim_key, meta| %>
+            <% level = ep_dims[dim_key] %>
+            <% next unless level.present? %>
+            <% value   = dim_values.dig(dim_key, level) || 0.0 %>
+            <% weight  = meta[:weight] %>
+            <% contrib = value * weight %>
+            <% total_contrib += contrib %>
+            <% total_weight  += weight %>
+            <% lvl_label = level_labels.dig(dim_key, level) || level.humanize %>
+            <% lvl_color, lvl_bg = case value
+               when 1.0 then ["#166534", "#dcfce7"]
+               when 0.7 then ["#1e40af", "#dbeafe"]
+               when 0.4 then ["#854d0e", "#fef9c3"]
+               else          ["#991b1b", "#fee2e2"]
+               end %>
+            <div style="display: flex; align-items: center; gap: 0.75rem; padding: 0.45rem 0; border-bottom: 1px solid #f5f5f5;">
+              <div style="flex: 1; min-width: 0;">
+                <div style="font-size: 0.82rem; font-weight: 500; color: #1a1a1a; line-height: 1.2;"><%= meta[:label] %></div>
+                <div style="font-size: 0.72rem; color: #999; margin-top: 0.1rem;"><%= meta[:desc] %></div>
+              </div>
+              <span style="font-size: 0.72rem; font-weight: 600; color: <%= lvl_color %>; background: <%= lvl_bg %>; border-radius: 4px; padding: 0.1rem 0.45rem; white-space: nowrap; flex-shrink: 0;"><%= lvl_label %></span>
+              <span style="font-size: 0.72rem; color: #aaa; white-space: nowrap; font-variant-numeric: tabular-nums; min-width: 110px; text-align: right;"><%= value %> × <%= (weight * 100).to_i %>% = <strong style="color: #555;"><%= contrib.round(3) %></strong></span>
+            </div>
+          <% end %>
+          <% if total_weight > 0 %>
+            <div style="display: flex; justify-content: flex-end; padding-top: 0.5rem; gap: 0.5rem; align-items: baseline;">
+              <span style="font-size: 0.72rem; color: #999;">Sum <%= total_contrib.round(3) %> ÷ <%= total_weight.round(2) %> × 10 =</span>
+              <span style="font-size: 0.88rem; font-weight: 700; color: #1a1a1a;"><%= ep_score %></span>
+            </div>
+          <% end %>
+        </div>
+      <% end %>
+    </div>
+
+  </div>
+<% end %>
+
+<%# Red flags %>
+<% if Array(fb["red_flags"]).any? %>
+  <div class="card">
+    <h2>Red Flags</h2>
+    <ul class="feedback-col">
+      <% Array(fb["red_flags"]).each do |flag| %><li><%= flag %></li><% end %>
+    </ul>
+  </div>
+<% end %>
+
+
+<%# Transcript %>
+<% if @video_analysis.transcript.present? %>
+  <div class="card no-print">
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem;">
+      <h2 style="margin: 0;">Transcript</h2>
+      <%= link_to "↓ Download", transcript_video_analysis_path(@video_analysis),
+            style: "font-size: 0.85rem; color: #555;" %>
+    </div>
+    <div class="transcript"><%= @video_analysis.transcript %></div>
+  </div>
+<% end %>
+
+<div class="no-print" style="margin-top: 0.5rem;">
+  <%= link_to "← Back to candidates", video_analyses_path, style: "color: #555; font-size: 0.9rem;" %>
+</div>

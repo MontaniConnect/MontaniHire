@@ -1,0 +1,4 @@
+:concurrency: 5
+:queues:
+  - [transcription, 1]
+  - [default, 1]

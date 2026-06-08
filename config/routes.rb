@@ -1,0 +1,59 @@
+Rails.application.routes.draw do
+  # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html
+
+  # Reveal health status on /up that returns 200 if the app boots with no exceptions, otherwise 500.
+  # Can be used by load balancers and uptime monitors to verify that the app is live.
+  get "up" => "rails/health#show", as: :rails_health_check
+
+  root "video_analyses#index"
+  get "dashboard", to: "dashboard#index", as: :dashboard
+  resources :video_analyses, only: %i[new create show index destroy] do
+    member do
+      post :reanalyse
+      get  :transcript
+    end
+  end
+  resources :cv_analyses, only: %i[create show index destroy] do
+    collection do
+      post :bulk_create
+    end
+    member do
+      post :reanalyse
+      get  :extracted_text
+    end
+  end
+  resources :job_roles do
+    member do
+      post :extract_requirements
+    end
+  end
+
+  # Candidate pipeline
+  resources :candidates, only: %i[index show destroy update] do
+    member do
+      post :advance
+      post :reject
+      post :revert
+      post :final_interview
+      post :not_invited
+      post :hire
+      post :offer_declined
+      post :not_selected
+      post :confirm_outcome
+      post :toggle_no_show
+    end
+  end
+
+  # Recruiter shortlist management (authenticated)
+  resources :shortlists do
+    resources :shortlist_items, only: %i[create update destroy], shallow: true
+  end
+
+  # Public shared link (no auth)
+  scope "/s" do
+    get   "/:token",                      to: "shared_shortlists#show",      as: :shared_shortlist
+    post  "/:token/verify",               to: "shared_shortlists#verify",    as: :verify_shared_shortlist
+    get   "/:token/items/:id",            to: "shared_shortlists#show_item", as: :shared_shortlist_item
+    patch "/:token/items/:id/feedback",   to: "shared_shortlists#feedback",  as: :shared_shortlist_feedback
+  end
+end

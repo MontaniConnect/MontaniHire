@@ -1,0 +1,324 @@
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 1.25rem; flex-wrap: wrap;">
+  <div>
+    <h1 style="margin: 0 0 0.4rem;"><%= @job_role.title %></h1>
+    <span class="badge badge-analyzing" style="text-transform: capitalize; font-size: 0.85rem;">
+      <%= @job_role.experience_level %>
+    </span>
+  </div>
+  <div style="display: flex; gap: 0.5rem;">
+    <%= link_to "Edit", edit_job_role_path(@job_role), class: "btn", style: "background: #555; padding: 0.45rem 0.9rem; font-size: 0.85rem;" %>
+    <%= button_to "✕ Delete", job_role_path(@job_role), method: :delete,
+          data: { turbo_confirm: "Delete \"#{@job_role.title}\"? This cannot be undone." },
+          class: "btn", style: "background: #dc2626; padding: 0.45rem 0.9rem; font-size: 0.85rem;" %>
+  </div>
+</div>
+
+<%# Tab navigation %>
+<nav class="tab-nav">
+  <%= link_to "Overview", job_role_path(@job_role), class: "tab-link #{@tab == 'overview' ? 'active' : ''}" %>
+  <%= link_to "Calibration", job_role_path(@job_role, tab: "calibration"), class: "tab-link #{@tab == 'calibration' ? 'active' : ''}" %>
+</nav>
+
+<% if @tab == "overview" %>
+
+  <div class="card">
+    <h2>Required Skills</h2>
+    <div class="rich-text-content">
+      <%= @job_role.required_skills %>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Responsibilities</h2>
+    <div class="rich-text-content">
+      <%= @job_role.responsibilities %>
+    </div>
+  </div>
+
+  <% if @job_role.description.present? %>
+    <div class="card">
+      <h2>Additional Context</h2>
+      <p style="font-size: 0.95rem; color: #333; line-height: 1.7; white-space: pre-wrap;"><%= @job_role.description %></p>
+    </div>
+  <% end %>
+
+<% elsif @tab == "calibration" %>
+
+  <% if @calibration_examples.empty? %>
+    <div class="card">
+      <p class="empty">No confirmed outcomes yet for this role. Confirm invited or not-invited decisions on candidates to build calibration data.</p>
+    </div>
+  <% else %>
+
+    <%# Summary stats %>
+    <div class="card">
+      <h2 style="margin-bottom: 1rem;">Confirmed Outcomes — <%= @calibration_examples.size %> candidate<%= "s" if @calibration_examples.size != 1 %></h2>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+
+        <%# Invited group %>
+        <% if @calibration_invited.any? %>
+          <% inv_int_scores    = @calibration_invited.filter_map { |c| c.video_analysis&.score&.to_f } %>
+          <% inv_cv_scores     = @calibration_invited.filter_map { |c| c.cv_analysis&.score&.to_f } %>
+          <% inv_cv_fit_scores = @calibration_invited.filter_map { |c| c.cv_analysis&.structured_feedback&.dig("cv_fit_score")&.to_f } %>
+          <% inv_recs          = @calibration_invited.filter_map { |c| c.structured_feedback["recommendation"] } %>
+          <div style="background: #f0fdf4; border: 1px solid #86efac; border-radius: 8px; padding: 1rem;">
+            <div style="font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #166534; margin-bottom: 0.65rem;">
+              Invited to Final Interview (<%= @calibration_invited.size %>)
+            </div>
+            <div style="display: flex; gap: 1.5rem; flex-wrap: wrap; margin-bottom: 0.5rem;">
+              <% if inv_int_scores.any? %>
+                <div>
+                  <div style="font-size: 1.4rem; font-weight: 700; color: #1a1a1a; line-height: 1;"><%= (inv_int_scores.sum / inv_int_scores.size).round(1) %></div>
+                  <div style="font-size: 0.72rem; color: #666; margin-top: 0.15rem;">Avg. Interview Score</div>
+                </div>
+              <% end %>
+              <% if inv_cv_scores.any? %>
+                <div>
+                  <div style="font-size: 1.4rem; font-weight: 700; color: #1a1a1a; line-height: 1;"><%= (inv_cv_scores.sum / inv_cv_scores.size).round(1) %></div>
+                  <div style="font-size: 0.72rem; color: #666; margin-top: 0.15rem;">Avg. CV Score</div>
+                </div>
+              <% end %>
+              <% if inv_cv_fit_scores.any? %>
+                <div>
+                  <div style="font-size: 1.4rem; font-weight: 700; color: #1a1a1a; line-height: 1;"><%= (inv_cv_fit_scores.sum / inv_cv_fit_scores.size).round(1) %></div>
+                  <div style="font-size: 0.72rem; color: #666; margin-top: 0.15rem;">Avg. CV Fit Score</div>
+                </div>
+              <% end %>
+            </div>
+            <% if inv_recs.any? %>
+              <div style="display: flex; gap: 0.4rem; flex-wrap: wrap;">
+                <% { "recommend" => "completed", "borderline" => "pending", "reject" => "failed" }.each do |rec, cls| %>
+                  <% n = inv_recs.count(rec) %>
+                  <% if n > 0 %>
+                    <span class="badge badge-<%= cls %>" style="font-size: 0.7rem;"><%= n %> <%= rec %></span>
+                  <% end %>
+                <% end %>
+              </div>
+            <% end %>
+          </div>
+        <% else %>
+          <div style="background: #fafafa; border: 1px solid #e5e5e5; border-radius: 8px; padding: 1rem;">
+            <div style="font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #999; margin-bottom: 0.4rem;">Invited to Final Interview</div>
+            <p style="font-size: 0.85rem; color: #aaa; margin: 0;">None confirmed yet</p>
+          </div>
+        <% end %>
+
+        <%# Not invited group %>
+        <% if @calibration_not_invited.any? %>
+          <% ni_int_scores    = @calibration_not_invited.filter_map { |c| c.video_analysis&.score&.to_f } %>
+          <% ni_cv_scores     = @calibration_not_invited.filter_map { |c| c.cv_analysis&.score&.to_f } %>
+          <% ni_cv_fit_scores = @calibration_not_invited.filter_map { |c| c.cv_analysis&.structured_feedback&.dig("cv_fit_score")&.to_f } %>
+          <% ni_recs          = @calibration_not_invited.filter_map { |c| c.structured_feedback["recommendation"] } %>
+          <div style="background: #fff5f5; border: 1px solid #fca5a5; border-radius: 8px; padding: 1rem;">
+            <div style="font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #991b1b; margin-bottom: 0.65rem;">
+              Not Invited (<%= @calibration_not_invited.size %>)
+            </div>
+            <div style="display: flex; gap: 1.5rem; flex-wrap: wrap; margin-bottom: 0.5rem;">
+              <% if ni_int_scores.any? %>
+                <div>
+                  <div style="font-size: 1.4rem; font-weight: 700; color: #1a1a1a; line-height: 1;"><%= (ni_int_scores.sum / ni_int_scores.size).round(1) %></div>
+                  <div style="font-size: 0.72rem; color: #666; margin-top: 0.15rem;">Avg. Interview Score</div>
+                </div>
+              <% end %>
+              <% if ni_cv_scores.any? %>
+                <div>
+                  <div style="font-size: 1.4rem; font-weight: 700; color: #1a1a1a; line-height: 1;"><%= (ni_cv_scores.sum / ni_cv_scores.size).round(1) %></div>
+                  <div style="font-size: 0.72rem; color: #666; margin-top: 0.15rem;">Avg. CV Score</div>
+                </div>
+              <% end %>
+              <% if ni_cv_fit_scores.any? %>
+                <div>
+                  <div style="font-size: 1.4rem; font-weight: 700; color: #1a1a1a; line-height: 1;"><%= (ni_cv_fit_scores.sum / ni_cv_fit_scores.size).round(1) %></div>
+                  <div style="font-size: 0.72rem; color: #666; margin-top: 0.15rem;">Avg. CV Fit Score</div>
+                </div>
+              <% end %>
+            </div>
+            <% if ni_recs.any? %>
+              <div style="display: flex; gap: 0.4rem; flex-wrap: wrap;">
+                <% { "recommend" => "completed", "borderline" => "pending", "reject" => "failed" }.each do |rec, cls| %>
+                  <% n = ni_recs.count(rec) %>
+                  <% if n > 0 %>
+                    <span class="badge badge-<%= cls %>" style="font-size: 0.7rem;"><%= n %> <%= rec %></span>
+                  <% end %>
+                <% end %>
+              </div>
+            <% end %>
+          </div>
+        <% else %>
+          <div style="background: #fafafa; border: 1px solid #e5e5e5; border-radius: 8px; padding: 1rem;">
+            <div style="font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #999; margin-bottom: 0.4rem;">Not Invited</div>
+            <p style="font-size: 0.85rem; color: #aaa; margin: 0;">None confirmed yet</p>
+          </div>
+        <% end %>
+
+      </div>
+    </div>
+
+    <%# Communication patterns side-by-side %>
+    <%
+      cs_fields = [
+        { key: "filler_word_frequency",  label: "Filler Words",        desc: "How often the candidate used um, uh, like, or you know",                             values: ["low", "moderate", "high"] },
+        { key: "answer_directness",      label: "Answer Directness",   desc: "Whether the candidate answered the question asked or talked around it",              values: ["direct", "circuitous", "evasive"] },
+        { key: "proactiveness",          label: "Proactiveness",       desc: "Whether the candidate added relevant context beyond what was explicitly asked",       values: ["volunteers information", "answers only what is asked", "requires prompting"] },
+        { key: "example_specificity",    label: "Example Specificity", desc: "Whether answers were backed by named projects, outcomes, or real personal stories",  values: ["specific and concrete", "generic or surface-level", "absent"] },
+        { key: "listening_accuracy",     label: "Listening Accuracy",  desc: "How accurately the candidate understood and responded to each question",             values: ["addresses question precisely", "partially addresses", "frequently misses the point"] },
+        { key: "engagement_level",       label: "Engagement Level",    desc: "The energy and genuine interest the candidate showed throughout the interview",      values: ["engaged and enthusiastic", "neutral", "flat or disengaged"] },
+      ]
+
+      inv_signals  = @calibration_invited.filter_map    { |c| c.video_analysis&.structured_feedback&.dig("communication_signals") }
+      ni_signals   = @calibration_not_invited.filter_map { |c| c.video_analysis&.structured_feedback&.dig("communication_signals") }
+      show_comms   = inv_signals.any? || ni_signals.any?
+    %>
+    <% if show_comms %>
+    <div class="card">
+      <h2 style="margin-bottom: 1rem;">Communication Patterns</h2>
+      <p style="font-size: 0.8rem; color: #888; margin-bottom: 1rem;">Distribution across confirmed outcomes with interview data. Numbers show how many candidates in each group fell into each category.</p>
+
+      <div style="overflow-x: auto;">
+        <table style="width: 100%; border-collapse: collapse; font-size: 0.82rem;">
+          <thead>
+            <tr style="border-bottom: 2px solid #e5e5e5;">
+              <th style="text-align: left; padding: 0.5rem 0.75rem; font-weight: 600; color: #444; width: 18%;">Signal</th>
+              <th style="text-align: left; padding: 0.5rem 0.75rem; font-weight: 600; color: #444; width: 24%;">Category</th>
+              <% if inv_signals.any? %>
+              <th style="text-align: center; padding: 0.5rem 0.75rem; font-weight: 600; color: #166534; background: #f0fdf4; border-radius: 4px 4px 0 0; width: 29%;">
+                Invited (<%= @calibration_invited.select { |c| c.video_analysis&.structured_feedback&.dig("communication_signals") }.size %>)
+              </th>
+              <% end %>
+              <% if ni_signals.any? %>
+              <th style="text-align: center; padding: 0.5rem 0.75rem; font-weight: 600; color: #991b1b; background: #fff5f5; border-radius: 4px 4px 0 0; width: 29%;">
+                Not Invited (<%= @calibration_not_invited.select { |c| c.video_analysis&.structured_feedback&.dig("communication_signals") }.size %>)
+              </th>
+              <% end %>
+            </tr>
+          </thead>
+          <tbody>
+            <% cs_fields.each_with_index do |field, field_idx| %>
+              <% field[:values].each_with_index do |val, vi| %>
+                <% inv_count = inv_signals.count { |s| s[field[:key]] == val } %>
+                <% ni_count  = ni_signals.count  { |s| s[field[:key]] == val } %>
+                <% row_bg    = field_idx.even? ? "#fafafa" : "#fff" %>
+                <% inv_pct   = inv_signals.any? ? (inv_count * 100.0 / inv_signals.size).round : 0 %>
+                <% ni_pct    = ni_signals.any?  ? (ni_count  * 100.0 / ni_signals.size).round  : 0 %>
+                <tr style="border-bottom: 1px solid #f0f0f0; background: <%= row_bg %>;">
+                  <% if vi == 0 %>
+                    <td rowspan="<%= field[:values].size %>" style="padding: 0.5rem 0.75rem; vertical-align: top; border-right: 1px solid #e5e5e5;">
+                      <div style="font-weight: 600; color: #333; margin-bottom: 0.2rem;"><%= field[:label] %></div>
+                      <div style="font-size: 0.72rem; color: #999; line-height: 1.4;"><%= field[:desc] %></div>
+                    </td>
+                  <% end %>
+                  <td style="padding: 0.4rem 0.75rem; color: #555;"><%= val.capitalize %></td>
+                  <% if inv_signals.any? %>
+                  <td style="padding: 0.4rem 0.75rem; text-align: center; background: #f0fdf4;">
+                    <% if inv_count > 0 %>
+                      <span style="font-weight: 700; color: #166534;"><%= inv_count %></span>
+                      <span style="color: #86efac; font-size: 0.75rem;"> (<%= inv_pct %>%)</span>
+                      <div style="margin-top: 3px; height: 4px; border-radius: 2px; background: #bbf7d0; overflow: hidden;">
+                        <div style="height: 100%; width: <%= inv_pct %>%; background: #16a34a; border-radius: 2px;"></div>
+                      </div>
+                    <% else %>
+                      <span style="color: #ccc;">—</span>
+                    <% end %>
+                  </td>
+                  <% end %>
+                  <% if ni_signals.any? %>
+                  <td style="padding: 0.4rem 0.75rem; text-align: center; background: #fff5f5;">
+                    <% if ni_count > 0 %>
+                      <span style="font-weight: 700; color: #991b1b;"><%= ni_count %></span>
+                      <span style="color: #fca5a5; font-size: 0.75rem;"> (<%= ni_pct %>%)</span>
+                      <div style="margin-top: 3px; height: 4px; border-radius: 2px; background: #fecaca; overflow: hidden;">
+                        <div style="height: 100%; width: <%= ni_pct %>%; background: #dc2626; border-radius: 2px;"></div>
+                      </div>
+                    <% else %>
+                      <span style="color: #ccc;">—</span>
+                    <% end %>
+                  </td>
+                  <% end %>
+                </tr>
+              <% end %>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <% end %>
+
+    <%# Individual examples %>
+    <div class="card">
+      <h2 style="margin-bottom: 0.85rem;">Confirmed Outcomes</h2>
+      <% @calibration_examples.each do |c| %>
+        <% fb           = c.structured_feedback %>
+        <% va           = c.video_analysis %>
+        <% cva          = c.cv_analysis %>
+        <% int_score    = va&.score %>
+        <% cv_score     = cva&.score %>
+        <% cv_fit_score = cva&.structured_feedback&.dig("cv_fit_score") %>
+        <% rec          = fb["recommendation"] %>
+        <% rec_class    = { "recommend" => "completed", "borderline" => "pending", "reject" => "failed" }[rec] || "pending" %>
+        <% outcome_label = c.pipeline_stage == "final_interview" ? "Invited" : "Not invited" %>
+        <% outcome_style = c.pipeline_stage == "final_interview" ? "color:#166534;background:#dcfce7" : "color:#991b1b;background:#fee2e2" %>
+        <div style="padding: 0.85rem 0; border-bottom: 1px solid #f0f0f0;">
+          <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; flex-wrap: wrap;">
+            <div style="flex: 1; min-width: 0;">
+              <div style="font-weight: 600; font-size: 0.95rem; margin-bottom: 0.3rem;"><%= c.name %></div>
+              <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center;">
+                <span class="badge" style="<%= outcome_style %>; font-size: 0.72rem;"><%= outcome_label %></span>
+                <% if rec.present? %>
+                  <span class="badge badge-<%= rec_class %>" style="font-size: 0.72rem;"><%= rec.capitalize %></span>
+                <% end %>
+                <% if int_score.present? %>
+                  <span style="font-size: 0.8rem; color: #555;">Interview: <strong><%= int_score %>/10</strong></span>
+                <% end %>
+                <% if cv_score.present? %>
+                  <span style="font-size: 0.8rem; color: #555;">CV: <strong><%= cv_score %>/10</strong></span>
+                <% end %>
+                <% if cv_fit_score.present? %>
+                  <span style="font-size: 0.8rem; color: #555;">CV Fit: <strong><%= cv_fit_score %>/10</strong></span>
+                <% end %>
+              </div>
+              <% cs = va&.structured_feedback&.dig("communication_signals") %>
+              <% if cs.present? %>
+                <div style="display: flex; gap: 0.4rem; flex-wrap: wrap; margin-top: 0.35rem;">
+                  <% {
+                    "answer_directness"   => cs["answer_directness"],
+                    "proactiveness"       => cs["proactiveness"],
+                    "example_specificity" => cs["example_specificity"],
+                    "engagement_level"    => cs["engagement_level"],
+                  }.each do |_k, v| %>
+                    <% next unless v.present? %>
+                    <% signal_color = case v
+                       when "direct", "volunteers information", "specific and concrete", "engaged and enthusiastic", "addresses question precisely", "low"
+                         "color:#166534;background:#dcfce7"
+                       when "evasive", "requires prompting", "absent", "flat or disengaged", "frequently misses the point", "high"
+                         "color:#991b1b;background:#fee2e2"
+                       else
+                         "color:#92400e;background:#fef3c7"
+                       end %>
+                    <span class="badge" style="<%= signal_color %>; font-size: 0.68rem;"><%= v %></span>
+                  <% end %>
+                </div>
+              <% end %>
+              <% if c.outcome_note.present? %>
+                <div style="font-size: 0.8rem; color: #666; font-style: italic; margin-top: 0.35rem;">
+                  "<%= c.outcome_note %>"
+                </div>
+              <% end %>
+            </div>
+            <div style="font-size: 0.75rem; color: #aaa; white-space: nowrap;">
+              <%= c.outcome_confirmed_at.strftime("%b %d, %Y") %>
+            </div>
+          </div>
+        </div>
+      <% end %>
+    </div>
+
+  <% end %>
+
+<% end %>
+
+<div style="display: flex; align-items: center; justify-content: space-between; margin-top: 0.5rem;">
+  <%= link_to "← Back to roles", job_roles_path, style: "color: #555; font-size: 0.9rem;" %>
+  <div style="font-size: 0.85rem; color: #999;">
+    <%= @job_role.video_analyses.count + @job_role.cv_analyses.count %> candidate(s) evaluated against this role
+  </div>
+</div>

@@ -1,0 +1,124 @@
+<%# Header %>
+<div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; margin-bottom: 1.25rem; flex-wrap: wrap;">
+  <div>
+    <h1 style="margin: 0 0 0.25rem;"><%= @shortlist.title %></h1>
+    <div style="font-size: 0.88rem; color: #777;">Shared with <%= @shortlist.client_email %></div>
+  </div>
+  <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+    <%= link_to "Edit", edit_shortlist_path(@shortlist),
+          class: "btn", style: "background: #555; padding: 0.45rem 0.9rem; font-size: 0.85rem;" %>
+    <%= button_to "Delete", shortlist_path(@shortlist),
+          method: :delete,
+          data: { turbo_confirm: "Delete this shortlist? This cannot be undone." },
+          class: "btn", style: "background: #dc2626; padding: 0.45rem 0.9rem; font-size: 0.85rem;" %>
+  </div>
+</div>
+
+<%# Share link card %>
+<div class="card" style="background: #f9fafb;">
+  <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
+    <div style="flex: 1; min-width: 0;">
+      <div style="font-size: 0.75rem; color: #888; margin-bottom: 0.25rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">Share link</div>
+      <code id="share-link" style="font-size: 0.82rem; color: #333; word-break: break-all;">
+        <%= shared_shortlist_url(@shortlist.token) %>
+      </code>
+    </div>
+    <button
+      onclick="navigator.clipboard.writeText(document.getElementById('share-link').textContent.trim()).then(function(){var b=this;b.textContent='Copied!';setTimeout(function(){b.textContent='Copy link'},1500)}.bind(this))"
+      class="btn" style="padding: 0.45rem 0.9rem; font-size: 0.85rem; white-space: nowrap;">
+      Copy link
+    </button>
+  </div>
+  <% if @shortlist.message.present? %>
+    <div style="margin-top: 0.75rem; font-size: 0.88rem; color: #555; border-top: 1px solid #e5e5e5; padding-top: 0.75rem;">
+      <strong>Message to client:</strong> <%= @shortlist.message %>
+    </div>
+  <% end %>
+</div>
+
+<%# Candidates %>
+<div style="margin-top: 1.25rem;">
+  <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem;">
+    <h2 style="margin: 0;">Candidates (<%= @items.count %>)</h2>
+    <div style="font-size: 0.82rem; color: #999;">
+      Add from <%= link_to "Video Interviews", video_analyses_path, style: "color: #555;" %> or
+      <%= link_to "CV Analysis", cv_analyses_path, style: "color: #555;" %>.
+    </div>
+  </div>
+
+  <% if @items.none? %>
+    <div class="card">
+      <p class="empty" style="padding: 1rem 0;">No candidates yet.</p>
+    </div>
+  <% else %>
+    <% @items.each do |item| %>
+      <div class="card" style="padding: 0; margin-bottom: 0.75rem;">
+        <%# Candidate row %>
+        <div style="padding: 0.85rem 1.25rem; display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
+          <div style="flex: 1; min-width: 0;">
+            <div style="font-weight: 500; font-size: 0.95rem; margin-bottom: 0.2rem;">
+              <% if item.candidate %>
+                <%= link_to item.candidate_name, candidate_path(item.candidate),
+                      style: "color: #1a1a1a; text-decoration: none;" %>
+              <% else %>
+                <%= item.candidate_name %>
+              <% end %>
+            </div>
+            <div style="display: flex; gap: 0.4rem; flex-wrap: wrap; align-items: center;">
+              <% if item.cv_analysis %>
+                <span style="font-size: 0.75rem; color: #0369a1; background: #e0f2fe; padding: 0.1rem 0.5rem; border-radius: 4px;">
+                  CV ✓
+                </span>
+              <% end %>
+              <% if item.video_analysis %>
+                <span style="font-size: 0.75rem; color: #0c5460; background: #d1ecf1; padding: 0.1rem 0.5rem; border-radius: 4px;">
+                  Video ✓
+                </span>
+              <% end %>
+              <% if item.job_role %>
+                <span style="font-size: 0.75rem; color: #666;">· <%= item.job_role.title %></span>
+              <% end %>
+              <% if item.score %>
+                <span style="font-size: 0.75rem; color: #666;">· <%= item.score %>/10</span>
+              <% end %>
+            </div>
+          </div>
+          <div style="display: flex; align-items: center; gap: 0.5rem; flex-shrink: 0; flex-wrap: wrap;">
+            <% if item.candidate %>
+              <% stage = item.candidate.pipeline_stage %>
+              <% if stage == "final_interview" %>
+                <span class="badge badge-completed" style="font-size: 0.78rem;">✓ Final Interview</span>
+                <%= render partial: "shortlists/outcome_confirm", locals: { candidate: item.candidate } %>
+              <% elsif stage == "not_invited" %>
+                <span class="badge badge-failed" style="font-size: 0.78rem;">✕ Not Invited</span>
+                <%= render partial: "shortlists/outcome_confirm", locals: { candidate: item.candidate } %>
+              <% else %>
+                <%= button_to "✓ Final Interview", final_interview_candidate_path(item.candidate),
+                      method: :post,
+                      class: "btn",
+                      style: "padding: 0.3rem 0.75rem; font-size: 0.78rem; background: #16a34a;" %>
+                <%= button_to "✕ Not Invited", not_invited_candidate_path(item.candidate),
+                      method: :post,
+                      data: { turbo_confirm: "Mark #{item.candidate_name} as not invited?" },
+                      class: "btn",
+                      style: "padding: 0.3rem 0.75rem; font-size: 0.78rem; background: #dc2626;" %>
+              <% end %>
+              <%= link_to "View →", candidate_path(item.candidate),
+                    class: "btn", style: "padding: 0.3rem 0.65rem; font-size: 0.8rem; background: #555;" %>
+            <% end %>
+            <%= button_to "Remove", shortlist_item_path(item),
+                  method: :delete,
+                  data: { turbo_confirm: "Remove #{item.candidate_name}?" },
+                  style: "background: none; border: none; padding: 0; cursor: pointer; font-size: 0.82rem; color: #dc2626;" %>
+          </div>
+        </div>
+
+
+      </div>
+    <% end %>
+  <% end %>
+</div>
+
+<div style="margin-top: 1rem;">
+  <%= link_to "← All shortlists", shortlists_path, style: "color: #555; font-size: 0.9rem;" %>
+</div>

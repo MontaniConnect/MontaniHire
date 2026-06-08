@@ -1,0 +1,166 @@
+<h1>CV Analysis</h1>
+
+<% if current_user.job_roles.none? %>
+  <div class="card">
+    <div class="error-box">
+      No job roles yet. <%= link_to "Create a role first →", new_job_role_path, style: "color: #dc2626; font-weight: 600;" %>
+    </div>
+  </div>
+<% else %>
+  <div class="card" data-controller="bulk-upload">
+    <%# Tab switcher %>
+    <div style="display: flex; gap: 0; border-bottom: 1px solid #e5e5e5; margin-bottom: 1.25rem;">
+      <button type="button"
+              data-bulk-upload-target="tabSingle"
+              data-action="click->bulk-upload#showSingle"
+              style="padding: 0.5rem 1rem; font-size: 0.88rem; font-weight: 600; border: none; border-bottom: 2px solid #1a1a1a; background: none; cursor: pointer; color: #1a1a1a;">
+        Single upload
+      </button>
+      <button type="button"
+              data-bulk-upload-target="tabBulk"
+              data-action="click->bulk-upload#showBulk"
+              style="padding: 0.5rem 1rem; font-size: 0.88rem; font-weight: 500; border: none; border-bottom: 2px solid transparent; background: none; cursor: pointer; color: #888;">
+        Bulk upload
+      </button>
+    </div>
+
+    <%# Single upload form %>
+    <div data-bulk-upload-target="panelSingle">
+      <%= form_with url: cv_analyses_path, multipart: true, data: { controller: "upload" } do |f| %>
+        <div class="form-group">
+          <label>Job Role</label>
+          <%= select_tag "cv_analysis[job_role_id]",
+                options_from_collection_for_select(current_user.job_roles.order(:title), :id, :title),
+                prompt: "Select a role…",
+                required: true %>
+        </div>
+        <div class="form-group">
+          <label>Candidate Name</label>
+          <input type="text"
+                 name="cv_analysis[candidate_name]"
+                 placeholder="e.g. Jane Smith"
+                 required
+                 data-upload-target="name">
+        </div>
+        <div class="form-group">
+          <label class="drop-zone" data-upload-target="zone">
+            <input type="file"
+                   name="cv_analysis[cv]"
+                   accept=".pdf,.docx,.txt"
+                   required
+                   style="display:none"
+                   data-upload-target="input"
+                   data-action="change->upload#preview">
+            <div data-upload-target="prompt">
+              <div style="font-size: 2rem; margin-bottom: 0.5rem;">📄</div>
+              <div style="font-weight: 500;">Click to choose a CV file</div>
+              <div style="font-size: 0.8rem; color: #999; margin-top: 0.25rem;">PDF, DOCX, or TXT</div>
+            </div>
+            <div data-upload-target="filename" style="display:none; font-weight: 500; color: #333;"></div>
+          </label>
+        </div>
+        <%= f.submit "Analyse CV", class: "btn", data: { upload_target: "button" } %>
+      <% end %>
+    </div>
+
+    <%# Bulk upload form %>
+    <div data-bulk-upload-target="panelBulk" style="display: none;">
+      <p style="font-size: 0.88rem; color: #666; margin-bottom: 1rem;">
+        Select multiple CV files at once. Candidate names are taken from filenames — rename files before uploading if needed (e.g. <code>Jane Smith.pdf</code>).
+      </p>
+      <%= form_with url: bulk_create_cv_analyses_path, multipart: true do |f| %>
+        <div class="form-group">
+          <label>Job Role</label>
+          <%= select_tag "job_role_id",
+                options_from_collection_for_select(current_user.job_roles.order(:title), :id, :title),
+                prompt: "Select a role…",
+                required: true %>
+        </div>
+        <div class="form-group">
+          <label class="drop-zone" style="min-height: 100px;">
+            <input type="file"
+                   name="cvs[]"
+                   accept=".pdf,.docx,.txt"
+                   multiple
+                   required
+                   style="display:none"
+                   data-bulk-upload-target="input"
+                   data-action="change->bulk-upload#preview">
+            <div data-bulk-upload-target="prompt">
+              <div style="font-size: 2rem; margin-bottom: 0.5rem;">📂</div>
+              <div style="font-weight: 500;">Click to choose multiple CV files</div>
+              <div style="font-size: 0.8rem; color: #999; margin-top: 0.25rem;">PDF, DOCX, or TXT — hold Cmd/Ctrl to select multiple</div>
+            </div>
+            <ul data-bulk-upload-target="fileList"
+                style="display:none; list-style:none; margin:0; padding:0; text-align:left; width:100%;"></ul>
+          </label>
+        </div>
+        <button type="submit"
+                class="btn"
+                data-bulk-upload-target="submitBtn">
+          Upload & Analyse All
+        </button>
+      <% end %>
+    </div>
+  </div>
+<% end %>
+
+<% if @cv_analyses.any? %>
+  <% grouped = @cv_analyses.group_by { |ca| ca.job_role&.title || "No Role" } %>
+  <% latest_role = @cv_analyses.select { |ca| ca.status == "completed" }.max_by(&:updated_at)&.job_role&.title || "No Role" %>
+  <% grouped.each do |role_title, analyses| %>
+    <details <%= "open" if role_title == latest_role %> style="margin-bottom: 0.75rem;">
+      <summary style="list-style: none; cursor: pointer; user-select: none;">
+        <div class="card" style="display: flex; align-items: center; justify-content: space-between; padding: 0.9rem 1.25rem; margin: 0;">
+          <div style="display: flex; align-items: center; gap: 0.75rem;">
+            <span style="font-size: 0.75rem; color: #aaa; font-weight: 700; transition: transform 0.15s;"
+                  data-toggle-icon>▶</span>
+            <span style="font-weight: 600; font-size: 0.95rem; color: #1a1a1a;"><%= role_title %></span>
+          </div>
+          <span style="font-size: 0.78rem; font-weight: 700; color: #555; background: #f0f0f0;
+                       border-radius: 99px; padding: 0.15rem 0.6rem;">
+            <%= analyses.size %> candidate<%= "s" if analyses.size != 1 %>
+          </span>
+        </div>
+      </summary>
+
+      <div class="card" style="padding: 0; overflow: hidden; margin-top: -0.5rem; border-top: none; border-radius: 0 0 8px 8px;">
+        <div class="table-wrapper"><table class="data-table">
+          <thead>
+            <tr>
+              <th>Candidate</th>
+              <th>CV Fit Score</th>
+              <th>Status</th>
+              <th>Uploaded</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% analyses.each do |ca| %>
+              <tr style="cursor: pointer;" onclick="window.location='<%= cv_analysis_path(ca) %>'">
+                <td style="font-weight: 500;"><%= ca.display_name.titleize %></td>
+                <td>
+                  <% cf = ca.cv_fit_score %>
+                  <% if cf %>
+                    <% tier = ca.cv_fit_tier %>
+                    <% tier_color = { "Shortlist" => "#166534", "Borderline" => "#854d0e", "Archive" => "#991b1b" }[tier] %>
+                    <% tier_bg    = { "Shortlist" => "#dcfce7", "Borderline" => "#fef9c3", "Archive" => "#fee2e2" }[tier] %>
+                    <span style="font-weight: 700;"><%= cf %>/10</span>
+                    <span style="font-size: 0.72rem; font-weight: 600; color: <%= tier_color %>; background: <%= tier_bg %>; border-radius: 4px; padding: 0.1rem 0.4rem; margin-left: 0.35rem;"><%= tier %></span>
+                  <% else %>
+                    <span style="color: #bbb;">—</span>
+                  <% end %>
+                </td>
+                <td><span class="badge badge-<%= ca.status %>"><%= ca.status %></span></td>
+                <td style="color: #999; font-size: 0.85rem;"><%= time_ago_in_words(ca.created_at) %> ago</td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table></div>
+      </div>
+    </details>
+  <% end %>
+<% else %>
+  <div class="card">
+    <p class="empty">No candidates yet. Upload a CV above.</p>
+  </div>
+<% end %>

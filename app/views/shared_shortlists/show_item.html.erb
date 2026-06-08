@@ -1,0 +1,100 @@
+<% status_labels = { "pending" => "🤔 Hold", "approved" => "👍 Advance", "rejected" => "👎 Reject" } %>
+<% status_badge  = { "pending" => "badge-pending", "approved" => "badge-approved", "rejected" => "badge-rejected" } %>
+
+<% if flash[:notice] %>
+  <div class="alert alert-notice"><%= flash[:notice] %></div>
+<% end %>
+
+<%# Back link %>
+<div style="margin-bottom: 1.25rem;">
+  <%= link_to "← All candidates", shared_shortlist_path(@shortlist.token),
+        style: "font-size: 0.88rem; color: #888; text-decoration: none;" %>
+</div>
+
+<%# Header — name, type badge, role, current decision %>
+<div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; flex-wrap: wrap; margin-bottom: 1.25rem;">
+  <div>
+    <h1 style="margin: 0 0 0.35rem;"><%= @item.candidate_name %></h1>
+    <div style="display: flex; gap: 0.4rem; flex-wrap: wrap; align-items: center;">
+      <% @item.kind.split(" + ").each do |k| %>
+        <span class="badge <%= k == "CV" ? "badge-cv" : "badge-video" %>"><%= k %></span>
+      <% end %>
+      <% if @item.job_role %>
+        <span class="badge" style="background: #f0f0f0; color: #555; font-size: 0.72rem; padding: 0.15rem 0.5rem;">
+          <%= @item.job_role.title %>
+        </span>
+      <% end %>
+    </div>
+  </div>
+  <span class="badge <%= status_badge[@item.client_status] %>" style="font-size: 0.82rem; align-self: flex-start;">
+    <%= status_labels[@item.client_status] %>
+  </span>
+</div>
+
+<%# ── CV document ── %>
+<% cv = @item.cv_analysis %>
+<% if cv&.cv&.attached? %>
+  <div class="card" style="padding: 1rem 1.25rem; display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
+    <div style="flex: 1; min-width: 0;">
+      <div style="font-size: 0.72rem; color: #888; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.2rem;">CV Document</div>
+      <div style="font-size: 0.9rem; color: #333;"><%= cv.cv.filename %></div>
+    </div>
+    <%= link_to "Download CV", url_for(cv.cv),
+          class: "btn", style: "padding: 0.45rem 1rem; font-size: 0.85rem; flex-shrink: 0;",
+          download: cv.cv.filename.to_s %>
+  </div>
+<% end %>
+
+<%# ── Feedback form (above the video) ── %>
+<div class="card">
+  <h2 style="margin-bottom: 0.85rem;">Your decision</h2>
+  <%= form_with url: shared_shortlist_feedback_path(@shortlist.token, @item),
+                method: :patch, style: "display: flex; flex-direction: column; gap: 0.75rem;" do |f| %>
+    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+      <% [["pending", "🤔 Hold"], ["approved", "👍 Advance"], ["rejected", "👎 Reject"]].each do |val, label| %>
+        <label style="flex: 1; min-width: 90px; cursor: pointer;">
+          <input type="radio" name="client_status" value="<%= val %>"
+                 <%= "checked" if @item.client_status == val %> style="display: none;"
+                 onchange="this.closest('form').querySelectorAll('[data-decision]').forEach(function(el){el.style.background=''; el.style.color=''; el.style.borderColor='#ddd';}); var d=document.querySelector('[data-decision=\"<%= val %>\"]'); d.style.background='#1a1a1a'; d.style.color='#fff'; d.style.borderColor='#1a1a1a';">
+          <div data-decision="<%= val %>"
+               style="padding: 0.55rem 0.75rem; border: 1px solid #ddd; border-radius: 6px; font-size: 0.88rem; font-weight: 500; text-align: center;
+                      <%= @item.client_status == val ? "background: #1a1a1a; color: #fff; border-color: #1a1a1a;" : "" %>">
+            <%= label %>
+          </div>
+        </label>
+      <% end %>
+    </div>
+    <div>
+      <label style="font-size: 0.8rem; font-weight: 500; color: #555; display: block; margin-bottom: 0.3rem;">Notes</label>
+      <textarea name="client_comment" rows="3"
+                placeholder="Add a note about this candidate…"
+                style="width: 100%; padding: 0.6rem 0.75rem; border: 1px solid #ddd; border-radius: 6px; font-size: 0.9rem; font-family: inherit; resize: vertical;"><%= @item.client_comment %></textarea>
+    </div>
+    <%= f.submit "Save", class: "btn", style: "align-self: flex-start; padding: 0.5rem 1.25rem;" %>
+  <% end %>
+</div>
+
+<%# ── Video interview ── %>
+<% va = @item.video_analysis %>
+<% if va&.video&.attached? %>
+  <div class="card" style="padding: 1rem 1.25rem;">
+    <div style="font-size: 0.72rem; color: #888; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.75rem;">
+      Preliminary Interview
+    </div>
+    <video controls preload="metadata"
+           style="width: 100%; border-radius: 6px; background: #000; max-height: 360px;">
+      <source src="<%= url_for(va.video) %>">
+      Your browser does not support video playback.
+    </video>
+  </div>
+<% end %>
+
+<%# Summary %>
+<% fb = @item.structured_feedback || {} %>
+<% if @item.summary.present? %>
+  <div class="card">
+    <h2>Summary</h2>
+    <p style="font-size: 0.93rem; color: #333; line-height: 1.75;"><%= @item.summary %></p>
+  </div>
+<% end %>
+
