@@ -1,4 +1,4 @@
-class JobRolesController < ApplicationController
+class JobRolesController < AuthenticatedController
   before_action :set_job_role, only: %i[show edit update destroy extract_requirements]
 
   def index
@@ -46,7 +46,7 @@ class JobRolesController < ApplicationController
   end
 
   def extract_requirements
-    result = JobRoleRequirementsService.new(@job_role).call
+    result = JobRoleRequirementsService.new(job_role: @job_role).call
     @job_role.update!(
       must_have_requirements:    result[:must_have],
       nice_to_have_requirements: result[:nice_to_have]

@@ -2,8 +2,8 @@ class EpisodeScoreCalculator
   WEIGHTS = VideoAnalysis::EPISODE_WEIGHTS
   LEVEL_VALUES = VideoAnalysis::EPISODE_LEVEL_VALUES
 
-  def initialize(episode_dimensions)
-    @dims = episode_dimensions || {}
+  def initialize(dimensions:)
+    @dims = dimensions || {}
   end
 
   def total_score

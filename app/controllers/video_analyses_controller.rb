@@ -1,4 +1,4 @@
-class VideoAnalysesController < ApplicationController
+class VideoAnalysesController < AuthenticatedController
   before_action :set_video_analysis, only: %i[show destroy reanalyse transcript]
 
   def new
@@ -60,7 +60,7 @@ class VideoAnalysesController < ApplicationController
     end
     @video_analysis.update!(status: "analyzing", error_message: nil,
                             score: nil, summary: nil, structured_feedback: {})
-    ClaudeAnalysisService.new(@video_analysis).call
+    ClaudeAnalysisService.new(analysis: @video_analysis).call
     redirect_to video_analysis_path(@video_analysis), notice: "Re-analysis complete."
   rescue => e
     @video_analysis.transition_to!("failed", error: e.message)

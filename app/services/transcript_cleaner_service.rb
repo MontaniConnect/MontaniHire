@@ -12,10 +12,10 @@ class TranscriptCleanerService
   FILLER_WORDS = %w[um uh hmm mm ah er erm].freeze
 
   def self.call(text)
-    new(text).clean
+    new(text: text).clean
   end
 
-  def initialize(text)
+  def initialize(text:)
     @text = text.to_s.dup
   end
 

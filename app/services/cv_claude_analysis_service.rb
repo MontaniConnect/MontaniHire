@@ -124,7 +124,7 @@ class CvClaudeAnalysisService
 
 
 
-  def initialize(analysis, client: AnthropicClient.new)
+  def initialize(analysis:, client: AnthropicClient.new)
     @analysis = analysis
     @client   = client
   end
@@ -145,7 +145,7 @@ class CvClaudeAnalysisService
 
     # Server always owns cv_fit_score — recompute from Claude's qualitative outputs,
     # never trusting Claude's arithmetic.
-    calc = CvScoreCalculator.new(sf)
+    calc = CvScoreCalculator.new(structured_feedback: sf)
     sf["cv_fit_score_raw"]  = calc.base_score
     sf["cv_fit_adjustments"] = calc.adjustments
     sf["nice_to_have_bonus"] = calc.nice_to_have_bonus

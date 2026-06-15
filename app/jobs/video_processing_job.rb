@@ -25,7 +25,7 @@ class VideoProcessingJob < ApplicationJob
       return
     end
 
-    analysis_service.new(analysis).call
+    analysis_service.new(analysis: analysis).call
   rescue => e
     analysis&.transition_to!("failed", error: e.message)
     raise
@@ -34,7 +34,7 @@ class VideoProcessingJob < ApplicationJob
   private
 
   def transcribe_from_drive(analysis, transcript_service)
-    transcript = transcript_service.new(analysis).call
+    transcript = transcript_service.new(analysis: analysis).call
     if transcript.present?
       analysis.update!(transcript: transcript)
     else
@@ -47,23 +47,11 @@ class VideoProcessingJob < ApplicationJob
     blob = analysis.video.blob
     raise "No transcript file attached." unless blob
 
-    raw = blob.download
-    transcript = if blob.filename.to_s.end_with?(".vtt")
-      parse_vtt(raw)
-    else
-      raw.force_encoding("UTF-8")
-    end
+    raw        = blob.download
+    mime_type  = blob.filename.to_s.end_with?(".vtt") ? TranscriptParsers::Vtt::MIME_TYPE : "text/plain"
+    transcript = TranscriptParsers.for(mime_type).parse(raw)
 
     analysis.update!(transcript: transcript)
     analysis.video.purge_later
-  end
-
-  def parse_vtt(raw)
-    raw.force_encoding("UTF-8")
-       .lines
-       .reject { |l| l =~ /\AWEBVTT|^\d+\z|-->/  }
-       .map(&:strip)
-       .reject(&:empty?)
-       .join(" ")
   end
 end

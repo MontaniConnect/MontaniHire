@@ -1,8 +1,8 @@
 class JdFitScoreCalculator
   SCORE_MAX = 10.0
 
-  def initialize(jd_requirements_coverage)
-    @reqs = Array(jd_requirements_coverage)
+  def initialize(coverage:)
+    @reqs = Array(coverage)
   end
 
   def score

@@ -90,7 +90,7 @@ class ClaudeAnalysisService
     Return only valid JSON. No markdown fences, no extra text.
   PROMPT
 
-  def initialize(analysis, client: AnthropicClient.new)
+  def initialize(analysis:, client: AnthropicClient.new)
     @analysis = analysis
     @client   = client
   end
@@ -108,7 +108,7 @@ class ClaudeAnalysisService
       messages: [{ role: "user", content: build_user_message(transcript, job_context) }]
     )
 
-    jd_fit_score = JdFitScoreCalculator.new(result.dig("structured_feedback", "jd_requirements_coverage")).score
+    jd_fit_score = JdFitScoreCalculator.new(coverage: result.dig("structured_feedback", "jd_requirements_coverage")).score
 
     @analysis.update!(
       score: result["score"],

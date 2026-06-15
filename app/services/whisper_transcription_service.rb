@@ -5,7 +5,7 @@ class WhisperTranscriptionService
   MODEL_PATH  = Rails.root.join("vendor", "whisper_models", "ggml-small.en.bin").to_s
   WHISPER_CLI = "/opt/homebrew/bin/whisper-cli"
 
-  def initialize(analysis)
+  def initialize(analysis:)
     @analysis = analysis
   end
 

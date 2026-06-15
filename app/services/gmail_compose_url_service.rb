@@ -1,0 +1,66 @@
+class GmailComposeUrlService
+  def initialize(candidate:)
+    @candidate = candidate
+  end
+
+  def invite_url(intake_url)
+    role    = @candidate.job_role&.title || "this position"
+    subject = "#{role} — Preliminary Interview Invitation"
+    compose_url(to: @candidate.email, subject: subject, body: invite_body(role, intake_url))
+  end
+
+  def followup_url(intake_url)
+    role    = @candidate.job_role&.title || "this position"
+    subject = "Following up — #{role} Preliminary Interview Invitation"
+    compose_url(to: @candidate.email, subject: subject, body: followup_body(role, intake_url))
+  end
+
+  private
+
+  def compose_url(to:, subject:, body:)
+    "https://mail.google.com/mail/?view=cm&fs=1" \
+      "&to=#{ERB::Util.url_encode(to)}" \
+      "&su=#{ERB::Util.url_encode(subject)}" \
+      "&body=#{ERB::Util.url_encode(body)}"
+  end
+
+  def invite_body(role, intake_url)
+    <<~TEXT
+      Hi #{@candidate.first_name},
+
+      Thank you for your interest in the #{role} position. We are pleased to inform you that you have been selected to proceed to the preliminary interview stage.
+
+      Before we confirm your schedule, we kindly ask you to complete the short form below:
+
+      #{intake_url}
+
+      The form will ask you to:
+      - Confirm that you are a Filipino citizen currently residing in the Philippines
+      - Confirm your availability to work in US timezone
+      - Share your asking salary for this role
+      - Select your preferred interview time slot
+
+      We look forward to hearing from you.
+
+      Best regards,
+    TEXT
+  end
+
+  def followup_body(role, intake_url)
+    <<~TEXT
+      Hi #{@candidate.first_name},
+
+      We hope this message finds you well. We reached out a few days ago regarding the #{role} position and wanted to follow up in case our previous email didn't reach you.
+
+      If you're still interested in proceeding, we'd love to hear from you. You can complete the short form below at your convenience:
+
+      #{intake_url}
+
+      Please don't hesitate to reach out if you have any questions.
+
+      We look forward to hearing from you.
+
+      Best regards,
+    TEXT
+  end
+end

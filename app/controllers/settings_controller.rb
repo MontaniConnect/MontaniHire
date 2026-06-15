@@ -1,4 +1,4 @@
-class SettingsController < ApplicationController
+class SettingsController < AuthenticatedController
   DAYS = %w[monday tuesday wednesday thursday friday saturday sunday].freeze
 
   def show

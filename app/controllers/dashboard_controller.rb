@@ -1,4 +1,4 @@
-class DashboardController < ApplicationController
+class DashboardController < AuthenticatedController
   def index
     @job_roles   = current_user.job_roles.order(:title)
     @job_role_id = params[:job_role_id].presence

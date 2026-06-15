@@ -1,7 +1,7 @@
 require "net/http"
 require "json"
 
-class Auth::GoogleController < ApplicationController
+class Auth::GoogleController < AuthenticatedController
   skip_before_action :authenticate!, only: [:callback]
 
   SCOPE = [

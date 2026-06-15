@@ -8,7 +8,7 @@ class CvScoreCalculator
   OWNERSHIP_BONUSES = { "high_ownership" => 0.50, "moderate_ownership" => 0.25 }.freeze
   LEVERAGE_BONUSES  = { "multiplier" => 0.50, "contributor" => 0.25 }.freeze
 
-  def initialize(structured_feedback)
+  def initialize(structured_feedback:)
     @sf = structured_feedback
   end
 

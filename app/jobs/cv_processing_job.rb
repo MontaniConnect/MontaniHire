@@ -9,8 +9,8 @@ class CvProcessingJob < ApplicationJob
     analysis = CvAnalysis.find(cv_analysis_id)
     return if analysis.completed? || analysis.failed?
 
-    extraction_service.new(analysis).call
-    analysis_service.new(analysis).call
+    extraction_service.new(analysis: analysis).call
+    analysis_service.new(analysis: analysis).call
 
     candidate = analysis.candidate
     if candidate && candidate.email.blank?

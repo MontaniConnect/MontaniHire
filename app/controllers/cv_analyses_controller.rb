@@ -1,4 +1,4 @@
-class CvAnalysesController < ApplicationController
+class CvAnalysesController < AuthenticatedController
   before_action :set_cv_analysis, only: %i[show destroy reanalyse extracted_text]
 
   def index
@@ -81,7 +81,7 @@ class CvAnalysesController < ApplicationController
     end
     @cv_analysis.update!(status: "analyzing", error_message: nil,
                          score: nil, summary: nil, structured_feedback: {})
-    CvClaudeAnalysisService.new(@cv_analysis).call
+    CvClaudeAnalysisService.new(analysis: @cv_analysis).call
     redirect_to cv_analysis_path(@cv_analysis), notice: "Re-analysis complete."
   rescue => e
     @cv_analysis.transition_to!("failed", error: e.message)

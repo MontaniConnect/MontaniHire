@@ -1,4 +1,4 @@
-class ShortlistsController < ApplicationController
+class ShortlistsController < AuthenticatedController
   before_action :set_shortlist, only: %i[show edit update destroy]
 
   def index

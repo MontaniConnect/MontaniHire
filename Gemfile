@@ -47,9 +47,6 @@ gem "sidekiq", ">= 7.3.9"
 # Google Drive integration
 gem "google-apis-drive_v3"
 
-# AssemblyAI kept as fallback
-gem "assemblyai"
-
 # Anthropic Claude API
 gem "anthropic"
 

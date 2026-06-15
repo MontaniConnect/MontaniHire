@@ -3,7 +3,7 @@ require "docx"
 require "tempfile"
 
 class CvTextExtractionService
-  def initialize(analysis)
+  def initialize(analysis:)
     @analysis = analysis
   end
 

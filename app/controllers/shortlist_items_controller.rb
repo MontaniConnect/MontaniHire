@@ -1,4 +1,4 @@
-class ShortlistItemsController < ApplicationController
+class ShortlistItemsController < AuthenticatedController
   def create
     shortlist = current_user.shortlists.find(params[:shortlist_id])
 

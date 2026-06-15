@@ -1,5 +1,9 @@
 class ApplicationController < ActionController::Base
-  before_action :authenticate!
+  helper_method :current_user
+
+  def current_user
+    @current_user
+  end
 
   private
 
@@ -17,10 +21,5 @@ class ApplicationController < ActionController::Base
       end
       format.json { render json: { error: "Unauthorized" }, status: :unauthorized }
     end
-  end
-
-  helper_method :current_user
-  def current_user
-    @current_user
   end
 end

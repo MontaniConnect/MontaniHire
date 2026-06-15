@@ -41,20 +41,24 @@ Rails.application.routes.draw do
   # Candidate pipeline
   resources :candidates, only: %i[index show destroy update] do
     member do
-      post :advance
-      post :reject
-      post :revert
-      post :final_interview
-      post :not_invited
-      post :hire
-      post :offer_declined
-      post :not_selected
-      post :confirm_outcome
-      post :toggle_no_show
-      patch :update_timeline
-      get  :send_invite_email
-      get  :send_followup_email
-      patch :update_email
+      scope :pipeline do
+        post :advance,         to: "candidates/pipeline#advance"
+        post :reject,          to: "candidates/pipeline#reject"
+        post :revert,          to: "candidates/pipeline#revert"
+        post :final_interview, to: "candidates/pipeline#final_interview"
+        post :not_invited,     to: "candidates/pipeline#not_invited"
+        post :hire,            to: "candidates/pipeline#hire"
+        post :offer_declined,  to: "candidates/pipeline#offer_declined"
+        post :not_selected,    to: "candidates/pipeline#not_selected"
+        post :confirm_outcome, to: "candidates/pipeline#confirm_outcome"
+        post :toggle_no_show,  to: "candidates/pipeline#toggle_no_show"
+      end
+      scope :communications do
+        get   :send_invite_email,   to: "candidates/communications#send_invite_email"
+        get   :send_followup_email, to: "candidates/communications#send_followup_email"
+        patch :update_email,        to: "candidates/communications#update_email"
+        patch :update_timeline,     to: "candidates/communications#update_timeline"
+      end
     end
   end
 

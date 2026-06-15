@@ -1,27 +1,17 @@
 class VideoAnalysis < ApplicationRecord
+  STATUSES = %w[pending transcribing analyzing awaiting_cv completed failed].freeze
+
+  include Analyzable
+
   belongs_to :user
   belongs_to :job_role
   has_one_attached :video
   has_one :candidate, foreign_key: :video_analysis_id, dependent: :nullify
   has_many :shortlist_items, as: :shareable, dependent: :destroy
 
-  STATUSES = %w[pending transcribing analyzing awaiting_cv completed failed].freeze
-
   validates :video, presence: true, unless: -> { drive_file_id.present? || transcript.present? }
   validates :job_role, presence: true
-  validates :status, inclusion: { in: STATUSES }
-  validates :score, numericality: { greater_than_or_equal_to: 0, less_than_or_equal_to: 10 }, allow_nil: true
 
-  scope :pending,   -> { where(status: "pending") }
-  scope :completed, -> { where(status: "completed") }
-  scope :failed,    -> { where(status: "failed") }
-
-  def transition_to!(new_status, error: nil)
-    update!(status: new_status, error_message: error)
-  end
-
-  def failed?      = status == "failed"
-  def completed?   = status == "completed"
   def awaiting_cv? = status == "awaiting_cv"
 
   def display_name
@@ -47,7 +37,7 @@ class VideoAnalysis < ApplicationRecord
   def episode_score
     dims = structured_feedback&.dig("episode_dimensions")
     return nil unless dims.present?
-    EpisodeScoreCalculator.new(dims).total_score
+    EpisodeScoreCalculator.new(dimensions: dims).total_score
   end
 
   def episode_tier

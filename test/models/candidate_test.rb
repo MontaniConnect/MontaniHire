@@ -43,27 +43,25 @@ class CandidateTest < ActiveSupport::TestCase
     )
   end
 
+  # All five dimensions at "meets" (1.0) → weighted sum = 1.0 × 10 = 10.0
   ALL_TOP_DIMS = {
     "episode_dimensions" => {
-      "elaboration_quality"  => "rich",
-      "ownership_language"   => "clear_ownership",
-      "outcome_orientation"  => "outcome_led",
-      "directness"           => "direct",
-      "stakeholder_fluency"  => "strong",
-      "relevance_discipline" => "disciplined",
-      "adaptability_signal"  => "adaptive"
+      "relevance_discipline"  => "meets",
+      "ownership_language"    => "meets",
+      "outcome_orientation"   => "meets",
+      "adaptability_signal"   => "meets",
+      "communication_clarity" => "meets"
     }
   }.freeze
 
+  # All five dimensions at "partially_meets" (0.7) → weighted sum = 0.7 × 10 = 7.0
   ALL_MID_DIMS = {
     "episode_dimensions" => {
-      "elaboration_quality"  => "adequate",
-      "ownership_language"   => "shared_credit",
-      "outcome_orientation"  => "outcome_aware",
-      "directness"           => "mostly_direct",
-      "stakeholder_fluency"  => "adequate",
-      "relevance_discipline" => "mostly_relevant",
-      "adaptability_signal"  => "flexible"
+      "relevance_discipline"  => "partially_meets",
+      "ownership_language"    => "partially_meets",
+      "outcome_orientation"   => "partially_meets",
+      "adaptability_signal"   => "partially_meets",
+      "communication_clarity" => "partially_meets"
     }
   }.freeze
 
@@ -80,16 +78,16 @@ class CandidateTest < ActiveSupport::TestCase
   end
 
   test "episode_score computes weighted average across mixed dimensions" do
-    # elaboration_quality rich (1.0, w=0.25) + outcome_orientation activity_focused (0.4, w=0.20)
-    # total_weight = 0.45, weighted = 0.25 + 0.08 = 0.33
-    # score = (0.33 / 0.45) * 10 = 7.3 (rounded to 1dp)
+    # relevance_discipline meets (1.0, w=0.20) + outcome_orientation vague (0.4, w=0.30)
+    # total_weight = 0.50, weighted = 0.20 + 0.12 = 0.32
+    # score = (0.32 / 0.50) * 10 = 6.4
     c = build_candidate(va_signals: {
       "episode_dimensions" => {
-        "elaboration_quality"  => "rich",
-        "outcome_orientation"  => "activity_focused"
+        "relevance_discipline" => "meets",
+        "outcome_orientation"  => "vague"
       }
     })
-    assert_equal 7.3, c.episode_score
+    assert_equal 6.4, c.episode_score
   end
 
   test "episode_score returns nil when no episode_dimensions present" do
@@ -111,52 +109,45 @@ class CandidateTest < ActiveSupport::TestCase
   end
 
   test "episode_score skips unknown level values" do
+    # Only ownership_language contributes: (1.0 * 0.10) / 0.10 * 10 = 10.0
     c = build_candidate(va_signals: {
       "episode_dimensions" => {
-        "elaboration_quality" => "unknown_level",
-        "ownership_language"  => "clear_ownership"
+        "ownership_language"  => "meets",
+        "outcome_orientation" => "unknown_level"
       }
     })
-    # only ownership_language contributes: (1.0 * 0.20) / 0.20 * 10 = 10.0
     assert_equal 10.0, c.episode_score
   end
 
   # ── episode_tier ───────────────────────────────────────────────────────────
 
-  test "episode_tier is Shortlist when score >= 7.0" do
+  test "episode_tier is Shortlist when score >= 7.5" do
+    # all "meets" → 10.0 ≥ 7.5
     c = build_candidate(va_signals: ALL_TOP_DIMS)
     assert_equal "Shortlist", c.episode_tier
   end
 
-  test "episode_tier is Hold when score is between 5.0 and 6.9" do
-    # Build dimensions to produce a ~6.0 score
-    # elaboration_quality surface_level (0.4, w=0.25) + ownership_language clear_ownership (1.0, w=0.20)
-    # = (0.10 + 0.20) / 0.45 * 10 = 6.7
-    c = build_candidate(va_signals: {
-      "episode_dimensions" => {
-        "elaboration_quality" => "surface_level",
-        "ownership_language"  => "clear_ownership"
-      }
-    })
+  test "episode_tier is Borderline when score is between 5.0 and 7.4" do
+    # all "partially_meets" → 7.0 (≥ 5.0 and < 7.5)
+    c = build_candidate(va_signals: ALL_MID_DIMS)
     score = c.episode_score
-    assert score >= 5.0 && score < 7.0, "Expected Hold range, got #{score}"
-    assert_equal "Hold", c.episode_tier
+    assert score >= 5.0 && score < 7.5, "Expected Borderline range, got #{score}"
+    assert_equal "Borderline", c.episode_tier
   end
 
-  test "episode_tier is Pass when score is below 5.0" do
+  test "episode_tier is Archive when score is below 5.0" do
+    # all "does_not_meet" → 0.0 < 5.0
     c = build_candidate(va_signals: {
       "episode_dimensions" => {
-        "elaboration_quality"  => "absent",
-        "ownership_language"   => "absent",
-        "outcome_orientation"  => "absent",
-        "directness"           => "absent",
-        "stakeholder_fluency"  => "absent",
-        "relevance_discipline" => "absent",
-        "adaptability_signal"  => "absent"
+        "relevance_discipline"  => "does_not_meet",
+        "ownership_language"    => "does_not_meet",
+        "outcome_orientation"   => "does_not_meet",
+        "adaptability_signal"   => "does_not_meet",
+        "communication_clarity" => "does_not_meet"
       }
     })
     assert_equal 0.0, c.episode_score
-    assert_equal "Pass", c.episode_tier
+    assert_equal "Archive", c.episode_tier
   end
 
   test "episode_tier returns nil when episode_score is nil" do
@@ -166,19 +157,19 @@ class CandidateTest < ActiveSupport::TestCase
 
   # ── jd_fit_tier ────────────────────────────────────────────────────────────
 
-  test "jd_fit_tier is Shortlist when jd_fit_score >= 7.0" do
+  test "jd_fit_tier is Shortlist when jd_fit_score >= 7.5" do
     c = build_candidate(va_signals: { "jd_fit_score" => 8.5 })
     assert_equal "Shortlist", c.jd_fit_tier
   end
 
-  test "jd_fit_tier is Hold when jd_fit_score is between 5.0 and 6.9" do
+  test "jd_fit_tier is Borderline when jd_fit_score is between 5.0 and 7.4" do
     c = build_candidate(va_signals: { "jd_fit_score" => 6.0 })
-    assert_equal "Hold", c.jd_fit_tier
+    assert_equal "Borderline", c.jd_fit_tier
   end
 
-  test "jd_fit_tier is Pass when jd_fit_score is below 5.0" do
+  test "jd_fit_tier is Archive when jd_fit_score is below 5.0" do
     c = build_candidate(va_signals: { "jd_fit_score" => 4.0 })
-    assert_equal "Pass", c.jd_fit_tier
+    assert_equal "Archive", c.jd_fit_tier
   end
 
   test "jd_fit_tier returns nil when jd_fit_score is absent" do

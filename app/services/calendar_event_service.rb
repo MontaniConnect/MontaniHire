@@ -4,7 +4,7 @@ require "json"
 class CalendarEventService
   class InsufficientScopeError < StandardError; end
 
-  def initialize(user, slot_booking)
+  def initialize(user:, slot_booking:)
     @user    = user
     @booking = slot_booking
   end

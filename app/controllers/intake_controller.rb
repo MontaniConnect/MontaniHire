@@ -51,7 +51,7 @@ class IntakeController < ApplicationController
     )
 
     if booking && @candidate.user.google_connected?
-      CalendarEventService.new(@candidate.user, booking).call rescue nil
+      CalendarEventService.new(user: @candidate.user, slot_booking: booking).call rescue nil
     end
   end
 

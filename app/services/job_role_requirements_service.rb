@@ -25,7 +25,7 @@ class JobRoleRequirementsService
     Return only valid JSON. No markdown, no explanation.
   PROMPT
 
-  def initialize(job_role, client: AnthropicClient.new)
+  def initialize(job_role:, client: AnthropicClient.new)
     @job_role = job_role
     @client   = client
   end
