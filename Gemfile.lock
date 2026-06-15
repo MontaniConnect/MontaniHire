@@ -187,6 +187,8 @@ GEM
       retriable (~> 3.1)
     google-apis-drive_v3 (0.81.0)
       google-apis-core (>= 0.15.0, < 2.a)
+    google-apis-gmail_v1 (0.51.0)
+      google-apis-core (>= 0.15.0, < 2.a)
     google-cloud-env (2.3.1)
       base64 (~> 0.2)
       faraday (>= 1.0, < 3.a)
@@ -510,6 +512,7 @@ DEPENDENCIES
   docx
   dotenv-rails
   google-apis-drive_v3
+  google-apis-gmail_v1
   image_processing (~> 1.2)
   importmap-rails
   kamal

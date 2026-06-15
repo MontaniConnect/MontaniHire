@@ -53,19 +53,36 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_16_064211) do
   end
 
   create_table "candidates", force: :cascade do |t|
+    t.datetime "applied_at"
+    t.integer "asking_salary"
     t.datetime "created_at", null: false
     t.bigint "cv_analysis_id"
+    t.string "email"
+    t.datetime "final_interview_at"
     t.datetime "hired_at"
+    t.datetime "intake_submitted_at"
+    t.string "intake_token"
+    t.datetime "intake_viewed_at"
+    t.datetime "interviewed_at"
+    t.datetime "invite_sent_at"
     t.bigint "job_role_id"
+    t.string "job_source"
+    t.string "job_source_other"
     t.string "name", null: false
     t.boolean "no_show", default: false, null: false
     t.datetime "outcome_confirmed_at"
     t.text "outcome_note"
+    t.boolean "ph_residency_confirmed"
     t.string "pipeline_stage", default: "cv_review", null: false
+    t.string "preferred_interview_time"
+    t.datetime "screened_at"
+    t.datetime "shortlisted_at"
     t.datetime "updated_at", null: false
+    t.boolean "us_hours_agreement"
     t.bigint "user_id", null: false
     t.bigint "video_analysis_id"
     t.index ["cv_analysis_id"], name: "index_candidates_on_cv_analysis_id"
+    t.index ["intake_token"], name: "index_candidates_on_intake_token", unique: true
     t.index ["job_role_id"], name: "index_candidates_on_job_role_id"
     t.index ["user_id"], name: "index_candidates_on_user_id"
     t.index ["video_analysis_id"], name: "index_candidates_on_video_analysis_id"
@@ -74,6 +91,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_16_064211) do
   create_table "cv_analyses", force: :cascade do |t|
     t.string "candidate_name"
     t.datetime "created_at", null: false
+    t.string "drive_file_id"
+    t.string "drive_file_name"
     t.text "error_message"
     t.text "extracted_text"
     t.bigint "job_role_id"
@@ -84,6 +103,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_16_064211) do
     t.text "summary"
     t.datetime "updated_at", null: false
     t.bigint "user_id", null: false
+    t.index ["drive_file_id"], name: "index_cv_analyses_on_drive_file_id"
     t.index ["job_role_id"], name: "index_cv_analyses_on_job_role_id"
     t.index ["status"], name: "index_cv_analyses_on_status"
     t.index ["user_id"], name: "index_cv_analyses_on_user_id"
@@ -142,9 +162,26 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_16_064211) do
     t.index ["user_id"], name: "index_shortlists_on_user_id"
   end
 
+  create_table "slot_bookings", force: :cascade do |t|
+    t.bigint "candidate_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "ends_at", null: false
+    t.string "google_event_id"
+    t.datetime "starts_at", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "user_id", null: false
+    t.index ["candidate_id"], name: "index_slot_bookings_on_candidate_id"
+    t.index ["user_id", "starts_at"], name: "index_slot_bookings_on_user_id_and_starts_at", unique: true
+    t.index ["user_id"], name: "index_slot_bookings_on_user_id"
+  end
+
   create_table "users", force: :cascade do |t|
+    t.jsonb "availability_settings", default: {}
     t.datetime "created_at", null: false
     t.string "email"
+    t.text "google_access_token"
+    t.text "google_refresh_token"
+    t.datetime "google_token_expires_at"
     t.string "name"
     t.datetime "updated_at", null: false
   end
@@ -183,6 +220,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_16_064211) do
   add_foreign_key "shortlist_items", "candidates"
   add_foreign_key "shortlist_items", "shortlists"
   add_foreign_key "shortlists", "users"
+  add_foreign_key "slot_bookings", "candidates"
+  add_foreign_key "slot_bookings", "users"
   add_foreign_key "video_analyses", "job_roles"
   add_foreign_key "video_analyses", "users"
 end

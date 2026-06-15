@@ -75,12 +75,13 @@
               <%= link_to c.name, candidate_path(c), style: "color: #1a1a1a; text-decoration: none;" %>
             </div>
 
-            <%# Role %>
-            <% if c.job_role %>
-              <div style="font-size: 0.8rem; color: #888; margin-bottom: 0.6rem;"><%= c.job_role.title %></div>
-            <% else %>
-              <div style="margin-bottom: 0.6rem;"></div>
-            <% end %>
+            <%# Role + email %>
+            <div style="font-size: 0.8rem; color: #888; margin-bottom: 0.6rem;">
+              <%= c.job_role&.title %>
+              <% if c.email.present? %>
+                <div style="font-size: 0.7rem; color: #bbb; margin-top: 0.1rem;"><%= c.email %></div>
+              <% end %>
+            </div>
 
             <%# Scores %>
             <div style="display: flex; gap: 0.6rem; flex-wrap: wrap; margin-bottom: 0.75rem;">

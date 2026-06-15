@@ -1,5 +1,3 @@
-require "anthropic"
-
 class JobRoleRequirementsService
   MODEL = "claude-haiku-4-5-20251001"
 
@@ -27,28 +25,23 @@ class JobRoleRequirementsService
     Return only valid JSON. No markdown, no explanation.
   PROMPT
 
-  def initialize(job_role)
+  def initialize(job_role, client: AnthropicClient.new)
     @job_role = job_role
-    @client   = Anthropic::Client.new(api_key: ENV.fetch("ANTHROPIC_API_KEY"))
+    @client   = client
   end
 
   def call
-    response = @client.messages.create(
+    result = @client.complete(
       model:      MODEL,
       max_tokens: 1024,
       system:     SYSTEM_PROMPT,
       messages:   [{ role: "user", content: build_prompt }]
     )
 
-    raw = response.content.first.text.gsub(/\A```(?:json)?\n?/, "").gsub(/\n?```\z/, "").strip
-    result = JSON.parse(raw)
-
     {
       must_have:    Array(result["must_have"]).map(&:strip).reject(&:blank?),
       nice_to_have: Array(result["nice_to_have"]).map(&:strip).reject(&:blank?)
     }
-  rescue JSON::ParserError => e
-    raise "Failed to parse requirements: #{e.message}"
   end
 
   private

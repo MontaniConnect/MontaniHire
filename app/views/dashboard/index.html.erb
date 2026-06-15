@@ -78,14 +78,26 @@
   <%= render "dashboard/kpi_tile", label: "Offer Declined Rate",   value: @offer_declined_rate,  suffix: "%", note: "declined / total offers" %>
 </div>
 
-<%# ── Section: Time Metrics ── %>
-<div style="font-size: 0.72rem; font-weight: 700; color: #888; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 0.65rem;">Time to Hire</div>
+<%# ── Section: Time from Application ── %>
+<div style="font-size: 0.72rem; font-weight: 700; color: #888; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 0.65rem;">Time from Application (days)</div>
 <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 0.75rem; margin-bottom: 1.5rem;">
-  <%= render "dashboard/kpi_tile", label: "Avg Time to Interview", value: @avg_time_to_interview, suffix: "d", note: "upload to video done" %>
-  <%= render "dashboard/kpi_tile", label: "Avg Time to Hire",      value: @avg_time_to_hire,      suffix: "d", note: "upload to hired" %>
+  <%= render "dashboard/kpi_tile", label: "To Screen",         value: @avg_time_to_screen,    suffix: "d", note: "applied → screened" %>
+  <%= render "dashboard/kpi_tile", label: "To Interview",      value: @avg_time_to_interview, suffix: "d", note: "applied → interviewed" %>
+  <%= render "dashboard/kpi_tile", label: "To Shortlist",      value: @avg_time_to_shortlist, suffix: "d", note: "applied → shortlisted" %>
+  <%= render "dashboard/kpi_tile", label: "To Final Interview",value: @avg_time_to_final,     suffix: "d", note: "applied → final interview" %>
+  <%= render "dashboard/kpi_tile", label: "To Hire",           value: @avg_time_to_hire,      suffix: "d", note: "applied → hired" %>
   <div class="card" style="padding: 1rem; margin: 0; opacity: 0.45;">
     <div style="font-size: 1.5rem; font-weight: 700; color: #1a1a1a;">—</div>
     <div style="font-size: 0.75rem; font-weight: 600; color: #555; margin-top: 0.25rem;">Cost / Hire</div>
     <div style="font-size: 0.72rem; color: #aaa; margin-top: 0.2rem;">not tracked</div>
   </div>
+</div>
+
+<%# ── Section: Stage-to-Stage Velocity ── %>
+<div style="font-size: 0.72rem; font-weight: 700; color: #888; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 0.65rem;">Stage-to-Stage Velocity (days)</div>
+<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 0.75rem; margin-bottom: 1.5rem;">
+  <%= render "dashboard/kpi_tile", label: "Screen → Interview",   value: @avg_screen_to_interview,    suffix: "d", note: "screened to interviewed" %>
+  <%= render "dashboard/kpi_tile", label: "Interview → Shortlist",value: @avg_interview_to_shortlist, suffix: "d", note: "interviewed to shortlisted" %>
+  <%= render "dashboard/kpi_tile", label: "Shortlist → Final",    value: @avg_shortlist_to_final,     suffix: "d", note: "shortlisted to final interview" %>
+  <%= render "dashboard/kpi_tile", label: "Final → Hire",         value: @avg_final_to_hire,          suffix: "d", note: "final interview to hired" %>
 </div>

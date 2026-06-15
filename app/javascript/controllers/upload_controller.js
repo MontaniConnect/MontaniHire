@@ -2,6 +2,7 @@ import { Controller } from "@hotwired/stimulus"
 
 export default class extends Controller {
   static targets = ["input", "zone", "prompt", "filename", "button", "name"]
+  static values  = { nameFieldId: String }
 
   preview() {
     const file = this.inputTarget.files[0]
@@ -12,10 +13,13 @@ export default class extends Controller {
     this.filenameTarget.textContent = `${file.name} (${(file.size / 1024 / 1024).toFixed(1)} MB)`
     this.zoneTarget.style.borderColor = "#1a1a1a"
 
-    // Pre-fill candidate name from filename if the field is empty
-    if (this.hasNameTarget && !this.nameTarget.value.trim()) {
+    const nameField = this.hasNameTarget
+      ? this.nameTarget
+      : (this.hasNameFieldIdValue && document.getElementById(this.nameFieldIdValue))
+
+    if (nameField && !nameField.value.trim()) {
       const base = file.name.replace(/\.[^.]+$/, "")
-      this.nameTarget.value = base
+      nameField.value = base
         .replace(/[-_]/g, " ")
         .replace(/\b\w/g, c => c.toUpperCase())
     }

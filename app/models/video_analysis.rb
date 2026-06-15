@@ -7,7 +7,7 @@ class VideoAnalysis < ApplicationRecord
 
   STATUSES = %w[pending transcribing analyzing awaiting_cv completed failed].freeze
 
-  validates :video, presence: true
+  validates :video, presence: true, unless: -> { drive_file_id.present? || transcript.present? }
   validates :job_role, presence: true
   validates :status, inclusion: { in: STATUSES }
   validates :score, numericality: { greater_than_or_equal_to: 0, less_than_or_equal_to: 10 }, allow_nil: true
@@ -30,10 +30,10 @@ class VideoAnalysis < ApplicationRecord
 
   EPISODE_WEIGHTS = {
     "relevance_discipline"  => 0.20,
-    "ownership_language"    => 0.20,
-    "outcome_orientation"   => 0.20,
-    "adaptability_signal"   => 0.20,
-    "communication_clarity" => 0.20
+    "ownership_language"    => 0.10,
+    "outcome_orientation"   => 0.30,
+    "adaptability_signal"   => 0.25,
+    "communication_clarity" => 0.15
   }.freeze
 
   EPISODE_LEVEL_VALUES = {
@@ -47,18 +47,7 @@ class VideoAnalysis < ApplicationRecord
   def episode_score
     dims = structured_feedback&.dig("episode_dimensions")
     return nil unless dims.present?
-    total_weight = 0.0
-    total_score  = 0.0
-    EPISODE_WEIGHTS.each do |dim, weight|
-      level = dims[dim]
-      next unless level.present?
-      value = EPISODE_LEVEL_VALUES.dig(dim, level)
-      next unless value
-      total_score  += value * weight
-      total_weight += weight
-    end
-    return nil if total_weight.zero?
-    (total_score / total_weight * 10).round(1)
+    EpisodeScoreCalculator.new(dims).total_score
   end
 
   def episode_tier

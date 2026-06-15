@@ -1,8 +1,6 @@
-require "anthropic"
-
 class CvClaudeAnalysisService
   MODEL          = "claude-sonnet-4-6"
-  PROMPT_VERSION = "2026-06-08-v8"
+  PROMPT_VERSION = "2026-06-15-v12"
 
   SYSTEM_PROMPT = <<~PROMPT
     You are an expert recruiter evaluating a candidate's CV against a job description.
@@ -40,14 +38,15 @@ class CvClaudeAnalysisService
     - "structured_feedback": an object with:
         - "cv_requirements_coverage": array of objects, one per must-have JD requirement, each with:
             - "requirement": the must-have requirement as stated or closely paraphrased from the JD
-            - "reasoning": one sentence — state what you found or did not find in the CV before committing to a coverage rating
             - "coverage": "evidenced" | "partial" | "not evidenced"
-                - "evidenced" (1.0): Direct, explicit alignment. The CV explicitly names the tool, framework, or core competency. Location in the CV (role description or skills list) does not affect this rating — explicit naming is the only criterion.
+                Coverage ratings must be based solely on what appears in the CV text. Pool context and historical outcome examples are for score calibration only — do not let them influence individual coverage ratings.
+                - "evidenced" (1.0): The CV explicitly names the exact tool, framework, technology, or core competency — or a standard abbreviation of it — anywhere in the document (role description OR skills list). Explicit naming is the only criterion; location does not matter.
                   Example — JD requires Git and CI/CD: CV states "Managed version control via GitHub and built automated CI/CD deployment pipelines." → evidenced.
-                - "partial" (0.5): Implied or high-level functional proximity. The exact tool or specific keyword is absent, but an adjacent technology, highly transferable skill, or overarching conceptual capability is clearly stated.
+                - "partial" (0.5): The exact name and standard abbreviations of the tool/technology/competency are absent, but an adjacent technology, highly transferable skill, or overarching conceptual capability is clearly stated.
                   Example — JD requires Git and CI/CD: CV states "Handled code deployments and team code reviews using Workbench." → partial (deployments present, explicit Git/CI/CD tool absent).
-                - "not evidenced" (0.0): Absolute silence. Zero structural, conceptual, or keyword-based evidence relating to this requirement anywhere in the CV.
+                - "not evidenced" (0.0): Zero structural, conceptual, or keyword-based evidence relating to this requirement anywhere in the CV.
                   Example — JD requires Git and CI/CD: CV mentions only individual code writing with no reference to teams, tools, deployments, or version control. → not evidenced.
+                Tiebreaker — if you are uncertain between two adjacent ratings, always choose the lower one. Apply this rule without exception: uncertain between evidenced and partial → partial; uncertain between partial and not evidenced → not evidenced.
             - "evidence": one sentence from the CV that drove this rating, or what is absent
         - "nice_to_have_requirements_coverage": array of objects, one per nice-to-have requirement (use exact wording from the list provided), each with:
             - "requirement": the nice-to-have requirement exactly as stated
@@ -63,12 +62,28 @@ class CvClaudeAnalysisService
         - "credential_flags": array of strings — qualifications or claims that seem implausible or inconsistent with the rest of the CV; empty array if none
         - "experience_level_fit": "below requirements" | "meets requirements" | "exceeds requirements"
         - "cv_fit_score_raw": omit this field — the server computes it from cv_requirements_coverage
-        - "cv_fit_adjustments": omit this field — the server derives it from your qualitative signal fields below
-        - "career_trajectory_alignment": "toward_role" | "lateral" | "away_from_role"
-            - "toward_role": each recent role builds progressively toward this type of position; most recent role is the closest match to the JD
-            - "lateral": roles show similar level across different functions without clear progression toward this role
-            - "away_from_role": career has moved away from the relevant experience — more relevant work is buried in older roles
-        - "career_trajectory_alignment_note": comma-separated phrases naming the specific roles or transitions that drove this rating — factual, no prose (e.g. "Bootcamp → developer → consultant → embedded role, clear compounding progression")
+        - "cv_fit_adjustments": omit this field — the server computes it from your growth_curve, tenure_ownership, and leverage ratings below
+        - "growth_curve": "exceptional" | "solid" | "stagnant"
+            Rate the candidate's career growth trajectory:
+            - "exceptional": Explicit internal promotion within 18 months OR clear evidence of a massive scope leap when changing companies (e.g., moving from managing a single feature to owning an entire product line).
+            - "solid": Steady, linear career progression. Upward trajectory is visible, but at a standard corporate pace (e.g., moving from Engineer I to II to III over 4–5 years).
+            - "stagnant": The candidate has held the exact same title with the exact same level of responsibility for 3 or more years without horizontal or vertical growth.
+            Tiebreaker — if uncertain between "exceptional" and "solid": assign "solid".
+        - "growth_curve_note": one sentence naming the specific role(s) or transition(s) that drove this rating — factual, no prose
+        - "tenure_ownership": "high_ownership" | "moderate_ownership" | "flight_risk"
+            Rate the candidate's depth of ownership:
+            - "high_ownership": Evidence of long-term tenure (2.5+ years) at a single company AND bullet points showing they optimised, scaled, or maintained a system after they built it.
+            - "moderate_ownership": Healthy tenure (2+ years) but the CV mostly lists maintenance without proactive optimisation, OR high impact but left at the 12-to-18-month mark before seeing long-term results.
+            - "flight_risk": A pattern of leaving companies or teams every 10–14 months, OR a CV that uses passive verbs like "assisted with" or "participated in" which fails to prove individual accountability.
+            Tiebreaker — if uncertain between "high_ownership" and "moderate_ownership": assign "moderate_ownership".
+        - "tenure_ownership_note": comma-separated role + duration pairs (e.g. "Simplus 3 years, TruDiagnostic 14 months")
+        - "leverage": "multiplier" | "contributor" | "solitary"
+            Rate the candidate's people and process impact:
+            - "multiplier": Verifiable evidence of building others up with metrics attached to mentorship, process optimisation, or cross-functional bridge-building (e.g., "Mentored 3 juniors to promotion" or "Redesigned QA pipeline, saving the team 10 hours/week").
+            - "contributor": Mentions of culture or collaboration, but lacks hard data or clear ownership (e.g., "Participated in university hiring" or "Conducted peer code reviews").
+            - "solitary": Zero mention of people, processes, mentorship, or culture. The CV focuses entirely on individual technical or financial output.
+            Tiebreaker — if uncertain between "multiplier" and "contributor": assign "contributor".
+        - "leverage_note": one sentence identifying the specific evidence (or absence) that drove this rating
         - "industry_proximity": "direct" | "adjacent" | "transferable" | "none"
             - "direct": same industry as the role
             - "adjacent": different industry but same buyer type, deal size, or complexity level
@@ -80,26 +95,11 @@ class CvClaudeAnalysisService
             - "team_context": "manager" | "lead" | "individual_contributor" | "unknown" — inferred from titles and responsibilities
             - "geography": "international" | "regional" | "local" | "unknown"
             - "scope_note": one sentence describing how scope was inferred and at what level the candidate has operated
-            - "scope_match": "strong_match" | "partial_match" | "no_match" — whether the candidate's scope of experience fits the scale requirements of THIS role. Read the JD to determine the target scope (e.g. enterprise, SMB, regional) before rating. A candidate whose scope exceeds or falls short of what the role requires should not receive strong_match.
-        - "tenure_pattern": "sufficient" | "short_in_relevant_roles"
-            - "sufficient": candidate stayed 12+ months in roles directly relevant to the JD, or relevant roles are the current position
-            - "short_in_relevant_roles": pattern of less than 12 months in roles directly relevant to the JD — raises a depth concern
-        - "tenure_pattern_note": comma-separated role + duration pairs (e.g. "Simplus ~24 months, TruDiagnostic ~9 months and growing, Collabera ~13 months")
-        - "responsibility_density": "high" | "medium" | "low"
-            - "high": majority of role description content maps to JD responsibilities
-            - "medium": some relevant content among mixed responsibilities
-            - "low": one or two relevant points buried in unrelated content
-        - "responsibility_density_note": comma-separated list of the specific responsibilities from the most relevant role that map to JD requirements (e.g. "Apex classes, batch processes, REST/SOAP APIs, Agile delivery")
-        - "recency_of_relevant_experience": "current" | "within_3_years" | "older_than_3_years"
-            - "current": most relevant experience is in the current or most recent role
-            - "within_3_years": most relevant experience is within the last 3 years but not in the most recent role
-            - "older_than_3_years": most relevant experience is only in roles older than 3 years
-        - "recency_of_relevant_experience_note": the most relevant role and its approximate dates — factual, comma-separated if multiple (e.g. "Current role at Simplus, active Salesforce architecture work")
-        - "implied_competency_from_employer": "strongly_implied" | "consistent" | "no_signal"
-            - "strongly_implied": the employer's known profile almost certainly required the candidate to perform the JD's key responsibilities — award partial credit even without explicit CV statement
-            - "consistent": employer context is consistent with having the required experience but does not specifically imply it
-            - "no_signal": employer context provides no meaningful inference about required competencies
-        - "implied_competency_from_employer_note": employer name + what their known profile implies — comma-separated, no prose (e.g. "Simplus is a Salesforce consulting partner — multi-client delivery, Apex best practices, integration patterns strongly implied")
+            - "scope_match": "strong_match" | "partial_match" | "no_match" — rate this in two steps: (1) identify the JD's target scope tier using account_size — if the JD does not specify, treat as the same tier as the candidate's inferred account_size. (2) Compare the candidate's inferred account_size to the JD target:
+                - "strong_match": candidate's inferred account_size is the same tier as the JD target, OR the JD specifies no scale requirement and candidate's scope is not mismatched
+                - "partial_match": candidate's inferred account_size is one tier away from the JD target (e.g. JD = enterprise, candidate = mid_market; or JD = smb, candidate = mid_market)
+                - "no_match": candidate's inferred account_size is two or more tiers away from the JD target, or JD explicitly requires a scale level and candidate shows zero evidence of that scale
+                Tiebreaker — if uncertain between "strong_match" and "partial_match": choose "partial_match".
         - "tool_specificity": integer 1–10 — how specifically the CV names tools, platforms, and technologies. 1 = only generic mentions ("Salesforce", "cloud tools"); 10 = specific named features, modules, and integrations backed by role-level evidence throughout
         - "ownership_clarity": integer 1–10 — how clearly the CV distinguishes direct ownership from peripheral involvement. 1 = all vague language ("worked with", "exposure to", "involved in"); 10 = clear first-person ownership throughout ("built", "owned", "designed", "led delivery of")
         - "quantifiable_work": integer 1–10 — presence of specific, measurable project work. 1 = no numbers, project names, or outcomes anywhere; 10 = multiple specific projects with named outcomes, org sizes, user counts, or impact metrics
@@ -124,9 +124,9 @@ class CvClaudeAnalysisService
 
 
 
-  def initialize(analysis)
+  def initialize(analysis, client: AnthropicClient.new)
     @analysis = analysis
-    @client = Anthropic::Client.new(api_key: ENV.fetch("ANTHROPIC_API_KEY"))
+    @client   = client
   end
 
   def call
@@ -135,55 +135,21 @@ class CvClaudeAnalysisService
 
     job_context = @analysis.job_role.to_prompt
 
-    response = @client.messages.create(
-      model: MODEL,
-      max_tokens: 4096,
-      temperature: 0,
-      system: [
-        {
-          type: "text",
-          text: SYSTEM_PROMPT,
-          cache_control: { type: "ephemeral" }
-        }
-      ],
-      messages: [
-        {
-          role: "user",
-          content: build_user_content(job_context)
-        }
-      ]
+    result = @client.complete(
+      model:    MODEL,
+      system:   [{ type: "text", text: SYSTEM_PROMPT, cache_control: { type: "ephemeral" } }],
+      messages: [{ role: "user", content: build_user_content(job_context) }]
     )
-
-    raw_json = response.content.first.text.gsub(/\A```(?:json)?\n?/, "").gsub(/\n?```\z/, "").strip
-    result = JSON.parse(raw_json)
 
     sf = result["structured_feedback"] || {}
 
-    # Server always owns cv_fit_score — recompute raw and adjustments from Claude's
-    # qualitative outputs, never trusting Claude's arithmetic.
-    reqs_cov = Array(sf["cv_requirements_coverage"])
-    n_ev  = reqs_cov.count { |r| r["coverage"] == "evidenced" }
-    n_par = reqs_cov.count { |r| r["coverage"] == "partial" }
-    n_tot = reqs_cov.size
-    raw = n_tot > 0 ? ((n_ev * 1.0 + n_par * 0.5) / n_tot * 7.0).round(2) : 0.0
-    sf["cv_fit_score_raw"] = raw
-
-    adjs = recompute_adjustments(sf)
-    sf["cv_fit_adjustments"] = adjs
-    adjs_total = adjs.values.sum
-
-    nh_coverage = Array(sf["nice_to_have_requirements_coverage"])
-    nh_bonus = nh_coverage.sum do |r|
-      case r["coverage"]
-      when "evidenced" then 0.5
-      when "partial"   then 0.25
-      else 0.0
-      end
-    end
-    nh_bonus = [nh_bonus, 1.5].min.round(2)
-    sf["nice_to_have_bonus"] = nh_bonus
-
-    result["cv_fit_score"] = [[raw + adjs_total + nh_bonus, 10.0].min, 0.0].max.round(1)
+    # Server always owns cv_fit_score — recompute from Claude's qualitative outputs,
+    # never trusting Claude's arithmetic.
+    calc = CvScoreCalculator.new(sf)
+    sf["cv_fit_score_raw"]  = calc.base_score
+    sf["cv_fit_adjustments"] = calc.adjustments
+    sf["nice_to_have_bonus"] = calc.nice_to_have_bonus
+    result["cv_fit_score"]   = calc.total_score
 
     @analysis.update!(
       score: result["score"],
@@ -198,8 +164,6 @@ class CvClaudeAnalysisService
     )
 
     result
-  rescue JSON::ParserError => e
-    raise "Claude returned invalid JSON: #{e.message}"
   end
 
   private
@@ -226,39 +190,6 @@ class CvClaudeAnalysisService
     end
     lines << "Use these to calibrate scores relative to the full candidate pool for this role."
     lines.join("\n")
-  end
-
-  def recompute_adjustments(sf)
-    scope_bonus = case sf.dig("scope_indicators", "scope_match")
-                  when "strong_match"   then 0.50
-                  when "partial_match"  then 0.25
-                  else 0.00
-                  end
-
-    {
-      "trajectory_bonus" => case sf["career_trajectory_alignment"]
-                            when "toward_role" then 0.50
-                            when "lateral"     then 0.25
-                            else 0.00
-                            end,
-      "scope_bonus"      => scope_bonus,
-      "recency_bonus"    => case sf["recency_of_relevant_experience"]
-                            when "current"        then 0.50
-                            when "within_3_years" then 0.25
-                            else 0.00
-                            end,
-      "implied_competency_bonus" => case sf["implied_competency_from_employer"]
-                                    when "strongly_implied" then 0.50
-                                    when "consistent"       then 0.25
-                                    else 0.00
-                                    end,
-      "tenure_bonus"     => sf["tenure_pattern"] == "sufficient" ? 0.50 : 0.00,
-      "density_bonus"    => case sf["responsibility_density"]
-                            when "high"   then 0.50
-                            when "medium" then 0.25
-                            else 0.00
-                            end
-    }
   end
 
   def build_user_content(job_context)

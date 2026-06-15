@@ -100,7 +100,8 @@ class CvAnalysesController < ApplicationController
   private
 
   def create_params
-    params.require(:cv_analysis).permit(:cv, :job_role_id, :candidate_name)
+    params.require(:cv_analysis).permit(:cv, :job_role_id, :candidate_name,
+                                        :drive_file_id, :drive_file_name)
   end
 
   def set_cv_analysis

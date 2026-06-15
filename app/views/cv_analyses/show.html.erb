@@ -82,19 +82,28 @@
     n_tot        = reqs.size
     raw_sum      = n_ev * 1.0 + n_par * 0.5
     is_v4        = @cv_analysis.prompt_version.to_s >= "2026-06-08"
-    multiplier   = is_v4 ? 7.0 : 10.0
+    is_v5        = @cv_analysis.prompt_version.to_s >= "2026-06-15"
+    multiplier   = is_v5 ? 8.0 : is_v4 ? 7.0 : 10.0
     computed_raw = fb["cv_fit_score_raw"]&.to_f || (n_tot > 0 ? (raw_sum / n_tot * multiplier).round(1) : 0.0)
-    adj_meta = {
-      "trajectory_bonus"         => "Career Trajectory",
-      "scope_bonus"              => "Scope",
-      "recency_bonus"            => "Recency",
-      "recency_modifier"         => "Recency",
-      "implied_competency_bonus" => "Implied Competency",
-      "tenure_bonus"             => "Tenure",
-      "tenure_penalty"           => "Tenure",
-      "density_bonus"            => "Responsibility Density",
-      "density_penalty"          => "Responsibility Density"
-    }
+    adj_meta = if is_v5
+      {
+        "growth_bonus"    => ["Growth Curve", fb["growth_curve"]],
+        "ownership_bonus" => ["Tenure",       fb["tenure_ownership"]],
+        "leverage_bonus"  => ["Leverage",     fb["leverage"]]
+      }
+    else
+      {
+        "trajectory_bonus"         => ["Career Trajectory",      fb["career_trajectory_alignment"]],
+        "scope_bonus"              => ["Scope",                  fb.dig("scope_indicators", "scope_match")],
+        "recency_bonus"            => ["Recency",                fb["recency_of_relevant_experience"]],
+        "recency_modifier"         => ["Recency",                fb["recency_of_relevant_experience"]],
+        "implied_competency_bonus" => ["Implied Competency",     fb["implied_competency_from_employer"]],
+        "tenure_bonus"             => ["Tenure",                 fb["tenure_pattern"]],
+        "tenure_penalty"           => ["Tenure",                 fb["tenure_pattern"]],
+        "density_bonus"            => ["Responsibility Density", fb["responsibility_density"]],
+        "density_penalty"          => ["Responsibility Density", fb["responsibility_density"]]
+      }
+    end
     total_adj   = adj.values.sum(&:to_f)
     recomputed  = [[computed_raw + total_adj, 10.0].min, 0.0].max.round(1)
     final_score = fb["cv_fit_score"]&.to_f || recomputed
@@ -139,7 +148,12 @@
 
       <%# Panel 2: Base Score %>
       <div style="flex: 1; min-width: 200px; padding: 1.25rem 1.4rem; border-right: 1px solid #f0f0f0;">
-        <div style="font-size: 0.63rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #bbb; margin-bottom: 0.8rem;">Base Score</div>
+        <div style="font-size: 0.63rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #bbb; margin-bottom: 0.5rem;">Base Score</div>
+        <div style="display: flex; gap: 0.5rem; margin-bottom: 0.7rem; flex-wrap: wrap;">
+          <span style="font-size: 0.68rem; color: #166534; background: #dcfce7; border-radius: 3px; padding: 0.1rem 0.4rem; font-weight: 600;">evidenced = 1.0</span>
+          <span style="font-size: 0.68rem; color: #854d0e; background: #fef9c3; border-radius: 3px; padding: 0.1rem 0.4rem; font-weight: 600;">partial = 0.5</span>
+          <span style="font-size: 0.68rem; color: #aaa; background: #f3f4f6; border-radius: 3px; padding: 0.1rem 0.4rem; font-weight: 600;">missing = 0.0</span>
+        </div>
         <% if reqs.any? %>
           <div style="display: flex; flex-direction: column; gap: 0; margin-bottom: 0.6rem;">
             <% reqs.each do |req| %>
@@ -147,13 +161,13 @@
               <% req_val   = { "evidenced" => 1.0, "partial" => 0.5, "not evidenced" => 0.0 }[cov] || 0.0 %>
               <% req_color = { "evidenced" => "#166534", "partial" => "#854d0e", "not evidenced" => "#aaa" }[cov] || "#aaa" %>
               <div style="display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; font-size: 0.78rem; padding: 0.26rem 0; border-bottom: 1px solid #f5f5f5;">
-                <span style="color: #666; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"><%= truncate(req["requirement"], length: 44) %></span>
+                <span style="color: #666; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="<%= req["requirement"] %>"><%= truncate(req["requirement"], length: 44) %></span>
                 <span style="font-weight: 600; color: <%= req_color %>; font-variant-numeric: tabular-nums; min-width: 28px; text-align: right; flex-shrink: 0;"><%= req_val %></span>
               </div>
             <% end %>
           </div>
           <div style="font-size: 0.72rem; color: #aaa; font-variant-numeric: tabular-nums; margin-bottom: 0.2rem;">
-            (<%= n_ev %> + <%= (n_par * 0.5).round(1) %>) ÷ <%= n_tot %> × <%= multiplier.to_i %>
+            (<%= n_ev %> × 1.0 + <%= n_par %> × 0.5) ÷ <%= n_tot %> × <%= multiplier.to_i %>
           </div>
           <div style="font-size: 1.6rem; font-weight: 700; color: #1a1a1a; font-variant-numeric: tabular-nums; line-height: 1;">
             <%= computed_raw %><span style="font-size: 0.82rem; color: #bbb; font-weight: 400;"> / <%= multiplier.to_i %></span>
@@ -165,16 +179,17 @@
 
       <%# Panel 3: Adjustments %>
       <div style="flex: 1; min-width: 200px; padding: 1.25rem 1.4rem; border-right: 1px solid #f0f0f0;">
-        <div style="font-size: 0.63rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #bbb; margin-bottom: 0.8rem;">Adjustments</div>
+        <div style="font-size: 0.63rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #bbb; margin-bottom: 0.5rem;">Adjustments</div>
+        <div style="font-size: 0.68rem; color: #bbb; margin-bottom: 0.7rem;">Each signal adds up to +0.50 based on its rating</div>
         <% if adj.any? %>
           <div style="display: flex; flex-direction: column; gap: 0; margin-bottom: 0.6rem;">
-            <% adj_meta.each do |key, label| %>
+            <% adj_meta.each do |key, (label, signal_val)| %>
               <% val = adj[key]&.to_f %>
               <% next unless val %>
               <% adj_color = val > 0 ? "#166534" : val < 0 ? "#991b1b" : "#aaa" %>
               <div style="display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; font-size: 0.78rem; padding: 0.26rem 0; border-bottom: 1px solid #f5f5f5;">
                 <span style="color: #666;"><%= label %></span>
-                <span style="font-weight: 600; color: <%= adj_color %>; font-variant-numeric: tabular-nums; min-width: 36px; text-align: right;"><%= val > 0 ? "+#{val}" : val == 0.0 ? "0.0" : val %></span>
+                <span style="font-weight: 600; color: <%= adj_color %>; font-variant-numeric: tabular-nums; min-width: 36px; text-align: right; flex-shrink: 0;"><%= val > 0 ? "+#{val}" : val == 0.0 ? "0.0" : val %></span>
               </div>
             <% end %>
           </div>
@@ -188,77 +203,140 @@
         <% end %>
       </div>
 
-      <%# Panel 4: Flags %>
+      <%# Panel 4: Nice-to-Have summary %>
       <div style="flex: 1; min-width: 200px; padding: 1.25rem 1.4rem;">
-        <div style="font-size: 0.63rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #bbb; margin-bottom: 0.8rem;">Flags</div>
-        <% if fb["skill_evidence_gaps"].present? || fb["credential_flags"].present? %>
-          <% if fb["skill_evidence_gaps"].present? %>
-            <div style="<%= fb["credential_flags"].present? ? "margin-bottom: 0.75rem;" : "" %>">
-              <div style="font-size: 0.72rem; font-weight: 600; color: #854d0e; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 0.35rem;">Skills without role-level evidence</div>
-              <ul style="margin: 0; padding-left: 1rem; display: flex; flex-direction: column; gap: 0.2rem;">
-                <% Array(fb["skill_evidence_gaps"]).each do |s| %>
-                  <li style="font-size: 0.8rem; color: #555; line-height: 1.4;"><%= s %></li>
-                <% end %>
-              </ul>
-            </div>
-          <% end %>
-          <% if fb["credential_flags"].present? %>
-            <div>
-              <div style="font-size: 0.72rem; font-weight: 600; color: #991b1b; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 0.35rem;">Credential / consistency flags</div>
-              <ul style="margin: 0; padding-left: 1rem; display: flex; flex-direction: column; gap: 0.2rem;">
-                <% Array(fb["credential_flags"]).each do |s| %>
-                  <li style="font-size: 0.8rem; color: #555; line-height: 1.4;"><%= s %></li>
-                <% end %>
-              </ul>
-            </div>
-          <% end %>
+        <div style="font-size: 0.63rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #bbb; margin-bottom: 0.5rem;">Nice-to-Have</div>
+        <% if nh_reqs.any? %>
+          <% _nh_ev  = nh_reqs.count { |r| r["coverage"] == "evidenced" } %>
+          <% _nh_par = nh_reqs.count { |r| r["coverage"] == "partial" } %>
+          <% nh_no   = nh_reqs.count { |r| r["coverage"] == "not evidenced" } %>
+          <div style="display: flex; flex-direction: column; gap: 0; margin-bottom: 0.6rem;">
+            <% if _nh_ev > 0 %>
+              <div style="display: flex; align-items: center; justify-content: space-between; font-size: 0.78rem; padding: 0.26rem 0; border-bottom: 1px solid #f5f5f5;">
+                <span style="color: #666;">Evidenced</span>
+                <span style="font-weight: 600; color: #166534; font-variant-numeric: tabular-nums;">× <%= _nh_ev %></span>
+              </div>
+            <% end %>
+            <% if _nh_par > 0 %>
+              <div style="display: flex; align-items: center; justify-content: space-between; font-size: 0.78rem; padding: 0.26rem 0; border-bottom: 1px solid #f5f5f5;">
+                <span style="color: #666;">Partial</span>
+                <span style="font-weight: 600; color: #854d0e; font-variant-numeric: tabular-nums;">× <%= _nh_par %></span>
+              </div>
+            <% end %>
+            <% if nh_no > 0 %>
+              <div style="display: flex; align-items: center; justify-content: space-between; font-size: 0.78rem; padding: 0.26rem 0; border-bottom: 1px solid #f5f5f5;">
+                <span style="color: #666;">Not evidenced</span>
+                <span style="font-weight: 600; color: #aaa; font-variant-numeric: tabular-nums;">× <%= nh_no %></span>
+              </div>
+            <% end %>
+          </div>
+          <div style="font-size: 0.72rem; color: #aaa; margin-bottom: 0.2rem;">Bonus</div>
+          <div style="font-size: 1.6rem; font-weight: 700; color: #1e40af; font-variant-numeric: tabular-nums; line-height: 1;">
+            +<%= nh_bonus %>
+          </div>
         <% else %>
-          <div style="font-size: 0.85rem; color: #bbb;">No flags</div>
+          <div style="font-size: 0.85rem; color: #bbb;">No nice-to-haves</div>
         <% end %>
       </div>
 
     </div>
   </div>
+
+  <%# Flags — standalone card immediately below the score row %>
+  <% _fb = @cv_analysis.structured_feedback %>
+  <% if _fb["skill_evidence_gaps"].present? || _fb["credential_flags"].present? %>
+    <div class="card" style="padding: 1rem 1.25rem;">
+      <div style="font-size: 0.63rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #bbb; margin-bottom: 0.75rem;">Flags</div>
+      <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+        <% if _fb["skill_evidence_gaps"].present? %>
+          <div>
+            <div style="font-size: 0.72rem; font-weight: 600; color: #854d0e; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 0.35rem;">Skills without role-level evidence</div>
+            <ul style="margin: 0; padding-left: 1rem; display: flex; flex-direction: column; gap: 0.2rem;">
+              <% Array(_fb["skill_evidence_gaps"]).each do |s| %>
+                <li style="font-size: 0.82rem; color: #555; line-height: 1.4;"><%= s %></li>
+              <% end %>
+            </ul>
+          </div>
+        <% end %>
+        <% if _fb["credential_flags"].present? %>
+          <div>
+            <div style="font-size: 0.72rem; font-weight: 600; color: #991b1b; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 0.35rem;">Credential / consistency flags</div>
+            <ul style="margin: 0; padding-left: 1rem; display: flex; flex-direction: column; gap: 0.2rem;">
+              <% Array(_fb["credential_flags"]).each do |s| %>
+                <li style="font-size: 0.82rem; color: #555; line-height: 1.4;"><%= s %></li>
+              <% end %>
+            </ul>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  <% end %>
 <% end %>
 
 <%# Contextual CV Signals %>
 <% fb = @cv_analysis.structured_feedback %>
 <%
-  _scope_val  = fb.dig("scope_indicators", "scope_match")
-  _scope_note = fb.dig("scope_indicators", "scope_note")
+  _is_v5 = @cv_analysis.prompt_version.to_s >= "2026-06-15"
 
-  signals = [
-    { label: "Career Trajectory",
-      desc:   "Recent roles moving toward, level with, or away from this position",
-      val:    fb["career_trajectory_alignment"],
-      colors: { "toward_role" => ["#166534","#dcfce7"], "lateral" => ["#854d0e","#fef3c7"], "away_from_role" => ["#991b1b","#fee2e2"] },
-      note:   fb["career_trajectory_alignment_note"] },
-    { label: "Scope",
-      desc:   "Scale of past work — company size, team, geography — relative to role requirements",
-      val:    _scope_val,
-      colors: { "strong_match" => ["#166534","#dcfce7"], "partial_match" => ["#1e40af","#dbeafe"], "no_match" => ["#555","#f3f4f6"] },
-      note:   _scope_note },
-    { label: "Recency",
-      desc:   "How recently the candidate's most relevant experience was active",
-      val:    fb["recency_of_relevant_experience"],
-      colors: { "current" => ["#166534","#dcfce7"], "within_3_years" => ["#854d0e","#fef3c7"], "older_than_3_years" => ["#991b1b","#fee2e2"] },
-      note:   fb["recency_of_relevant_experience_note"] },
-    { label: "Implied Competency",
-      desc:   "What the employer's known profile implies about the candidate's competencies",
-      val:    fb["implied_competency_from_employer"],
-      colors: { "strongly_implied" => ["#166534","#dcfce7"], "consistent" => ["#1e40af","#dbeafe"], "no_signal" => ["#555","#f3f4f6"] },
-      note:   fb["implied_competency_from_employer_note"] },
-    { label: "Tenure",
-      desc:   "Whether the candidate stayed long enough in relevant roles to build meaningful depth",
-      val:    fb["tenure_pattern"],
-      colors: { "sufficient" => ["#166534","#dcfce7"], "short_in_relevant_roles" => ["#991b1b","#fee2e2"] },
-      note:   fb["tenure_pattern_note"] },
-    { label: "Responsibility Density",
-      desc:   "Share of role description content that maps directly to JD responsibilities",
-      val:    fb["responsibility_density"],
-      colors: { "high" => ["#166534","#dcfce7"], "medium" => ["#854d0e","#fef3c7"], "low" => ["#991b1b","#fee2e2"] },
-      note:   fb["responsibility_density_note"] }
-  ].select { |s| s[:val].present? }
+  if _is_v5
+    signals = [
+      { label: "Growth Curve",
+        desc:   "Career progression speed — promotions, scope leaps, or stagnation",
+        val:    fb["growth_curve"],
+        colors: { "exceptional" => ["#166534","#dcfce7"], "solid" => ["#1e40af","#dbeafe"], "stagnant" => ["#991b1b","#fee2e2"] },
+        note:   fb["growth_curve_note"] },
+      { label: "Tenure",
+        desc:   "Depth of ownership — long-term commitment and evidence of building then optimising",
+        val:    fb["tenure_ownership"],
+        colors: { "high_ownership" => ["#166534","#dcfce7"], "moderate_ownership" => ["#854d0e","#fef3c7"], "flight_risk" => ["#991b1b","#fee2e2"] },
+        note:   fb["tenure_ownership_note"] },
+      { label: "Leverage",
+        desc:   "People and process impact — mentorship, cross-functional influence, and building others up",
+        val:    fb["leverage"],
+        colors: { "multiplier" => ["#166534","#dcfce7"], "contributor" => ["#1e40af","#dbeafe"], "solitary" => ["#991b1b","#fee2e2"] },
+        note:   fb["leverage_note"] }
+    ].select { |s| s[:val].present? }
+  else
+    _scope_ind  = fb["scope_indicators"] || {}
+    _scope_val  = _scope_ind["scope_match"]
+    _scope_acct = _scope_ind["account_size"]
+    _scope_note = _scope_ind["scope_note"]
+    _scope_note ||= _scope_acct.present? ? "Inferred account size: #{_scope_acct}" : nil
+    _scope_card_val = _scope_val.presence || (_scope_ind.any? ? "unknown" : nil)
+
+    signals = [
+      { label: "Career Trajectory",
+        desc:   "Recent roles moving toward, level with, or away from this position",
+        val:    fb["career_trajectory_alignment"],
+        colors: { "toward_role" => ["#166534","#dcfce7"], "lateral" => ["#854d0e","#fef3c7"], "away_from_role" => ["#991b1b","#fee2e2"] },
+        note:   fb["career_trajectory_alignment_note"] },
+      { label: "Scope",
+        desc:   "Scale of past work — company size, team, geography — relative to role requirements",
+        val:    _scope_card_val,
+        colors: { "strong_match" => ["#166534","#dcfce7"], "partial_match" => ["#1e40af","#dbeafe"], "no_match" => ["#555","#f3f4f6"], "unknown" => ["#888","#f3f4f6"] },
+        note:   _scope_note },
+      { label: "Recency",
+        desc:   "How recently the candidate's most relevant experience was active",
+        val:    fb["recency_of_relevant_experience"],
+        colors: { "current" => ["#166534","#dcfce7"], "within_3_years" => ["#854d0e","#fef3c7"], "older_than_3_years" => ["#991b1b","#fee2e2"] },
+        note:   fb["recency_of_relevant_experience_note"] },
+      { label: "Implied Competency",
+        desc:   "What the employer's known profile implies about the candidate's competencies",
+        val:    fb["implied_competency_from_employer"],
+        colors: { "strongly_implied" => ["#166534","#dcfce7"], "consistent" => ["#1e40af","#dbeafe"], "no_signal" => ["#555","#f3f4f6"] },
+        note:   fb["implied_competency_from_employer_note"] },
+      { label: "Tenure",
+        desc:   "Whether the candidate stayed long enough in relevant roles to build meaningful depth",
+        val:    fb["tenure_pattern"],
+        colors: { "sufficient" => ["#166534","#dcfce7"], "short_in_relevant_roles" => ["#991b1b","#fee2e2"] },
+        note:   fb["tenure_pattern_note"] },
+      { label: "Responsibility Density",
+        desc:   "Share of role description content that maps directly to JD responsibilities",
+        val:    fb["responsibility_density"],
+        colors: { "high" => ["#166534","#dcfce7"], "medium" => ["#854d0e","#fef3c7"], "low" => ["#991b1b","#fee2e2"] },
+        note:   fb["responsibility_density_note"] }
+    ].select { |s| s[:val].present? }
+  end
 %>
 <% if signals.any? %>
   <div class="card">

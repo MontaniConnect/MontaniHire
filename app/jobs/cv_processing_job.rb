@@ -3,14 +3,23 @@ class CvProcessingJob < ApplicationJob
 
   sidekiq_options retry: 3
 
-  def perform(cv_analysis_id)
+  def perform(cv_analysis_id,
+              extraction_service: CvTextExtractionService,
+              analysis_service:   CvClaudeAnalysisService)
     analysis = CvAnalysis.find(cv_analysis_id)
     return if analysis.completed? || analysis.failed?
 
-    CvTextExtractionService.new(analysis).call
-    CvClaudeAnalysisService.new(analysis).call
+    extraction_service.new(analysis).call
+    analysis_service.new(analysis).call
 
     candidate = analysis.candidate
+    if candidate && candidate.email.blank?
+      # Collapse line breaks inside split email addresses (common in multi-column PDFs)
+      searchable = analysis.extracted_text&.gsub(/([A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+)\n+([A-Za-z0-9.\-]{1,6})/) { |_m| $1 + $2 }
+      email_match = searchable&.match(/\b[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}\b/)
+      candidate.update_columns(email: email_match[0]) if email_match
+    end
+
     if candidate&.video_analysis&.awaiting_cv?
       VideoProcessingJob.perform_later(candidate.video_analysis.id)
     end

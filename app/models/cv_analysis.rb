@@ -7,7 +7,7 @@ class CvAnalysis < ApplicationRecord
 
   STATUSES = %w[pending extracting analyzing completed failed].freeze
 
-  validates :cv, presence: true
+  validates :cv, presence: true, unless: -> { drive_file_id.present? }
   validates :job_role, presence: true
   validates :status, inclusion: { in: STATUSES }
   validates :score, numericality: { greater_than_or_equal_to: 0, less_than_or_equal_to: 10 }, allow_nil: true
@@ -17,6 +17,9 @@ class CvAnalysis < ApplicationRecord
 
   def transition_to!(new_status, error: nil)
     update!(status: new_status, error_message: error)
+    if new_status == "completed"
+      candidate&.update_columns(screened_at: candidate.screened_at || Time.current)
+    end
   end
 
   def failed?    = status == "failed"

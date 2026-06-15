@@ -1,0 +1,117 @@
+<h1>Settings</h1>
+
+<%# Upcoming bookings %>
+<% if @upcoming_bookings.any? %>
+  <div class="card">
+    <h2>Upcoming Interviews</h2>
+    <div class="table-wrapper">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Candidate</th>
+            <th>Date & Time</th>
+            <th>Duration</th>
+            <th>Calendar</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% @upcoming_bookings.each do |b| %>
+            <% tz = ActiveSupport::TimeZone[current_user.availability["timezone"]] || Time.zone %>
+            <tr>
+              <td style="font-weight: 500;">
+                <%= link_to b.candidate.name, candidate_path(b.candidate),
+                      style: "color: #1a1a1a; text-decoration: none;" %>
+              </td>
+              <td><%= b.starts_at.in_time_zone(tz).strftime("%A, %b %-d · %-I:%M %p %Z") %></td>
+              <td><%= ((b.ends_at - b.starts_at) / 60).to_i %> min</td>
+              <td>
+                <% if b.google_event_id.present? %>
+                  <span style="font-size: 0.78rem; color: #166534; background: #dcfce7; border-radius: 4px; padding: 0.15rem 0.5rem; font-weight: 600;">✓ Synced</span>
+                <% else %>
+                  <span style="font-size: 0.78rem; color: #aaa;">—</span>
+                <% end %>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+<% end %>
+
+<div class="card">
+  <h2>Interview Availability</h2>
+  <p style="font-size: 0.85rem; color: #666; margin-bottom: 1.5rem;">
+    Set the days and hours candidates can book interview slots. All times are in the selected timezone.
+  </p>
+
+  <%= form_with url: update_availability_settings_path, method: :patch do |f| %>
+
+    <%# Slot duration + timezone %>
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
+      <div class="form-group" style="margin: 0;">
+        <label>Slot Duration</label>
+        <select name="slot_duration" style="width: 100%; padding: 0.6rem 0.75rem; border: 1px solid #ddd; border-radius: 6px; font-size: 0.9rem; background: #fff;">
+          <% [15, 30, 45, 60].each do |m| %>
+            <option value="<%= m %>" <%= "selected" if @availability["slot_duration"] == m %>><%= m %> minutes</option>
+          <% end %>
+        </select>
+      </div>
+      <div class="form-group" style="margin: 0;">
+        <label>Timezone</label>
+        <select name="timezone" style="width: 100%; padding: 0.6rem 0.75rem; border: 1px solid #ddd; border-radius: 6px; font-size: 0.9rem; background: #fff;">
+          <% [
+               ["Philippine Time (PHT)",       "Asia/Manila"],
+               ["Eastern Time (US & Canada)",  "Eastern Time (US & Canada)"],
+               ["Central Time (US & Canada)",  "Central Time (US & Canada)"],
+               ["Mountain Time (US & Canada)", "Mountain Time (US & Canada)"],
+               ["Pacific Time (US & Canada)",  "Pacific Time (US & Canada)"]
+             ].each do |label, val| %>
+            <option value="<%= val %>" <%= "selected" if (@availability["timezone"] || "Asia/Manila") == val %>><%= label %></option>
+          <% end %>
+        </select>
+      </div>
+    </div>
+
+    <%# Day rows %>
+    <% day_labels = { "monday" => "Monday", "tuesday" => "Tuesday", "wednesday" => "Wednesday",
+                      "thursday" => "Thursday", "friday" => "Friday",
+                      "saturday" => "Saturday", "sunday" => "Sunday" } %>
+    <div style="border: 1px solid #e5e5e5; border-radius: 8px; overflow: hidden; margin-bottom: 1.5rem;">
+      <% day_labels.each_with_index do |(day, label), idx| %>
+        <% cfg = @availability.dig("days", day) || {} %>
+        <div style="display: grid; grid-template-columns: 160px 1fr; align-items: center; gap: 1rem;
+                    padding: 0.75rem 1rem; <%= idx > 0 ? 'border-top: 1px solid #f0f0f0;' : '' %>
+                    background: <%= cfg['enabled'] ? '#fff' : '#fafafa' %>;"
+             id="day-row-<%= day %>">
+          <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; font-weight: 500; font-size: 0.9rem; margin: 0;">
+            <input type="checkbox" name="days[<%= day %>][enabled]" value="1"
+                   <%= "checked" if cfg["enabled"] %>
+                   onchange="toggleDay('<%= day %>', this.checked)"
+                   style="width: 15px; height: 15px;">
+            <%= label %>
+          </label>
+          <div id="day-times-<%= day %>" style="display: flex; align-items: center; gap: 0.5rem; <%= cfg['enabled'] ? '' : 'opacity: 0.35; pointer-events: none;' %>">
+            <input type="time" name="days[<%= day %>][start]" value="<%= cfg['start'] || '09:00' %>"
+                   style="padding: 0.35rem 0.5rem; border: 1px solid #ddd; border-radius: 6px; font-size: 0.88rem;">
+            <span style="color: #aaa; font-size: 0.85rem;">to</span>
+            <input type="time" name="days[<%= day %>][end]" value="<%= cfg['end'] || '17:00' %>"
+                   style="padding: 0.35rem 0.5rem; border: 1px solid #ddd; border-radius: 6px; font-size: 0.88rem;">
+          </div>
+        </div>
+      <% end %>
+    </div>
+
+    <button type="submit" class="btn">Save Availability</button>
+  <% end %>
+</div>
+
+<script>
+  function toggleDay(day, enabled) {
+    const times = document.getElementById("day-times-" + day)
+    const row   = document.getElementById("day-row-" + day)
+    times.style.opacity = enabled ? "1" : "0.35"
+    times.style.pointerEvents = enabled ? "" : "none"
+    row.style.background = enabled ? "#fff" : "#fafafa"
+  }
+</script>

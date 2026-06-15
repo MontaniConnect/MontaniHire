@@ -76,18 +76,6 @@
 
 <%# ── Video interview ── %>
 <% va = @item.video_analysis %>
-<% if va&.video&.attached? %>
-  <div class="card" style="padding: 1rem 1.25rem;">
-    <div style="font-size: 0.72rem; color: #888; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.75rem;">
-      Preliminary Interview
-    </div>
-    <video controls preload="metadata"
-           style="width: 100%; border-radius: 6px; background: #000; max-height: 360px;">
-      <source src="<%= url_for(va.video) %>">
-      Your browser does not support video playback.
-    </video>
-  </div>
-<% end %>
 
 <%# Summary %>
 <% fb = @item.structured_feedback || {} %>

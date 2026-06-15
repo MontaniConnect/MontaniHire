@@ -4,10 +4,12 @@ class Candidate < ApplicationRecord
   belongs_to :cv_analysis,    optional: true, class_name: "CvAnalysis"
   belongs_to :video_analysis, optional: true, class_name: "VideoAnalysis"
   has_many   :shortlist_items, dependent: :nullify
+  has_one    :slot_booking,   dependent: :destroy
 
   STAGES = %w[cv_review preliminary_interview client_interview final_interview not_invited rejected hired offer_declined not_selected].freeze
 
-  validates :name,           presence: true
+
+  validates :name, presence: true
 
   def name
     self[:name]&.titleize
@@ -15,11 +17,13 @@ class Candidate < ApplicationRecord
   validates :pipeline_stage, inclusion: { in: STAGES }
 
   def advance_to_interview!
-    update!(pipeline_stage: "preliminary_interview")
+    update!(pipeline_stage: "preliminary_interview",
+            interviewed_at: interviewed_at || Time.current)
   end
 
   def advance_to_final_interview!
-    update!(pipeline_stage: "final_interview")
+    update!(pipeline_stage: "final_interview",
+            final_interview_at: final_interview_at || Time.current)
   end
 
   def mark_not_invited!
@@ -27,7 +31,12 @@ class Candidate < ApplicationRecord
   end
 
   def hire!
-    update!(pipeline_stage: "hired", hired_at: Time.current)
+    update!(pipeline_stage: "hired", hired_at: hired_at || Time.current)
+  end
+
+  def shortlist_for_client!
+    update!(pipeline_stage: "client_interview",
+            shortlisted_at: shortlisted_at || Time.current)
   end
 
   def no_show!
@@ -46,6 +55,9 @@ class Candidate < ApplicationRecord
     update!(pipeline_stage: "not_selected")
   end
 
+  def intake_submitted? = intake_submitted_at.present?
+  def intake_unread?    = intake_submitted? && intake_viewed_at.nil?
+
   def outcome_confirmed? = outcome_confirmed_at.present?
   def confirm_outcome!   = update!(outcome_confirmed_at: Time.current)
   def unconfirm_outcome! = update!(outcome_confirmed_at: nil)
@@ -63,10 +75,6 @@ class Candidate < ApplicationRecord
     }
     update!(pipeline_stage: previous.fetch(pipeline_stage, "cv_review"), outcome_confirmed_at: nil)
     shortlist_items.destroy_all if was_shortlisted
-  end
-
-  def shortlist_for_client!
-    update!(pipeline_stage: "client_interview")
   end
 
   def reject!
@@ -105,6 +113,18 @@ class Candidate < ApplicationRecord
     [cv_line, va_line, rationale].compact.select(&:present?)
   end
 
+  def first_name
+    name.to_s.split.first
+  end
+
+  def cv_feedback
+    cv_analysis&.structured_feedback || {}
+  end
+
+  def video_feedback
+    video_analysis&.structured_feedback || {}
+  end
+
   # Delegates so ShortlistItem (and views) can read candidate data uniformly
 
   def score
@@ -117,5 +137,11 @@ class Candidate < ApplicationRecord
 
   def structured_feedback
     video_analysis&.structured_feedback || cv_analysis&.structured_feedback || {}
+  end
+
+  private
+
+  def generate_intake_token
+    self.intake_token ||= SecureRandom.urlsafe_base64(16)
   end
 end

@@ -1,0 +1,118 @@
+<% if @candidate.intake_submitted? %>
+
+  <h1>Thank you, <%= @candidate.first_name %>!</h1>
+  <p class="subtitle">
+    Your response has been received. We'll send a calendar invite to <strong><%= @candidate.email %></strong> shortly.
+  </p>
+
+<% else %>
+
+  <h1>You've been shortlisted!</h1>
+  <p class="subtitle">
+    Congratulations — you've been selected to proceed to the preliminary interview for
+    <strong><%= @candidate.job_role&.title || "this position" %></strong>.
+    Please complete the form below to confirm your details and book your interview slot.
+  </p>
+
+  <hr class="divider">
+
+  <%= form_with url: candidate_intake_submit_path(token: @candidate.intake_token), method: :post do |f| %>
+
+    <div class="form-group">
+      <p style="font-size: 0.85rem; font-weight: 600; color: #333; margin-bottom: 0.6rem;">Please confirm the following:</p>
+      <div class="checkbox-row">
+        <input type="checkbox" id="ph_residency" name="ph_residency_confirmed" value="1" required>
+        <label for="ph_residency">I am a Filipino citizen currently residing in the Philippines.</label>
+      </div>
+      <div class="checkbox-row">
+        <input type="checkbox" id="us_hours" name="us_hours_agreement" value="1" required>
+        <label for="us_hours">I am available and agree to work in US timezone.</label>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <div class="form-group">
+      <label for="asking_salary">Asking Salary</label>
+      <div class="php-prefix">
+        <span>PHP</span>
+        <input type="number" id="asking_salary" name="asking_salary" min="0" step="1"
+               placeholder="e.g. 80000" required>
+      </div>
+      <p class="note">Monthly gross salary in Philippine Peso.</p>
+    </div>
+
+    <hr class="divider">
+
+    <div class="form-group">
+      <label for="job_source">Where did you find this job?</label>
+      <div style="display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.4rem;">
+        <% [
+             ["linkedin",   "LinkedIn"],
+             ["facebook",   "Facebook"],
+             ["instagram",  "Instagram"],
+             ["jobstreet",  "JobStreet"],
+             ["indeed",     "Indeed"],
+             ["onlinejobs", "OnlineJobs.ph"],
+             ["others",     "Others"]
+           ].each do |val, lbl| %>
+          <label style="display: flex; align-items: center; gap: 0.6rem; cursor: pointer; font-size: 0.93rem; font-weight: 400;">
+            <input type="radio" name="job_source" value="<%= val %>" required
+                   onchange="document.getElementById('job-source-other-wrap').style.display = this.value === 'others' ? 'block' : 'none'"
+                   style="width: 15px; height: 15px; flex-shrink: 0;">
+            <%= lbl %>
+          </label>
+        <% end %>
+      </div>
+      <div id="job-source-other-wrap" style="display: none; margin-top: 0.6rem;">
+        <input type="text" name="job_source_other" placeholder="Please specify…"
+               style="width: 100%; padding: 0.5rem 0.65rem; border: 1px solid #ddd; border-radius: 6px; font-size: 0.9rem;">
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <div class="form-group">
+      <label>Preferred Interview Slot</label>
+      <% if @slots.any? %>
+        <p class="note" style="margin-bottom: 0.75rem;">All times shown in <%= @timezone_label %>. Select one slot below.</p>
+        <% @slots.each do |date, day_slots| %>
+          <div style="margin-bottom: 1rem;">
+            <div style="font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
+                        color: #888; margin-bottom: 0.4rem;">
+              <%= date.strftime("%A, %B %-d") %>
+            </div>
+            <div style="display: flex; flex-wrap: wrap; gap: 0.4rem;">
+              <% day_slots.each do |slot| %>
+                <label style="cursor: pointer;">
+                  <input type="radio" name="slot_starts_at" value="<%= slot.iso8601 %>" required style="display: none;"
+                         onchange="document.querySelectorAll('.slot-btn').forEach(b => b.classList.remove('slot-active')); this.parentElement.querySelector('.slot-btn').classList.add('slot-active')">
+                  <span class="slot-btn" style="display: inline-block; padding: 0.35rem 0.75rem; border: 1px solid #ddd;
+                        border-radius: 6px; font-size: 0.85rem; background: #fff; transition: all 0.1s;">
+                    <%= slot.strftime("%-I:%M %p") %>
+                  </span>
+                </label>
+              <% end %>
+            </div>
+          </div>
+        <% end %>
+      <% else %>
+        <div style="padding: 1rem; background: #fafafa; border: 1px solid #e5e5e5; border-radius: 8px;
+                    font-size: 0.88rem; color: #888; text-align: center;">
+          No slots available at the moment. Please check back later or contact us directly.
+        </div>
+        <%# Still allow submission without a slot if none are available %>
+        <input type="hidden" name="slot_starts_at" value="">
+      <% end %>
+    </div>
+
+    <button type="submit" class="btn">Confirm & Book</button>
+
+  <% end %>
+
+<% end %>
+
+<style>
+  .slot-btn:hover { border-color: #555; background: #f5f5f5; }
+  .slot-active { border-color: #1a1a1a !important; background: #1a1a1a !important; color: #fff !important; }
+</style>

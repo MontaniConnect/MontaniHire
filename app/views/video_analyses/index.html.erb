@@ -8,44 +8,169 @@
   </div>
 <% else %>
   <div class="card">
-    <h2>Upload Interview Video</h2>
-    <%= form_with url: video_analyses_path, multipart: true, data: { controller: "upload" } do |f| %>
+    <%# ── Header row with Google Drive connection status ── %>
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
+      <h2 style="margin: 0;">Add Interview Recording</h2>
+      <% if current_user.google_connected? %>
+        <div style="display: flex; align-items: center; gap: 0.6rem;">
+          <span style="font-size: 0.78rem; color: #166534; background: #dcfce7; border-radius: 99px; padding: 0.2rem 0.65rem; font-weight: 600;">✓ Google Drive connected</span>
+          <%= button_to "Disconnect", auth_google_disconnect_path, method: :delete,
+                style: "font-size: 0.75rem; color: #888; background: none; border: none; cursor: pointer; text-decoration: underline; padding: 0;" %>
+        </div>
+      <% else %>
+        <%= link_to auth_google_path,
+              style: "font-size: 0.8rem; display: inline-flex; align-items: center; gap: 0.35rem;
+                      padding: 0.3rem 0.75rem; border: 1px solid #ddd; border-radius: 6px;
+                      color: #555; text-decoration: none; background: #fff; white-space: nowrap;" do %>
+          <svg width="14" height="14" viewBox="0 0 48 48" style="flex-shrink:0"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+          Connect Google Drive
+        <% end %>
+      <% end %>
+    </div>
+
+    <%# ── Source tabs ── %>
+    <div style="display: flex; gap: 0; margin-bottom: 1.25rem; border-bottom: 2px solid #f0f0f0;">
+      <button type="button" id="tab-upload" onclick="switchTab('upload')"
+              style="padding: 0.5rem 1rem; font-size: 0.85rem; font-weight: 600; border: none; background: none;
+                     cursor: pointer; border-bottom: 2px solid #1a1a1a; margin-bottom: -2px; color: #1a1a1a;">
+        Upload File
+      </button>
+      <button type="button" id="tab-drive" onclick="switchTab('drive')"
+              style="padding: 0.5rem 1rem; font-size: 0.85rem; font-weight: 600; border: none; background: none;
+                     cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -2px; color: #999;">
+        From Google Drive
+      </button>
+    </div>
+
+    <%# ── Shared fields (both sources) ── %>
+    <div id="shared-fields">
       <div class="form-group">
         <label>Job Role</label>
-        <%= select_tag "video_analysis[job_role_id]",
+        <%= select_tag "shared_job_role_id",
               options_from_collection_for_select(current_user.job_roles.order(:title), :id, :title),
               prompt: "Select a role…",
-              required: true %>
+              id: "shared_job_role_id" %>
       </div>
       <div class="form-group">
         <label>Candidate Name</label>
-        <input type="text"
-               name="video_analysis[candidate_name]"
-               placeholder="e.g. Jane Smith"
-               required
-               data-upload-target="name">
+        <input type="text" id="shared_candidate_name" placeholder="e.g. Jane Smith">
       </div>
-      <div class="form-group">
-        <label class="drop-zone" data-upload-target="zone">
-          <input type="file"
-                 name="video_analysis[video]"
-                 accept="video/*,audio/*"
-                 required
-                 style="display:none"
-                 data-upload-target="input"
-                 data-action="change->upload#preview">
-          <div data-upload-target="prompt">
-            <div style="font-size: 2rem; margin-bottom: 0.5rem;">📁</div>
-            <div style="font-weight: 500;">Click to choose a video or audio file</div>
-            <div style="font-size: 0.8rem; color: #999; margin-top: 0.25rem;">MP4, MOV, M4A, MP3, WAV, etc.</div>
+    </div>
+
+    <%# ── Upload tab ── %>
+    <div id="panel-upload">
+      <%= form_with url: video_analyses_path, multipart: true, id: "form-upload",
+            data: { controller: "upload", "upload-name-field-id-value": "shared_candidate_name" } do |f| %>
+        <%= hidden_field_tag "video_analysis[job_role_id]",  nil, id: "upload_job_role_id" %>
+        <%= hidden_field_tag "video_analysis[candidate_name]", nil, id: "upload_candidate_name" %>
+        <div class="form-group">
+          <label class="drop-zone" data-upload-target="zone">
+            <input type="file"
+                   name="video_analysis[video]"
+                   accept=".txt,.vtt"
+                   required
+                   style="display:none"
+                   data-upload-target="input"
+                   data-action="change->upload#preview">
+            <div data-upload-target="prompt">
+              <div style="font-size: 2rem; margin-bottom: 0.5rem;">📄</div>
+              <div style="font-weight: 500;">Click to choose a transcript file</div>
+              <div style="font-size: 0.8rem; color: #999; margin-top: 0.25rem;">Plain text (.txt) or WebVTT (.vtt) format</div>
+            </div>
+            <div data-upload-target="filename" style="display:none; font-weight: 500; color: #333;"></div>
+          </label>
+        </div>
+        <%= f.submit "Start Analysis", class: "btn", data: { upload_target: "button" } %>
+      <% end %>
+    </div>
+
+    <%# ── Drive tab ── %>
+    <div id="panel-drive" style="display:none;"
+         data-controller="drive-picker"
+         data-drive-picker-access-token-value="<%= current_user.fresh_google_access_token.to_s %>"
+         data-drive-picker-api-key-value="<%= ENV.fetch('GOOGLE_BROWSER_API_KEY', '') %>"
+         data-drive-picker-name-field-id-value="shared_candidate_name"
+         data-drive-picker-folder-mode-value="true">
+      <%= form_with url: video_analyses_path, id: "form-drive" do |f| %>
+        <%= hidden_field_tag "video_analysis[job_role_id]",    nil, id: "drive_job_role_id" %>
+        <%= hidden_field_tag "video_analysis[candidate_name]", nil, id: "drive_candidate_name" %>
+        <%= f.hidden_field :drive_file_id,   data: { "drive-picker-target": "fileIdInput" } %>
+        <%= f.hidden_field :drive_file_name, data: { "drive-picker-target": "fileNameInput" } %>
+
+        <% if current_user.google_connected? %>
+          <div class="form-group">
+            <label style="display: flex; align-items: center; justify-content: space-between;">
+              <span>Recording Folder</span>
+              <span style="font-size: 0.72rem; color: #aaa; font-weight: 400;">Select the Google Meet recording folder — the transcript inside will be used automatically</span>
+            </label>
+            <input type="text"
+                   data-drive-picker-target="folderInput"
+                   placeholder="https://drive.google.com/drive/folders/… (optional)"
+                   style="width: 100%; padding: 0.45rem 0.6rem; border: 1px solid #ddd; border-radius: 6px;
+                          font-size: 0.82rem; color: #555; margin-bottom: 0.5rem; box-sizing: border-box;">
+            <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+              <button type="button"
+                      data-drive-picker-target="button"
+                      data-action="click->drive-picker#open"
+                      style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.6rem 1rem;
+                             border: 1px dashed #ccc; border-radius: 6px; background: #fafafa;
+                             font-size: 0.88rem; color: #555; cursor: pointer; width: fit-content;">
+                <svg width="16" height="16" viewBox="0 0 87.3 78" style="flex-shrink:0"><path d="M6.6 66.85l3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3L38.6 30H0c0 1.55.4 3.1 1.2 4.5z" fill="#0066DA"/><path d="M43.65 25L29.9 0c-1.35.8-2.5 1.9-3.3 3.3L1.2 45.5A9.06 9.06 0 000 50h38.6z" fill="#00AC47"/><path d="M73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5H48.7l8.55 16.05z" fill="#EA4335"/><path d="M43.65 25L57.4 0H29.9z" fill="#00832D"/><path d="M87.3 50H48.7L43.65 25 57.4 0c1.35.8 2.5 1.9 3.3 3.3l26.4 45.7c.8 1.4 1.2 2.95 1.2 4.5z" fill="#2684FC"/><path d="M73.55 76.8L48.7 50H87.3c0 1.55-.4 3.1-1.2 4.5L79.45 68l-5.9 8.8z" fill="#FFBA00"/></svg>
+                Browse Drive Folders
+              </button>
+              <span data-drive-picker-target="fileLabel"
+                    style="display:none; font-size: 0.85rem; color: #555; font-weight: 500;"></span>
+            </div>
           </div>
-          <div data-upload-target="filename" style="display:none; font-weight: 500; color: #333;"></div>
-        </label>
-      </div>
-      <%= f.submit "Start Analysis", class: "btn", data: { upload_target: "button" } %>
-    <% end %>
+        <% else %>
+          <div class="error-box" style="margin-bottom: 1rem;">
+            Connect your Google account above to browse Drive recordings.
+          </div>
+        <% end %>
+
+        <%= f.submit "Start Analysis", class: "btn",
+              disabled: !current_user.google_connected?,
+              style: current_user.google_connected? ? "" : "opacity: 0.4; cursor: not-allowed;" %>
+      <% end %>
+    </div>
   </div>
 <% end %>
+
+<script>
+  function syncSharedFields(formPrefix) {
+    const role = document.getElementById("shared_job_role_id")?.value
+    const name = document.getElementById("shared_candidate_name")?.value
+    document.getElementById(formPrefix + "_job_role_id").value = role || ""
+    document.getElementById(formPrefix + "_candidate_name").value = name || ""
+  }
+
+  function switchTab(tab) {
+    const panels  = ["upload", "drive"]
+    const buttons = { upload: document.getElementById("tab-upload"), drive: document.getElementById("tab-drive") }
+    panels.forEach(p => {
+      document.getElementById("panel-" + p).style.display = p === tab ? "" : "none"
+      buttons[p].style.borderBottomColor = p === tab ? "#1a1a1a" : "transparent"
+      buttons[p].style.color = p === tab ? "#1a1a1a" : "#999"
+    })
+  }
+
+  // Sync shared fields into the active form on submit
+  document.addEventListener("DOMContentLoaded", function() {
+    ["form-upload", "form-drive"].forEach(function(id) {
+      const form = document.getElementById(id)
+      if (!form) return
+      form.addEventListener("submit", function() {
+        const prefix = id === "form-upload" ? "upload" : "drive"
+        syncSharedFields(prefix)
+        const roleEl = document.getElementById("shared_job_role_id")
+        if (roleEl && !roleEl.value) {
+          alert("Please select a job role.")
+          event.preventDefault()
+        }
+      })
+    })
+  })
+</script>
 
 <% if @video_analyses.any? %>
   <% grouped = @video_analyses.group_by { |va| va.job_role&.title || "No Role" } %>
@@ -74,6 +199,7 @@
               <th>Episode Score</th>
               <th>Status</th>
               <th>Uploaded</th>
+              <th></th>
             </tr>
           </thead>
           <tbody>
@@ -94,6 +220,13 @@
                 </td>
                 <td><span class="badge badge-<%= va.status %>"><%= va.status %></span></td>
                 <td style="color: #999; font-size: 0.85rem;"><%= time_ago_in_words(va.created_at) %> ago</td>
+                <td onclick="event.stopPropagation()">
+                  <%= button_to "✕", video_analysis_path(va),
+                        method: :delete,
+                        data: { turbo_confirm: "Delete interview analysis for #{va.display_name.titleize}? The candidate record will be kept." },
+                        style: "padding: 0.25rem 0.55rem; font-size: 0.78rem; background: #dc2626;
+                                color: #fff; border: none; border-radius: 4px; cursor: pointer;" %>
+                </td>
               </tr>
             <% end %>
           </tbody>

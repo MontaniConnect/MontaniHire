@@ -38,17 +38,19 @@ class DashboardController < ApplicationController
     @interview_to_offer_rate  = pct(@total_offers, @submitted)
     @screens_to_hire          = @hired_count > 0 ? (@screened.to_f / @hired_count).round(1) : nil
 
-    # ── Timing ────────────────────────────────────────────────────────────
-    @avg_time_to_interview = avg_days(
-      base.joins(:video_analysis)
-          .where(video_analyses: { status: "completed" })
-          .pluck("candidates.created_at", "video_analyses.created_at")
-    )
+    # ── Timing: application-origin spans ─────────────────────────────────
+    @avg_time_to_screen         = avg_days(base.pluck(:applied_at, :screened_at))
+    @avg_time_to_interview      = avg_days(base.pluck(:applied_at, :interviewed_at))
+    @avg_time_to_shortlist      = avg_days(base.pluck(:applied_at, :shortlisted_at))
+    @avg_time_to_final          = avg_days(base.pluck(:applied_at, :final_interview_at))
+    @avg_time_to_hire           = avg_days(base.pluck(:applied_at, :hired_at))
 
-    @avg_time_to_hire = avg_days(
-      base.where(pipeline_stage: "hired").where.not(hired_at: nil)
-          .pluck(:created_at, :hired_at)
-    )
+    # ── Timing: stage-to-stage spans ─────────────────────────────────────
+    @avg_screen_to_interview    = avg_days(base.pluck(:screened_at, :interviewed_at))
+    @avg_interview_to_shortlist = avg_days(base.pluck(:interviewed_at, :shortlisted_at))
+    @avg_shortlist_to_final     = avg_days(base.pluck(:shortlisted_at, :final_interview_at))
+    @avg_final_to_hire          = avg_days(base.where(pipeline_stage: "hired")
+                                               .pluck(:final_interview_at, :hired_at))
   end
 
   private
@@ -59,8 +61,8 @@ class DashboardController < ApplicationController
   end
 
   def avg_days(pairs)
-    return nil if pairs.empty?
-    days = pairs.map { |from, to| (to - from) / 86400.0 }
+    days = pairs.filter_map { |from, to| (to - from) / 86400.0 if from && to }
+    return nil if days.empty?
     (days.sum / days.size).round(1)
   end
 end

@@ -1,94 +1,31 @@
-<% if @candidate %>
-  <div style="margin-bottom: 1rem;">
-    <%= link_to "← Back to #{@candidate.name}", candidate_path(@candidate),
-          style: "font-size: 0.88rem; color: #555; text-decoration: none;" %>
-  </div>
-  <h1>Upload Preliminary Interview</h1>
-  <p style="color: #666; font-size: 0.9rem; margin-bottom: 0.75rem;">
-    Uploading interview video for <strong><%= @candidate.name %></strong>.
-  </p>
-  <% if @candidate.pipeline_stage == "preliminary_interview" %>
-    <% _c_name   = @candidate.name %>
-    <% _c_role   = @candidate.job_role&.title || "the position" %>
-    <% _cal_text = ERB::Util.url_encode("Preliminary Interview — #{_c_name}") %>
-    <% _cal_det  = ERB::Util.url_encode("Candidate: #{_c_name}\nRole: #{_c_role}") %>
-    <% _cal_url  = "https://calendar.google.com/calendar/render?action=TEMPLATE&text=#{_cal_text}&details=#{_cal_det}" %>
-    <% _first    = _c_name.split.first %>
-    <% _mail_sub = ERB::Util.url_encode("Interview Invitation — #{_c_name}") %>
-    <% _mail_bdy = ERB::Util.url_encode("Dear #{_first},\n\nWe would like to invite you to a preliminary interview for the #{_c_role} position.\n\nPlease confirm your availability.\n\nBest regards") %>
-    <% _mail_url = "https://mail.google.com/mail/?view=cm&fs=1&su=#{_mail_sub}&body=#{_mail_bdy}" %>
-    <div style="display: flex; gap: 0.5rem; margin-bottom: 1.25rem; flex-wrap: wrap;">
-      <%= link_to _cal_url, target: "_blank", rel: "noopener",
-            style: "display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.82rem;
-                    padding: 0.35rem 0.75rem; border: 1px solid #ddd; border-radius: 6px;
-                    color: #555; text-decoration: none; background: #fff; white-space: nowrap;" do %>
-        📅 Schedule on Calendar
-      <% end %>
-      <%= link_to _mail_url, target: "_blank", rel: "noopener",
-            style: "display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.82rem;
-                    padding: 0.35rem 0.75rem; border: 1px solid #ddd; border-radius: 6px;
-                    color: #555; text-decoration: none; background: #fff; white-space: nowrap;" do %>
-        ✉️ Send Invite Email
-      <% end %>
+<% unless @candidate %>
+  <% redirect_to video_analyses_path and return %>
+<% end %>
+
+<div style="margin-bottom: 1rem;">
+  <%= link_to "← Back to #{@candidate.name}", candidate_path(@candidate),
+        style: "font-size: 0.88rem; color: #555; text-decoration: none;" %>
+</div>
+
+<h1>Preliminary Interview</h1>
+<p style="color: #666; font-size: 0.9rem; margin-bottom: 1.5rem;">
+  <strong><%= @candidate.name %></strong> has been advanced to Preliminary Interview.
+  Send them the invitation so they can confirm their details and book a slot.
+</p>
+
+<div class="card" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
+  <div>
+    <div style="font-weight: 600; font-size: 0.95rem; margin-bottom: 0.2rem;"><%= @candidate.name %></div>
+    <div style="font-size: 0.85rem; color: #888;">
+      <%= @candidate.email.presence || "No email on file — add one on the candidate profile first." %>
     </div>
+  </div>
+  <% if @candidate.email.present? %>
+    <%= link_to "✉️ Send Invite Email", send_invite_email_candidate_path(@candidate),
+          target: "_blank", rel: "noopener", class: "btn",
+          style: "display: inline-flex; align-items: center; gap: 0.4rem; white-space: nowrap;" %>
+  <% else %>
+    <%= link_to "← Add email on profile", candidate_path(@candidate),
+          style: "font-size: 0.85rem; color: #2563eb; text-decoration: none;" %>
   <% end %>
-<% else %>
-  <h1>Upload Interview Video</h1>
-<% end %>
-
-<% if current_user.job_roles.none? %>
-  <div class="card">
-    <div class="error-box">
-      No job roles yet. <%= link_to "Create a role first →", new_job_role_path, style: "color: #dc2626; font-weight: 600;" %>
-    </div>
-  </div>
-<% else %>
-  <div class="card">
-    <%= form_with url: video_analyses_path, multipart: true, data: { controller: "upload" } do |f| %>
-      <% if @candidate %>
-        <%= hidden_field_tag :candidate_id, @candidate.id %>
-      <% end %>
-
-      <div class="form-group">
-        <label>Job Role</label>
-        <%= select_tag "video_analysis[job_role_id]",
-              options_from_collection_for_select(
-                current_user.job_roles.order(:title), :id, :title,
-                @candidate&.job_role_id
-              ),
-              prompt: "Select a role…",
-              required: true %>
-      </div>
-
-      <div class="form-group">
-        <label>Candidate Name</label>
-        <input type="text"
-               name="video_analysis[candidate_name]"
-               value="<%= @candidate&.name %>"
-               placeholder="e.g. Jane Smith"
-               required
-               data-upload-target="name">
-      </div>
-
-      <div class="form-group">
-        <label class="drop-zone" data-upload-target="zone">
-          <input type="file"
-                 name="video_analysis[video]"
-                 accept="video/*,audio/*"
-                 required
-                 style="display:none"
-                 data-upload-target="input"
-                 data-action="change->upload#preview">
-          <div data-upload-target="prompt">
-            <div style="font-size: 2rem; margin-bottom: 0.5rem;">📁</div>
-            <div style="font-weight: 500;">Click to choose a video or audio file</div>
-            <div style="font-size: 0.8rem; color: #999; margin-top: 0.25rem;">MP4, MOV, M4A, MP3, WAV, etc.</div>
-          </div>
-          <div data-upload-target="filename" style="display:none; font-weight: 500; color: #333;"></div>
-        </label>
-      </div>
-
-      <%= f.submit "Start Analysis", class: "btn", data: { upload_target: "button" } %>
-    <% end %>
-  </div>
-<% end %>
+</div>

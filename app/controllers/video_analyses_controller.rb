@@ -79,7 +79,8 @@ class VideoAnalysesController < ApplicationController
   private
 
   def create_params
-    params.require(:video_analysis).permit(:video, :job_role_id, :candidate_name)
+    params.require(:video_analysis).permit(:video, :job_role_id, :candidate_name,
+                                           :drive_file_id, :drive_file_name)
   end
 
   def set_video_analysis

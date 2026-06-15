@@ -1,8 +1,6 @@
-require "anthropic"
-
 class ClaudeAnalysisService
   MODEL          = "claude-sonnet-4-6"
-  PROMPT_VERSION = "2026-06-08-v6"
+  PROMPT_VERSION = "2026-06-15-v7"
 
   SYSTEM_PROMPT = <<~PROMPT
     You are an expert HR analyst evaluating a candidate's preliminary interview transcript against a specific job role.
@@ -59,31 +57,31 @@ class ClaudeAnalysisService
                 - "not addressed": candidate did not demonstrate this requirement in the interview
             - "evidence": one sentence — what the candidate said (or failed to say) that drove this rating; quote directly from the transcript where possible
         - "episode_dimensions": an object scoring the candidate's overall interview performance across five behavioural dimensions. Each dimension is assessed holistically across the full transcript — not per question. Use "meets" | "partially_meets" | "vague" | "does_not_meet" for every dimension.
-            - "relevance_discipline":
-                - "meets": laser-focused; every sentence directly answers the prompt with zero rambling
-                - "partially_meets": minor tangential details, but the core answer remains on point
-                - "vague": heavy background context or narrative fluff; substance is light
-                - "does_not_meet": scattered answer that wanders completely away from the core question
-            - "ownership_language":
-                - "meets": flawless first-person active grammar throughout ("I designed," "I led")
-                - "partially_meets": balanced mix of I and we, with personal contributions clearly defined
-                - "vague": diffused we-language; highly unclear what they personally drove
-                - "does_not_meet": zero personal ownership claimed; acted entirely as a passive observer
-            - "outcome_orientation":
-                - "meets": voluntarily leads with hard data, technical metrics, or clear business results
-                - "partially_meets": mentioned results/deltas only when explicitly prompted or naturally arising
-                - "vague": activity-focused; described what they did step-by-step with no results stated
-                - "does_not_meet": effort-focused; framed answers around how hard they worked, not what happened
-            - "adaptability_signal":
-                - "meets": explicitly detailed an active strategy pivot when project constraints changed
-                - "partially_meets": showed strong awareness of alternative approaches, but didn't execute them
-                - "vague": fixed mindset; described using the exact same playbook across all examples
-                - "does_not_meet": rigid mindset; actively resisted or dismissed the idea that context alters approach
-            - "communication_clarity":
-                - "meets": sentences are logically structured and technically coherent; zero effort to parse
-                - "partially_meets": understandable, but heavily relies on crutch words ("like," "um," "you know")
-                - "vague": highly fragmented thoughts; structure disrupts the technical meaning
-                - "does_not_meet": complete word-salad; technical explanation is entirely incomprehensible
+            - "relevance_discipline": (Weight: 20%) Measures cognitive focus and the ability to listen and directly address a prompt.
+                - "meets": The candidate actively listens, addresses the exact prompt within the first 30 seconds, and concludes their thought cleanly without prompts.
+                - "partially_meets": Answers the question but takes a scenic route — includes slightly unrelated background context before hitting the point.
+                - "vague": Speaks in high-level theories or generalisations about the topic rather than sharing a specific, disciplined story.
+                - "does_not_meet": Completely hijacks the question to deliver a pre-memorised script, or rambles continuously until interrupted by the interviewer.
+            - "ownership_language": (Weight: 10%) Measures personal accountability while filtering out political corporate camouflage.
+                - "meets": Explicitly uses "I" to define their personal scope, decisions, and mistakes, while naturally using "we" only to attribute shared success or team morale.
+                - "partially_meets": Uses "we" for everything initially, but when explicitly prompted ("What was your exact role?"), they can quickly isolate their individual contribution.
+                - "vague": The transcript is heavily passive (e.g., "The project was launched," or "I was part of the circle that oversaw…"). Individual footprint is highly blurred.
+                - "does_not_meet": Credit-hogging (taking 100% solo credit for a massive multi-team effort) OR absolute deflection (using "we" as a shield to disguise the fact that they didn't actually execute any core tasks).
+            - "outcome_orientation": (Weight: 30%) Measures whether the candidate is driven by business reality or just passing time.
+                - "meets": Automatically anchors their story around a metric or a clear definition of success. Delivers the "R" in the STAR method without being asked.
+                - "partially_meets": Mentions a successful outcome, but it is purely qualitative (e.g., "The client was very happy"), or needs to be explicitly nudged to provide a data point.
+                - "vague": Describes a mountain of tasks, meetings, and personal busyness, but never clearly connects that activity to a final organisational result.
+                - "does_not_meet": Tells a story where the project dragged on indefinitely, failed without any reflection, or had no measurable purpose to begin with.
+            - "adaptability_signal": (Weight: 25%) Identifies learning agility and lack of ego.
+                - "meets": Describes a moment where their initial plan failed or constraints suddenly changed. Explicitly outlines how they shifted mindset, gathered feedback, and changed tactics.
+                - "partially_meets": Pivoted because they were forced to by management or external circumstances, rather than showing proactive situational awareness.
+                - "vague": Acknowledges a challenge occurred, but glosses over how they adapted — simply asserting they "worked harder" or "figured it out."
+                - "does_not_meet": Pure rigidity. When a playbook failed, they doubled down on the broken strategy, blamed external factors, or refused to accept candid feedback.
+            - "communication_clarity": (Weight: 15%) Measures structured thinking, narrative architecture, and baseline executive presence.
+                - "meets": Exceptional structural hygiene. Uses signposting (e.g., "There were two main challenges here; first…") or follows a crisp chronological path.
+                - "partially_meets": The story is fully coherent and easy to follow, but lacks crisp structure — reads more like a casual, unstructured chat.
+                - "vague": Fragmented pacing. Jumps backward and forward in time, forcing the interviewer to do mental gymnastics to piece the timeline together.
+                - "does_not_meet": Word salad. Deeply disorganised thoughts, heavy technical jargon used incorrectly to mask confusion, or answers that completely unravel midway through.
         - "domain_drift": true | false — whether the candidate shifted answers toward a different domain (e.g. general IT support, web development, project coordination, helpdesk) when asked role-specific questions
         - "domain_drift_explanation": a 1-sentence description of what domain the answers drifted toward and in which questions; null if domain_drift is false
     - "red_flags": array of strings — operational, credibility, or risk-weight flags only; must not duplicate jd_requirements_coverage gaps; empty array if none
@@ -92,35 +90,25 @@ class ClaudeAnalysisService
     Return only valid JSON. No markdown fences, no extra text.
   PROMPT
 
-  def initialize(analysis)
+  def initialize(analysis, client: AnthropicClient.new)
     @analysis = analysis
-    @client = Anthropic::Client.new(api_key: ENV.fetch("ANTHROPIC_API_KEY"))
+    @client   = client
   end
 
   def call
     @analysis.transition_to!("analyzing")
     raise "No transcript available" if @analysis.transcript.blank?
 
-    transcript   = @analysis.cleaned_transcript.presence || @analysis.transcript
-    job_context  = @analysis.job_role.to_prompt
+    transcript  = @analysis.cleaned_transcript.presence || @analysis.transcript
+    job_context = @analysis.job_role.to_prompt
 
-    response = @client.messages.create(
-      model: MODEL,
-      max_tokens: 4096,
-      temperature: 0,
-      system: [{ type: "text", text: SYSTEM_PROMPT, cache_control: { type: "ephemeral" } }],
+    result = @client.complete(
+      model:    MODEL,
+      system:   [{ type: "text", text: SYSTEM_PROMPT, cache_control: { type: "ephemeral" } }],
       messages: [{ role: "user", content: build_user_message(transcript, job_context) }]
     )
 
-    raw_json = response.content.first.text.gsub(/\A```(?:json)?\n?/, "").gsub(/\n?```\z/, "").strip
-    result = JSON.parse(raw_json)
-
-    # Compute jd_fit_score server-side from qualitative coverage labels — never trust Claude's arithmetic.
-    jd_cov = Array(result.dig("structured_feedback", "jd_requirements_coverage"))
-    jd_n_addr = jd_cov.count { |r| r["coverage"] == "addressed" }
-    jd_n_par  = jd_cov.count { |r| r["coverage"] == "partial" }
-    jd_n_tot  = jd_cov.size
-    jd_fit_score = jd_n_tot > 0 ? ((jd_n_addr * 1.0 + jd_n_par * 0.5) / jd_n_tot * 10.0).round(1) : nil
+    jd_fit_score = JdFitScoreCalculator.new(result.dig("structured_feedback", "jd_requirements_coverage")).score
 
     @analysis.update!(
       score: result["score"],
@@ -136,8 +124,6 @@ class ClaudeAnalysisService
     )
 
     result
-  rescue JSON::ParserError => e
-    raise "Claude returned invalid JSON: #{e.message}"
   end
 
   private

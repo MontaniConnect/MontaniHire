@@ -1,5 +1,5 @@
-<% cv_fb      = candidate.cv_analysis.structured_feedback || {} %>
-<% va_fb      = candidate.video_analysis.structured_feedback || {} %>
+<% cv_fb      = candidate.cv_feedback %>
+<% va_fb      = candidate.video_feedback %>
 <% jd_fit     = va_fb["jd_fit_score"]&.to_f %>
 <% ep_score   = candidate.episode_score %>
 <% jd_tier    = candidate.jd_fit_tier %>

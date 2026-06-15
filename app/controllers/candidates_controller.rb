@@ -1,5 +1,5 @@
 class CandidatesController < ApplicationController
-  before_action :set_candidate, only: %i[show update advance reject revert final_interview not_invited hire offer_declined not_selected confirm_outcome toggle_no_show destroy]
+  before_action :set_candidate, only: %i[show update advance reject revert final_interview not_invited hire offer_declined not_selected confirm_outcome toggle_no_show update_timeline destroy send_invite_email send_followup_email update_email]
 
   def index
     @q           = params[:q].to_s.strip
@@ -29,6 +29,7 @@ class CandidatesController < ApplicationController
     @shortlist_item = ShortlistItem.joins(:shortlist)
                                    .where(shortlists: { user_id: current_user.id })
                                    .find_by(candidate_id: @candidate.id)
+    @candidate.update_columns(intake_viewed_at: Time.current) if @candidate.intake_unread?
   end
 
   def update
@@ -45,8 +46,8 @@ class CandidatesController < ApplicationController
 
   def advance
     @candidate.advance_to_interview!
-    redirect_to new_video_analysis_path(candidate_id: @candidate.id),
-                notice: "#{@candidate.name} advanced to preliminary interview. Upload their interview video below."
+    redirect_to candidate_path(@candidate),
+                notice: "#{@candidate.name} advanced to preliminary interview."
   end
 
   def reject
@@ -107,6 +108,13 @@ class CandidatesController < ApplicationController
     end
   end
 
+  def update_timeline
+    @candidate.update!(timeline_params)
+    redirect_to candidate_path(@candidate), notice: "Timeline updated."
+  rescue => e
+    redirect_to candidate_path(@candidate), alert: "Could not save timeline: #{e.message}"
+  end
+
   def toggle_no_show
     if @candidate.no_show?
       @candidate.undo_no_show!
@@ -114,6 +122,50 @@ class CandidatesController < ApplicationController
     else
       @candidate.no_show!
       redirect_to candidate_path(@candidate), notice: "#{@candidate.name} marked as no-show."
+    end
+  end
+
+  def send_invite_email
+    if @candidate.email.blank?
+      redirect_to candidate_path(@candidate),
+                  alert: "No email address found for #{@candidate.name}. Add one and try again."
+      return
+    end
+
+    @candidate.update_columns(intake_token: SecureRandom.urlsafe_base64(16)) if @candidate.intake_token.blank?
+    @candidate.update_columns(invite_sent_at: Time.current)
+
+    intake_url = candidate_intake_url(token: @candidate.intake_token,
+                                      **Rails.application.config.action_mailer.default_url_options)
+    role       = @candidate.job_role&.title || "this position"
+    subject    = ERB::Util.url_encode("#{role} — Preliminary Interview Invitation")
+    body       = ERB::Util.url_encode(GmailDraftService.new(nil, @candidate).body(intake_url))
+    redirect_to "https://mail.google.com/mail/?view=cm&fs=1&to=#{ERB::Util.url_encode(@candidate.email)}&su=#{subject}&body=#{body}",
+                allow_other_host: true
+  end
+
+  def send_followup_email
+    if @candidate.email.blank? || @candidate.intake_token.blank?
+      redirect_to candidate_path(@candidate), alert: "Cannot send follow-up — invite has not been sent yet."
+      return
+    end
+
+    intake_url = candidate_intake_url(token: @candidate.intake_token,
+                                      **Rails.application.config.action_mailer.default_url_options)
+    role       = @candidate.job_role&.title || "this position"
+    subject    = ERB::Util.url_encode("Following up — #{role} Preliminary Interview Invitation")
+    body       = ERB::Util.url_encode(GmailDraftService.new(nil, @candidate).followup_body(intake_url))
+    redirect_to "https://mail.google.com/mail/?view=cm&fs=1&to=#{ERB::Util.url_encode(@candidate.email)}&su=#{subject}&body=#{body}",
+                allow_other_host: true
+  end
+
+  def update_email
+    email = params[:email].to_s.strip
+    if email.match?(URI::MailTo::EMAIL_REGEXP)
+      @candidate.update!(email: email)
+      redirect_to candidate_path(@candidate), notice: "Email updated."
+    else
+      redirect_to candidate_path(@candidate), alert: "Invalid email address."
     end
   end
 
@@ -126,6 +178,11 @@ class CandidatesController < ApplicationController
   end
 
   private
+
+  def timeline_params
+    params.require(:candidate).permit(:applied_at, :screened_at, :interviewed_at,
+                                      :shortlisted_at, :final_interview_at, :hired_at)
+  end
 
   def set_candidate
     @candidate = current_user.candidates.find(params[:id])

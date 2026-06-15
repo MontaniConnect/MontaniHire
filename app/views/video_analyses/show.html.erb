@@ -139,15 +139,6 @@
 <%# fb must be set before any section that uses it %>
 <% fb = @video_analysis.structured_feedback || {} %>
 
-<%# Video player %>
-<% if @video_analysis.video.attached? %>
-  <div class="card no-print" style="padding: 0; overflow: hidden;">
-    <video controls preload="metadata"
-           style="width: 100%; max-height: 480px; display: block; background: #000;">
-      <source src="<%= url_for(@video_analysis.video) %>" type="<%= @video_analysis.video.content_type %>">
-    </video>
-  </div>
-<% end %>
 
 <%# Score card — Episode Score %>
 <% ep_dims  = fb["episode_dimensions"] || {} %>
@@ -156,11 +147,11 @@
 <% if ep_score.present? || ep_dims.any? %>
   <%
     dim_meta = {
-      "relevance_discipline"  => { label: "Relevance Discipline",  desc: "Every answer directly addresses the question with zero rambling",              weight: 0.20 },
-      "ownership_language"    => { label: "Ownership Language",    desc: "First-person active grammar throughout — I designed, I led, I decided",         weight: 0.20 },
-      "outcome_orientation"   => { label: "Outcome Orientation",   desc: "Leads with results, metrics, and business impact — not just activity",           weight: 0.20 },
-      "adaptability_signal"   => { label: "Adaptability Signal",   desc: "Explicit strategy pivots when constraints changed — not just awareness",          weight: 0.20 },
-      "communication_clarity" => { label: "Communication Clarity", desc: "Logically structured and coherent; no crutch words or fragmented delivery",       weight: 0.20 }
+      "relevance_discipline"  => { label: "Relevance & Discipline", desc: "Measures cognitive focus and the ability to listen and directly address a prompt.",                          weight: 0.20 },
+      "ownership_language"    => { label: "Ownership Language",    desc: "Measures personal accountability while filtering out political corporate camouflage.",                     weight: 0.10 },
+      "outcome_orientation"   => { label: "Outcome Orientation",   desc: "Measures if they are driven by business reality or just passing time.",                                   weight: 0.30 },
+      "adaptability_signal"   => { label: "Adaptability Signal",   desc: "Identifies learning agility and lack of ego.",                                                            weight: 0.25 },
+      "communication_clarity" => { label: "Communication Clarity", desc: "Measures structured thinking, narrative architecture, and baseline executive presence.",                  weight: 0.15 }
     }
     shared_levels = { "meets" => "Meets", "partially_meets" => "Partially Meets", "vague" => "Vague", "does_not_meet" => "Does Not Meet" }
     level_labels = Hash.new(shared_levels).merge(dim_meta.keys.index_with { shared_levels })
@@ -196,11 +187,12 @@
         <% _tier_bg    = { "Shortlist" => "#dcfce7", "Borderline" => "#fef9c3", "Archive" => "#fee2e2" }[_cv_tier] %>
         <div style="display: flex; flex-direction: column; align-items: center; gap: 0.45rem;">
           <div style="font-size: 0.63rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #bbb;">CV Fit Score</div>
-          <div class="score-ring" style="--pct: <%= _cv_pct %>%">
-            <span class="score-value"><%= _cv_fit %></span>
-          </div>
+          <%= link_to cv_analysis_path(_cv), style: "text-decoration: none;" do %>
+            <div class="score-ring" style="--pct: <%= _cv_pct %>%; cursor: pointer;">
+              <span class="score-value"><%= _cv_fit %></span>
+            </div>
+          <% end %>
           <span style="font-size: 0.72rem; font-weight: 700; color: <%= _tier_color %>; background: <%= _tier_bg %>; border-radius: 99px; padding: 0.15rem 0.55rem;"><%= _cv_tier %></span>
-          <%= link_to "View CV →", cv_analysis_path(_cv), style: "font-size: 0.72rem; color: #aaa; text-decoration: none;" %>
         </div>
       <% end %>
     </div>
@@ -216,7 +208,8 @@
         <div style="display: flex; flex-direction: column; gap: 0;">
           <% dim_meta.each do |dim_key, meta| %>
             <% level = ep_dims[dim_key] %>
-            <% next unless level.present? %>
+            <% level = level["rating"] || level.values.first if level.is_a?(Hash) %>
+            <% next unless level.is_a?(String) && level.present? %>
             <% value   = dim_values.dig(dim_key, level) || 0.0 %>
             <% weight  = meta[:weight] %>
             <% contrib = value * weight %>
@@ -251,13 +244,32 @@
   </div>
 <% end %>
 
-<%# Red flags %>
-<% if Array(fb["red_flags"]).any? %>
-  <div class="card">
-    <h2>Red Flags</h2>
-    <ul class="feedback-col">
-      <% Array(fb["red_flags"]).each do |flag| %><li><%= flag %></li><% end %>
-    </ul>
+<%# Flags %>
+<% _consistency = fb["cv_interview_consistency"].to_s %>
+<% _has_consistency_flag = %w[significant\ inconsistencies minor\ inconsistencies].include?(_consistency) %>
+<% if Array(fb["red_flags"]).any? || _has_consistency_flag %>
+  <div class="card" style="padding: 1rem 1.25rem;">
+    <div style="font-size: 0.63rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #bbb; margin-bottom: 0.75rem;">Flags</div>
+    <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+      <% if Array(fb["red_flags"]).any? %>
+        <div>
+          <div style="font-size: 0.72rem; font-weight: 600; color: #854d0e; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 0.35rem;">Red Flags</div>
+          <ul style="margin: 0; padding-left: 1rem; display: flex; flex-direction: column; gap: 0.2rem;">
+            <% Array(fb["red_flags"]).each do |flag| %>
+              <li style="font-size: 0.82rem; color: #555; line-height: 1.4;"><%= flag %></li>
+            <% end %>
+          </ul>
+        </div>
+      <% end %>
+      <% if _has_consistency_flag %>
+        <div>
+          <div style="font-size: 0.72rem; font-weight: 600; color: #991b1b; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 0.35rem;">CV / Interview Consistency</div>
+          <ul style="margin: 0; padding-left: 1rem; display: flex; flex-direction: column; gap: 0.2rem;">
+            <li style="font-size: 0.82rem; color: #555; line-height: 1.4;"><%= _consistency.humanize %> detected between CV and interview responses.</li>
+          </ul>
+        </div>
+      <% end %>
+    </div>
   </div>
 <% end %>
 

@@ -5,6 +5,16 @@ Rails.application.routes.draw do
   # Can be used by load balancers and uptime monitors to verify that the app is live.
   get "up" => "rails/health#show", as: :rails_health_check
 
+  # Google OAuth
+  namespace :auth do
+    get  "google",            to: "google#connect",    as: :google
+    get  "google/callback",   to: "google#callback",   as: :google_callback
+    delete "google",          to: "google#disconnect",  as: :google_disconnect
+  end
+
+  get  "settings",             to: "settings#show",                as: :settings
+  patch "settings/availability", to: "settings#update_availability", as: :update_availability_settings
+
   root "video_analyses#index"
   get "dashboard", to: "dashboard#index", as: :dashboard
   resources :video_analyses, only: %i[new create show index destroy] do
@@ -41,8 +51,16 @@ Rails.application.routes.draw do
       post :not_selected
       post :confirm_outcome
       post :toggle_no_show
+      patch :update_timeline
+      get  :send_invite_email
+      get  :send_followup_email
+      patch :update_email
     end
   end
+
+  # Public candidate intake form (no auth)
+  get  "/i/:token", to: "intake#show",   as: :candidate_intake
+  post "/i/:token", to: "intake#submit", as: :candidate_intake_submit
 
   # Recruiter shortlist management (authenticated)
   resources :shortlists do
