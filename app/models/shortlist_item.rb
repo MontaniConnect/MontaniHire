@@ -54,6 +54,20 @@ class ShortlistItem < ApplicationRecord
       (shareable.is_a?(VideoAnalysis) ? shareable : nil)
   end
 
+  def sync_candidate_stage!(client_status)
+    stage = Candidate.stage_for_client_status(client_status)
+    # update_columns bypasses after_save to prevent circular sync
+    candidate&.update_columns(pipeline_stage: stage) if stage
+  end
+
+  def toggle_final_interview_no_show!
+    candidate&.update_columns(
+      final_interview_no_show: !candidate.final_interview_no_show
+    )
+  end
+
+  def final_interview_no_show? = candidate&.final_interview_no_show || false
+
   def kind
     parts = []
     parts << "CV"    if resolved_cv_analysis.present?

@@ -2,12 +2,14 @@ class SharedShortlistsController < ActionController::Base
   layout "shared"
 
   before_action :set_shortlist
-  before_action :require_verification, only: %i[feedback show_item]
+  before_action :require_verification, only: %i[feedback show_item no_show]
   helper_method :verified?
 
   def show
     if verified?
-      @items = @shortlist.shortlist_items.includes(:shareable)
+      @items = @shortlist.shortlist_items
+                         .includes(:shareable, candidate: :cv_analysis)
+                         .sort_by { |i| -(i.resolved_cv_analysis&.cv_fit_score || -1) }
     end
     # renders the email gate or the candidate list depending on verified?
   end
@@ -25,17 +27,30 @@ class SharedShortlistsController < ActionController::Base
   end
 
   def show_item
-    @item = @shortlist.shortlist_items.includes(:shareable).find(params[:id])
+    @item = @shortlist.shortlist_items
+                      .includes(:shareable, candidate: { video_analysis: { video_attachment: :blob } })
+                      .find(params[:id])
   end
 
   def feedback
-    item = @shortlist.shortlist_items.find(params[:id])
+    item       = @shortlist.shortlist_items.includes(:candidate).find(params[:id])
+    rating     = params[:client_rating].to_i
+    new_status = params[:client_status].presence || item.client_status
     item.update!(
-      client_status:  params[:client_status].presence || item.client_status,
-      client_comment: params[:client_comment]
+      client_status:  new_status,
+      client_comment: params[:client_comment],
+      client_rating:  rating.between?(1, 5) ? rating : nil
     )
+    item.sync_candidate_stage!(new_status)
     redirect_to shared_shortlist_item_path(@shortlist.token, item),
                 notice: "Feedback saved."
+  end
+
+  def no_show
+    item = @shortlist.shortlist_items.includes(:candidate).find(params[:id])
+    item.toggle_final_interview_no_show!
+    notice = item.final_interview_no_show? ? "Marked as no show." : "No show cleared."
+    redirect_to shared_shortlist_item_path(@shortlist.token, item), notice: notice
   end
 
   private

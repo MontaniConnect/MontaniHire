@@ -19,8 +19,9 @@ Rails.application.routes.draw do
   get "dashboard", to: "dashboard#index", as: :dashboard
   resources :video_analyses, only: %i[new create show index destroy] do
     member do
-      post :reanalyse
-      get  :transcript
+      post  :reanalyse
+      get   :transcript
+      patch :link_video
     end
   end
   resources :cv_analyses, only: %i[create show index destroy] do
@@ -58,6 +59,7 @@ Rails.application.routes.draw do
         get   :send_followup_email, to: "candidates/communications#send_followup_email"
         patch :update_email,        to: "candidates/communications#update_email"
         patch :update_timeline,     to: "candidates/communications#update_timeline"
+        post  :sync_calendar,       to: "candidates/communications#sync_calendar"
       end
     end
   end
@@ -77,5 +79,6 @@ Rails.application.routes.draw do
     post  "/:token/verify",               to: "shared_shortlists#verify",    as: :verify_shared_shortlist
     get   "/:token/items/:id",            to: "shared_shortlists#show_item", as: :shared_shortlist_item
     patch "/:token/items/:id/feedback",   to: "shared_shortlists#feedback",  as: :shared_shortlist_feedback
+    patch "/:token/items/:id/no_show",    to: "shared_shortlists#no_show",   as: :shared_shortlist_no_show
   end
 end

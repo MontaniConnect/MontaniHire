@@ -1,4 +1,4 @@
-<% status_labels = { "pending" => "🤔 Hold", "approved" => "👍 Advance", "rejected" => "👎 Reject" } %>
+<% status_labels = { "pending" => "Hold", "approved" => "Invite", "rejected" => "Decline" } %>
 <% status_badge  = { "pending" => "badge-pending", "approved" => "badge-approved", "rejected" => "badge-rejected" } %>
 
 <% if flash[:notice] %>
@@ -31,38 +31,95 @@
   </span>
 </div>
 
-<%# ── CV document ── %>
+<%# ── Summary (with CV download) ── %>
 <% cv = @item.cv_analysis %>
-<% if cv&.cv&.attached? %>
-  <div class="card" style="padding: 1rem 1.25rem; display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
-    <div style="flex: 1; min-width: 0;">
-      <div style="font-size: 0.72rem; color: #888; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.2rem;">CV Document</div>
-      <div style="font-size: 0.9rem; color: #333;"><%= cv.cv.filename %></div>
+<% if @item.summary.present? || cv&.cv&.attached? %>
+  <div class="card">
+    <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; flex-wrap: wrap; margin-bottom: <%= @item.summary.present? ? "0.75rem" : "0" %>;">
+      <h2 style="margin: 0;">Summary</h2>
+      <% if cv&.cv&.attached? %>
+        <%= link_to "Download CV", url_for(cv.cv),
+              class: "btn", style: "padding: 0.35rem 0.85rem; font-size: 0.82rem; flex-shrink: 0; background: #555;",
+              download: cv.cv.filename.to_s %>
+      <% end %>
     </div>
-    <%= link_to "Download CV", url_for(cv.cv),
-          class: "btn", style: "padding: 0.45rem 1rem; font-size: 0.85rem; flex-shrink: 0;",
-          download: cv.cv.filename.to_s %>
+    <% if @item.summary.present? %>
+      <p style="font-size: 0.93rem; color: #333; line-height: 1.75; margin: 0;"><%= @item.summary %></p>
+    <% end %>
   </div>
 <% end %>
 
-<%# ── Feedback form (above the video) ── %>
+<%# ── Video interview ── %>
+<% va = @item.resolved_video_analysis %>
+<% if va %>
+  <% if va.video.attached? && va.video.blob&.content_type.to_s.start_with?("video/") %>
+    <div class="card" style="padding: 0; overflow: hidden;">
+      <video controls preload="metadata"
+             style="width: 100%; display: block; background: #000; max-height: 480px;">
+        <source src="<%= rails_blob_url(va.video, disposition: 'inline') %>"
+                type="<%= va.video.blob.content_type %>">
+      </video>
+    </div>
+  <% elsif va.drive_video_file_id.present? %>
+    <div class="card" style="padding: 0; overflow: hidden;">
+      <div style="position: relative; width: 100%; padding-bottom: 56.25%; background: #000;">
+        <iframe src="https://drive.google.com/file/d/<%= va.drive_video_file_id %>/preview"
+                allow="autoplay"
+                style="position: absolute; inset: 0; width: 100%; height: 100%; border: none;">
+        </iframe>
+      </div>
+    </div>
+  <% end %>
+<% end %>
+
+<%# ── Feedback form ── %>
 <div class="card">
   <h2 style="margin-bottom: 0.85rem;">Your decision</h2>
   <%= form_with url: shared_shortlist_feedback_path(@shortlist.token, @item),
                 method: :patch, style: "display: flex; flex-direction: column; gap: 0.75rem;" do |f| %>
+    <%
+      decision_colors = {
+        "pending"  => { bg: "#fef3c7", color: "#92400e", border: "#fcd34d", hover_bg: "#fde68a", active_bg: "#fbbf24" },
+        "approved" => { bg: "#d1fae5", color: "#065f46", border: "#6ee7b7", hover_bg: "#a7f3d0", active_bg: "#34d399" },
+        "rejected" => { bg: "#fee2e2", color: "#991b1b", border: "#fca5a5", hover_bg: "#fecaca", active_bg: "#f87171" }
+      }
+    %>
     <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-      <% [["pending", "🤔 Hold"], ["approved", "👍 Advance"], ["rejected", "👎 Reject"]].each do |val, label| %>
+      <% [["pending", "Hold"], ["approved", "Invite"], ["rejected", "Decline"]].each do |val, label| %>
+        <% c = decision_colors[val] %>
+        <% selected = @item.client_status == val %>
         <label style="flex: 1; min-width: 90px; cursor: pointer;">
           <input type="radio" name="client_status" value="<%= val %>"
-                 <%= "checked" if @item.client_status == val %> style="display: none;"
-                 onchange="this.closest('form').querySelectorAll('[data-decision]').forEach(function(el){el.style.background=''; el.style.color=''; el.style.borderColor='#ddd';}); var d=document.querySelector('[data-decision=\"<%= val %>\"]'); d.style.background='#1a1a1a'; d.style.color='#fff'; d.style.borderColor='#1a1a1a';">
+                 <%= "checked" if selected %> style="display: none;"
+                 onchange="this.closest('form').requestSubmit();">
           <div data-decision="<%= val %>"
-               style="padding: 0.55rem 0.75rem; border: 1px solid #ddd; border-radius: 6px; font-size: 0.88rem; font-weight: 500; text-align: center;
-                      <%= @item.client_status == val ? "background: #1a1a1a; color: #fff; border-color: #1a1a1a;" : "" %>">
+               style="padding: 0.55rem 0.75rem; border: 2px solid <%= selected ? c[:border] : '#ddd' %>; border-radius: 6px; font-size: 0.88rem; font-weight: 600; text-align: center; transition: background 0.15s, border-color 0.15s;
+                      <%= selected ? "background: #{c[:bg]}; color: #{c[:color]};" : "color: #555;" %>"
+               onmouseover="if(!this.dataset.selected) { this.style.background='<%= c[:hover_bg] %>'; this.style.borderColor='<%= c[:border] %>'; this.style.color='<%= c[:color] %>'; }"
+               onmouseout="if(!this.dataset.selected) { this.style.background=''; this.style.borderColor='#ddd'; this.style.color='#555'; }"
+               onmousedown="if(!this.dataset.selected) { this.style.background='<%= c[:active_bg] %>'; }"
+               onmouseup="if(!this.dataset.selected) { this.style.background='<%= c[:hover_bg] %>'; }"
+               <%= "data-selected=true" if selected %>>
             <%= label %>
           </div>
         </label>
       <% end %>
+    </div>
+    <div>
+      <label style="font-size: 0.8rem; font-weight: 500; color: #555; display: block; margin-bottom: 0.5rem;">Rating</label>
+      <div style="display: flex; gap: 0.25rem; flex-direction: row-reverse; justify-content: flex-end;">
+        <% (1..5).reverse_each do |i| %>
+          <label style="cursor: pointer; font-size: 1.6rem; color: #d1d5db; line-height: 1;"
+                 onmouseenter="highlightStars(this, <%= i %>)"
+                 onmouseleave="resetStars(this.closest('div'))">
+            <input type="radio" name="client_rating" value="<%= i %>"
+                   <%= "checked" if @item.client_rating == i %>
+                   style="display: none;"
+                   onchange="resetStars(this.closest('div'))">
+            ★
+          </label>
+        <% end %>
+      </div>
     </div>
     <div>
       <label style="font-size: 0.8rem; font-weight: 500; color: #555; display: block; margin-bottom: 0.3rem;">Notes</label>
@@ -74,15 +131,46 @@
   <% end %>
 </div>
 
-<%# ── Video interview ── %>
-<% va = @item.video_analysis %>
-
-<%# Summary %>
-<% fb = @item.structured_feedback || {} %>
-<% if @item.summary.present? %>
-  <div class="card">
-    <h2>Summary</h2>
-    <p style="font-size: 0.93rem; color: #333; line-height: 1.75;"><%= @item.summary %></p>
+<%# ── No Show ── %>
+<% if @item.client_status == "approved" && @item.candidate %>
+  <% no_show = @item.candidate.final_interview_no_show %>
+  <div class="card" style="display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap;">
+    <div>
+      <div style="font-weight: 600; font-size: 0.92rem; margin-bottom: 0.2rem;">Final Interview Attendance</div>
+      <div style="font-size: 0.82rem; color: #888;">
+        <%= no_show ? "Candidate did not attend the final interview." : "Candidate is expected to attend." %>
+      </div>
+    </div>
+    <%= button_to no_show ? "↩ Clear No Show" : "⚠ Mark as No Show",
+          shared_shortlist_no_show_path(@shortlist.token, @item),
+          method: :patch,
+          style: "padding: 0.45rem 1rem; font-size: 0.85rem; font-weight: 600; border: none; border-radius: 6px; cursor: pointer;
+                  background: #{no_show ? '#6b7280' : '#f59e0b'}; color: #fff;" %>
   </div>
 <% end %>
 
+<script>
+  function highlightStars(hoveredLabel, upTo) {
+    const container = hoveredLabel.closest("div")
+    const labels    = Array.from(container.querySelectorAll("label")).reverse()
+    labels.forEach(function(l, idx) {
+      l.style.color = idx < upTo ? "#f59e0b" : "#d1d5db"
+    })
+  }
+
+  function resetStars(container) {
+    const labels  = Array.from(container.querySelectorAll("label")).reverse()
+    const checked = container.querySelector("input[type=radio]:checked")
+    const rating  = checked ? parseInt(checked.value) : 0
+    labels.forEach(function(l, idx) {
+      l.style.color = idx < rating ? "#f59e0b" : "#d1d5db"
+    })
+  }
+
+  document.addEventListener("DOMContentLoaded", function() {
+    document.querySelectorAll("input[name=client_rating]").forEach(function(input) {
+      const container = input.closest("div[style]")
+      if (container) resetStars(container)
+    })
+  })
+</script>

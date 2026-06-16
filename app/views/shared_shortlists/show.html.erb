@@ -32,7 +32,7 @@
     <% end %>
   </div>
 
-  <% status_labels = { "pending" => "🤔 Hold", "approved" => "👍 Advance", "rejected" => "👎 Reject" } %>
+  <% status_labels = { "pending" => "Hold", "approved" => "Invite", "rejected" => "Decline" } %>
   <% status_badge  = { "pending" => "badge-pending", "approved" => "badge-approved", "rejected" => "badge-rejected" } %>
 
   <% if @items.none? %>
@@ -64,6 +64,15 @@
                 <% end %>
               </div>
             </div>
+
+            <%# CV fit score %>
+            <% cv_score = item.resolved_cv_analysis&.cv_fit_score %>
+            <% if cv_score.present? %>
+              <div style="flex-shrink: 0; text-align: center;">
+                <div style="font-size: 1.1rem; font-weight: 700; color: #1a1a1a; line-height: 1;"><%= "%.1f" % cv_score %></div>
+                <div style="font-size: 0.65rem; color: #aaa; font-weight: 500; margin-top: 0.1rem;">CV FIT</div>
+              </div>
+            <% end %>
 
             <%# Status + arrow %>
             <div style="display: flex; align-items: center; gap: 0.75rem; flex-shrink: 0;">

@@ -32,12 +32,12 @@
     <div style="display: flex; gap: 0; margin-bottom: 1.25rem; border-bottom: 2px solid #f0f0f0;">
       <button type="button" id="tab-upload" onclick="switchTab('upload')"
               style="padding: 0.5rem 1rem; font-size: 0.85rem; font-weight: 600; border: none; background: none;
-                     cursor: pointer; border-bottom: 2px solid #1a1a1a; margin-bottom: -2px; color: #1a1a1a;">
+                     cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -2px; color: #999;">
         Upload File
       </button>
       <button type="button" id="tab-drive" onclick="switchTab('drive')"
               style="padding: 0.5rem 1rem; font-size: 0.85rem; font-weight: 600; border: none; background: none;
-                     cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -2px; color: #999;">
+                     cursor: pointer; border-bottom: 2px solid #1a1a1a; margin-bottom: -2px; color: #1a1a1a;">
         From Google Drive
       </button>
     </div>
@@ -58,7 +58,7 @@
     </div>
 
     <%# ── Upload tab ── %>
-    <div id="panel-upload">
+    <div id="panel-upload" style="display:none;">
       <%= form_with url: video_analyses_path, multipart: true, id: "form-upload",
             data: { controller: "upload", "upload-name-field-id-value": "shared_candidate_name" } do |f| %>
         <%= hidden_field_tag "video_analysis[job_role_id]",  nil, id: "upload_job_role_id" %>
@@ -67,15 +67,15 @@
           <label class="drop-zone" data-upload-target="zone">
             <input type="file"
                    name="video_analysis[video]"
-                   accept=".txt,.vtt"
+                   accept="video/*,.mp4,.mov,.webm,.avi"
                    required
                    style="display:none"
                    data-upload-target="input"
                    data-action="change->upload#preview">
             <div data-upload-target="prompt">
-              <div style="font-size: 2rem; margin-bottom: 0.5rem;">📄</div>
-              <div style="font-weight: 500;">Click to choose a transcript file</div>
-              <div style="font-size: 0.8rem; color: #999; margin-top: 0.25rem;">Plain text (.txt) or WebVTT (.vtt) format</div>
+              <div style="font-size: 2rem; margin-bottom: 0.5rem;">🎥</div>
+              <div style="font-weight: 500;">Click to choose a video file</div>
+              <div style="font-size: 0.8rem; color: #999; margin-top: 0.25rem;">MP4, MOV, WebM — transcript generated automatically via Whisper</div>
             </div>
             <div data-upload-target="filename" style="display:none; font-weight: 500; color: #333;"></div>
           </label>
@@ -85,12 +85,12 @@
     </div>
 
     <%# ── Drive tab ── %>
-    <div id="panel-drive" style="display:none;"
+    <div id="panel-drive"
          data-controller="drive-picker"
          data-drive-picker-access-token-value="<%= current_user.fresh_google_access_token.to_s %>"
          data-drive-picker-api-key-value="<%= ENV.fetch('GOOGLE_BROWSER_API_KEY', '') %>"
          data-drive-picker-name-field-id-value="shared_candidate_name"
-         data-drive-picker-folder-mode-value="true">
+         data-drive-picker-folder-mode-value="false">
       <%= form_with url: video_analyses_path, id: "form-drive" do |f| %>
         <%= hidden_field_tag "video_analysis[job_role_id]",    nil, id: "drive_job_role_id" %>
         <%= hidden_field_tag "video_analysis[candidate_name]", nil, id: "drive_candidate_name" %>

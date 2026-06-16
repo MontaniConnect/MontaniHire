@@ -1,5 +1,5 @@
 class VideoAnalysesController < AuthenticatedController
-  before_action :set_video_analysis, only: %i[show destroy reanalyse transcript]
+  before_action :set_video_analysis, only: %i[show destroy reanalyse transcript link_video]
 
   def new
     @candidate = current_user.candidates.find_by(id: params[:candidate_id])
@@ -65,6 +65,22 @@ class VideoAnalysesController < AuthenticatedController
   rescue => e
     @video_analysis.transition_to!("failed", error: e.message)
     redirect_to video_analysis_path(@video_analysis), alert: "Re-analysis failed: #{e.message}"
+  end
+
+  def link_video
+    raw     = params[:drive_video_url].to_s.strip
+    file_id = raw.match(/\/d\/([a-zA-Z0-9_-]+)/)&.captures&.first ||
+              (raw.match?(/\A[a-zA-Z0-9_-]+\z/) ? raw : nil)
+
+    candidate = current_user.candidates.find_by(video_analysis_id: @video_analysis.id)
+    back      = candidate ? candidate_path(candidate) : video_analysis_path(@video_analysis)
+
+    if file_id.present?
+      @video_analysis.update!(drive_video_file_id: file_id)
+      redirect_to back, notice: "Video recording linked."
+    else
+      redirect_to back, alert: "Could not parse a file ID from that URL. Paste the full Google Drive share link."
+    end
   end
 
   def transcript

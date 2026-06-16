@@ -32,6 +32,15 @@
 
   <%# Action buttons %>
   <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: flex-start;">
+    <% if @cv_analysis.cv.attached? %>
+      <%= link_to "Preview CV", rails_blob_url(@cv_analysis.cv, disposition: "inline"),
+            target: "_blank", rel: "noopener", class: "btn",
+            style: "background: #555; padding: 0.45rem 0.9rem; font-size: 0.85rem;" %>
+    <% elsif @cv_analysis.drive_file_id.present? %>
+      <%= link_to "Preview CV", "https://drive.google.com/file/d/#{@cv_analysis.drive_file_id}/view",
+            target: "_blank", rel: "noopener", class: "btn",
+            style: "background: #555; padding: 0.45rem 0.9rem; font-size: 0.85rem;" %>
+    <% end %>
     <% if @cv_analysis.completed? %>
       <button onclick="window.print()"
               class="btn"

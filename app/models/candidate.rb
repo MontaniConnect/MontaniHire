@@ -8,6 +8,25 @@ class Candidate < ApplicationRecord
 
   STAGES = %w[cv_review preliminary_interview client_interview final_interview not_invited rejected hired offer_declined not_selected].freeze
 
+  STAGE_CLIENT_STATUS = {
+    "client_interview" => "pending",
+    "final_interview"  => "approved",
+    "hired"            => "approved",
+    "offer_declined"   => "approved",
+    "not_invited"      => "rejected",
+    "rejected"         => "rejected",
+    "not_selected"     => "rejected"
+  }.freeze
+
+  CLIENT_STATUS_STAGE = {
+    "pending"  => "client_interview",
+    "approved" => "final_interview",
+    "rejected" => "not_selected"
+  }.freeze
+
+  def self.stage_for_client_status(status) = CLIENT_STATUS_STAGE[status]
+
+  after_save :sync_shortlist_client_status, if: :saved_change_to_pipeline_stage?
 
   validates :name, presence: true
 
@@ -143,5 +162,11 @@ class Candidate < ApplicationRecord
 
   def generate_intake_token
     self.intake_token ||= SecureRandom.urlsafe_base64(16)
+  end
+
+  def sync_shortlist_client_status
+    status = STAGE_CLIENT_STATUS[pipeline_stage]
+    return unless status
+    shortlist_items.update_all(client_status: status)
   end
 end

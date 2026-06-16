@@ -8,24 +8,161 @@
 </div>
 
 <h1>Preliminary Interview</h1>
-<p style="color: #666; font-size: 0.9rem; margin-bottom: 1.5rem;">
-  <strong><%= @candidate.name %></strong> has been advanced to Preliminary Interview.
-  Send them the invitation so they can confirm their details and book a slot.
-</p>
 
-<div class="card" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
-  <div>
-    <div style="font-weight: 600; font-size: 0.95rem; margin-bottom: 0.2rem;"><%= @candidate.name %></div>
-    <div style="font-size: 0.85rem; color: #888;">
-      <%= @candidate.email.presence || "No email on file — add one on the candidate profile first." %>
+<% if @candidate.intake_submitted? %>
+  <%# Candidate has booked — show video upload form %>
+  <p style="color: #666; font-size: 0.9rem; margin-bottom: 1.5rem;">
+    Upload the interview recording for <strong><%= @candidate.name %></strong>.
+  </p>
+
+  <% if current_user.job_roles.none? %>
+    <div class="card">
+      <div class="error-box">
+        No job roles yet. <%= link_to "Create a role first →", new_job_role_path, style: "color: #dc2626; font-weight: 600;" %>
+      </div>
     </div>
-  </div>
-  <% if @candidate.email.present? %>
-    <%= link_to "✉️ Send Invite Email", send_invite_email_candidate_path(@candidate),
-          target: "_blank", rel: "noopener", class: "btn",
-          style: "display: inline-flex; align-items: center; gap: 0.4rem; white-space: nowrap;" %>
   <% else %>
-    <%= link_to "← Add email on profile", candidate_path(@candidate),
-          style: "font-size: 0.85rem; color: #2563eb; text-decoration: none;" %>
+    <div class="card">
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
+        <h2 style="margin: 0;">Add Interview Recording</h2>
+        <% if current_user.google_connected? %>
+          <span style="font-size: 0.78rem; color: #166534; background: #dcfce7; border-radius: 99px; padding: 0.2rem 0.65rem; font-weight: 600;">✓ Google Drive connected</span>
+        <% else %>
+          <%= link_to auth_google_path,
+                style: "font-size: 0.8rem; display: inline-flex; align-items: center; gap: 0.35rem;
+                        padding: 0.3rem 0.75rem; border: 1px solid #ddd; border-radius: 6px;
+                        color: #555; text-decoration: none; background: #fff; white-space: nowrap;" do %>
+            Connect Google Drive
+          <% end %>
+        <% end %>
+      </div>
+
+      <div style="display: flex; gap: 0; margin-bottom: 1.25rem; border-bottom: 2px solid #f0f0f0;">
+        <button type="button" id="tab-upload" onclick="switchTab('upload')"
+                style="padding: 0.5rem 1rem; font-size: 0.85rem; font-weight: 600; border: none; background: none;
+                       cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -2px; color: #999;">
+          Upload File
+        </button>
+        <button type="button" id="tab-drive" onclick="switchTab('drive')"
+                style="padding: 0.5rem 1rem; font-size: 0.85rem; font-weight: 600; border: none; background: none;
+                       cursor: pointer; border-bottom: 2px solid #1a1a1a; margin-bottom: -2px; color: #1a1a1a;">
+          From Google Drive
+        </button>
+      </div>
+
+      <div id="panel-upload" style="display:none;">
+        <%= form_with url: video_analyses_path, multipart: true, id: "form-upload",
+              data: { controller: "upload", "upload-name-field-id-value": "shared_candidate_name" } do |f| %>
+          <%= hidden_field_tag "candidate_id", @candidate.id %>
+          <%= hidden_field_tag "video_analysis[job_role_id]",    @candidate.job_role_id, id: "upload_job_role_id" %>
+          <%= hidden_field_tag "video_analysis[candidate_name]", @candidate.name,        id: "upload_candidate_name" %>
+          <input type="hidden" id="shared_candidate_name" value="<%= @candidate.name %>">
+          <div class="form-group">
+            <label class="drop-zone" data-upload-target="zone">
+              <input type="file"
+                     name="video_analysis[video]"
+                     accept="video/*,.mp4,.mov,.webm,.avi"
+                     required
+                     style="display:none"
+                     data-upload-target="input"
+                     data-action="change->upload#preview">
+              <div data-upload-target="prompt">
+                <div style="font-size: 2rem; margin-bottom: 0.5rem;">🎥</div>
+                <div style="font-weight: 500;">Click to choose a video file</div>
+                <div style="font-size: 0.8rem; color: #999; margin-top: 0.25rem;">MP4, MOV, WebM — transcript generated automatically via Whisper</div>
+              </div>
+              <div data-upload-target="filename" style="display:none; font-weight: 500; color: #333;"></div>
+            </label>
+          </div>
+          <%= f.submit "Start Analysis", class: "btn", data: { upload_target: "button" } %>
+        <% end %>
+      </div>
+
+      <div id="panel-drive"
+           data-controller="drive-picker"
+           data-drive-picker-access-token-value="<%= current_user.fresh_google_access_token.to_s %>"
+           data-drive-picker-api-key-value="<%= ENV.fetch('GOOGLE_BROWSER_API_KEY', '') %>"
+           data-drive-picker-name-field-id-value="shared_candidate_name"
+           data-drive-picker-folder-mode-value="false">
+        <%= form_with url: video_analyses_path, id: "form-drive" do |f| %>
+          <%= hidden_field_tag "candidate_id", @candidate.id %>
+          <%= hidden_field_tag "video_analysis[job_role_id]",    @candidate.job_role_id, id: "drive_job_role_id" %>
+          <%= hidden_field_tag "video_analysis[candidate_name]", @candidate.name,        id: "drive_candidate_name" %>
+          <%= f.hidden_field :drive_file_id,   data: { "drive-picker-target": "fileIdInput" } %>
+          <%= f.hidden_field :drive_file_name, data: { "drive-picker-target": "fileNameInput" } %>
+
+          <% if current_user.google_connected? %>
+            <div class="form-group">
+              <label style="display: flex; align-items: center; justify-content: space-between;">
+                <span>Recording Folder</span>
+                <span style="font-size: 0.72rem; color: #aaa; font-weight: 400;">Select the Google Meet recording folder — the transcript inside will be used automatically</span>
+              </label>
+              <input type="text"
+                     data-drive-picker-target="folderInput"
+                     placeholder="https://drive.google.com/drive/folders/… (optional)"
+                     style="width: 100%; padding: 0.45rem 0.6rem; border: 1px solid #ddd; border-radius: 6px;
+                            font-size: 0.82rem; color: #555; margin-bottom: 0.5rem; box-sizing: border-box;">
+              <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                <button type="button"
+                        data-drive-picker-target="button"
+                        data-action="click->drive-picker#open"
+                        style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.6rem 1rem;
+                               border: 1px dashed #ccc; border-radius: 6px; background: #fafafa;
+                               font-size: 0.88rem; color: #555; cursor: pointer; width: fit-content;">
+                  <svg width="16" height="16" viewBox="0 0 87.3 78" style="flex-shrink:0"><path d="M6.6 66.85l3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3L38.6 30H0c0 1.55.4 3.1 1.2 4.5z" fill="#0066DA"/><path d="M43.65 25L29.9 0c-1.35.8-2.5 1.9-3.3 3.3L1.2 45.5A9.06 9.06 0 000 50h38.6z" fill="#00AC47"/><path d="M73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5H48.7l8.55 16.05z" fill="#EA4335"/><path d="M43.65 25L57.4 0H29.9z" fill="#00832D"/><path d="M87.3 50H48.7L43.65 25 57.4 0c1.35.8 2.5 1.9-3.3 3.3l26.4 45.7c.8 1.4 1.2 2.95 1.2 4.5z" fill="#2684FC"/><path d="M73.55 76.8L48.7 50H87.3c0 1.55-.4 3.1-1.2 4.5L79.45 68l-5.9 8.8z" fill="#FFBA00"/></svg>
+                  Browse Drive Folders
+                </button>
+                <span data-drive-picker-target="fileLabel"
+                      style="display:none; font-size: 0.85rem; color: #555; font-weight: 500;"></span>
+              </div>
+            </div>
+          <% else %>
+            <div class="error-box" style="margin-bottom: 1rem;">
+              Connect your Google account above to browse Drive recordings.
+            </div>
+          <% end %>
+
+          <%= f.submit "Start Analysis", class: "btn",
+                disabled: !current_user.google_connected?,
+                style: current_user.google_connected? ? "" : "opacity: 0.4; cursor: not-allowed;" %>
+        <% end %>
+      </div>
+    </div>
   <% end %>
-</div>
+
+  <script>
+    function switchTab(tab) {
+      const panels  = ["upload", "drive"]
+      const buttons = { upload: document.getElementById("tab-upload"), drive: document.getElementById("tab-drive") }
+      panels.forEach(p => {
+        document.getElementById("panel-" + p).style.display = p === tab ? "" : "none"
+        buttons[p].style.borderBottomColor = p === tab ? "#1a1a1a" : "transparent"
+        buttons[p].style.color = p === tab ? "#1a1a1a" : "#999"
+      })
+    }
+  </script>
+
+<% else %>
+  <%# Candidate has not yet submitted intake — prompt to send invite %>
+  <p style="color: #666; font-size: 0.9rem; margin-bottom: 1.5rem;">
+    <strong><%= @candidate.name %></strong> has been advanced to Preliminary Interview.
+    Send them the invitation so they can confirm their details and book a slot.
+  </p>
+
+  <div class="card" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
+    <div>
+      <div style="font-weight: 600; font-size: 0.95rem; margin-bottom: 0.2rem;"><%= @candidate.name %></div>
+      <div style="font-size: 0.85rem; color: #888;">
+        <%= @candidate.email.presence || "No email on file — add one on the candidate profile first." %>
+      </div>
+    </div>
+    <% if @candidate.email.present? %>
+      <%= link_to "✉️ Send Invite Email", send_invite_email_candidate_path(@candidate),
+            target: "_blank", rel: "noopener", class: "btn",
+            style: "display: inline-flex; align-items: center; gap: 0.4rem; white-space: nowrap;" %>
+    <% else %>
+      <%= link_to "← Add email on profile", candidate_path(@candidate),
+            style: "font-size: 0.85rem; color: #2563eb; text-decoration: none;" %>
+    <% end %>
+  </div>
+<% end %>

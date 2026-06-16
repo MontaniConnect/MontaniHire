@@ -59,6 +59,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_16_064211) do
     t.bigint "cv_analysis_id"
     t.string "email"
     t.datetime "final_interview_at"
+    t.boolean "final_interview_no_show", default: false, null: false
     t.datetime "hired_at"
     t.datetime "intake_submitted_at"
     t.string "intake_token"
@@ -134,6 +135,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_16_064211) do
   create_table "shortlist_items", force: :cascade do |t|
     t.bigint "candidate_id"
     t.text "client_comment"
+    t.integer "client_rating"
     t.string "client_status", default: "pending"
     t.datetime "created_at", null: false
     t.bigint "cv_analysis_id"
@@ -193,6 +195,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_16_064211) do
     t.datetime "created_at", null: false
     t.string "drive_file_id"
     t.string "drive_file_name"
+    t.string "drive_video_file_id"
     t.text "error_message"
     t.bigint "job_role_id"
     t.string "prompt_version"

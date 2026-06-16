@@ -226,4 +226,91 @@ class CandidateTest < ActiveSupport::TestCase
     assert_not c1.cv_interview_gap?
     assert_not c2.cv_interview_gap?
   end
+
+  # ── sync_shortlist_client_status (after_save callback) ────────────────────
+
+  def build_shortlist_item(candidate, status: "pending")
+    user      = candidate.user
+    shortlist = Shortlist.create!(
+      user:         user,
+      title:        "SL #{SecureRandom.hex(3)}",
+      client_email: "hm_#{SecureRandom.hex(3)}@test.com"
+    )
+    ShortlistItem.create!(shortlist: shortlist, candidate: candidate, client_status: status)
+  end
+
+  test "advancing to final_interview sets shortlist item to approved" do
+    c    = build_candidate
+    item = build_shortlist_item(c, status: "pending")
+
+    c.update!(pipeline_stage: "final_interview")
+
+    assert_equal "approved", item.reload.client_status
+  end
+
+  test "advancing to hired keeps shortlist item approved" do
+    c    = build_candidate
+    item = build_shortlist_item(c, status: "pending")
+
+    c.update!(pipeline_stage: "hired")
+
+    assert_equal "approved", item.reload.client_status
+  end
+
+  test "advancing to offer_declined keeps shortlist item approved" do
+    c    = build_candidate
+    item = build_shortlist_item(c, status: "pending")
+
+    c.update!(pipeline_stage: "offer_declined")
+
+    assert_equal "approved", item.reload.client_status
+  end
+
+  test "moving to not_selected sets shortlist item to rejected" do
+    c    = build_candidate
+    item = build_shortlist_item(c, status: "pending")
+
+    c.update!(pipeline_stage: "not_selected")
+
+    assert_equal "rejected", item.reload.client_status
+  end
+
+  test "moving to not_invited sets shortlist item to rejected" do
+    c    = build_candidate
+    item = build_shortlist_item(c, status: "pending")
+
+    c.update!(pipeline_stage: "not_invited")
+
+    assert_equal "rejected", item.reload.client_status
+  end
+
+  test "syncs all shortlist items when candidate has multiple" do
+    c     = build_candidate
+    item1 = build_shortlist_item(c, status: "pending")
+    item2 = build_shortlist_item(c, status: "pending")
+
+    c.update!(pipeline_stage: "final_interview")
+
+    assert_equal "approved", item1.reload.client_status
+    assert_equal "approved", item2.reload.client_status
+  end
+
+  test "stage with no mapping leaves shortlist items unchanged" do
+    c    = build_candidate
+    item = build_shortlist_item(c, status: "approved")
+
+    # cv_review and preliminary_interview have no entry in STAGE_CLIENT_STATUS
+    c.update!(pipeline_stage: "cv_review")
+
+    assert_equal "approved", item.reload.client_status
+  end
+
+  test "callback does not fire when an unrelated attribute changes" do
+    c    = build_candidate
+    item = build_shortlist_item(c, status: "pending")
+
+    c.update!(name: "Updated Name")
+
+    assert_equal "pending", item.reload.client_status
+  end
 end

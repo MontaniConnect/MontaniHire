@@ -25,26 +25,31 @@
 <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; flex-wrap: wrap; margin-bottom: 1.25rem;">
   <div>
     <h1 style="margin: 0 0 0.3rem;"><%= @candidate.name %></h1>
-    <% if @candidate.email.present? %>
-      <div style="font-size: 0.82rem; color: #666; margin-bottom: 0.3rem;"><%= @candidate.email %></div>
-    <% end %>
     <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
       <span class="badge <%= stage_badge[@candidate.pipeline_stage] %>">
         <%= stage_label[@candidate.pipeline_stage] %>
       </span>
       <% job_roles = current_user.job_roles.order(:title) %>
-      <% if job_roles.any? %>
-        <%= form_with model: @candidate, style: "display: inline-flex; align-items: center; gap: 0.4rem;" do |f| %>
-          <%= f.select :job_role_id,
-                job_roles.map { |jr| [jr.title, jr.id] },
-                {},
-                style: "font-size: 0.82rem; color: #555; border: 1px solid #ddd; border-radius: 6px;
-                        padding: 0.2rem 0.5rem; background: #fff; outline: none;" %>
-          <%= f.submit "Save", style: "font-size: 0.78rem; padding: 0.2rem 0.6rem; background: #1a1a1a;
-                                      color: #fff; border: none; border-radius: 6px; cursor: pointer;" %>
+      <span style="font-size: 0.82rem; color: #555;">
+        <% if @candidate.job_role %>
+          <%= @candidate.job_role.title %>
+        <% else %>
+          <em style="color: #aaa;">No role assigned</em>
         <% end %>
-      <% elsif @candidate.job_role %>
-        <span style="font-size: 0.85rem; color: #777;"><%= @candidate.job_role.title %></span>
+      </span>
+      <% if job_roles.any? %>
+        <details style="position: relative; display: inline-block;">
+          <summary style="list-style: none; cursor: pointer; font-size: 0.75rem; color: #888; text-decoration: underline;">Edit</summary>
+          <div style="position: absolute; left: 0; top: calc(100% + 4px); background: #fff; border: 1px solid #e5e5e5; border-radius: 8px; padding: 0.75rem; min-width: 220px; z-index: 50; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+            <%= form_with model: @candidate, style: "display: flex; gap: 0.4rem;" do |f| %>
+              <%= f.select :job_role_id,
+                    job_roles.map { |jr| [jr.title, jr.id] },
+                    { selected: @candidate.job_role_id },
+                    style: "flex: 1; padding: 0.4rem 0.6rem; border: 1px solid #ddd; border-radius: 6px; font-size: 0.85rem;" %>
+              <%= f.submit "Save", class: "btn", style: "padding: 0.4rem 0.75rem; font-size: 0.82rem;" %>
+            <% end %>
+          </div>
+        </details>
       <% end %>
     </div>
   </div>
@@ -55,10 +60,6 @@
       <%= button_to "Advance to Interview →", advance_candidate_path(@candidate),
             method: :post, class: "btn",
             style: "padding: 0.45rem 1rem; font-size: 0.85rem;" %>
-      <%= button_to "✕ Not Selected", not_selected_candidate_path(@candidate),
-            method: :post,
-            data: { turbo_confirm: "Mark #{@candidate.name} as not selected?" },
-            class: "btn", style: "background: #6b7280; padding: 0.45rem 1rem; font-size: 0.85rem;" %>
     <% elsif @candidate.pipeline_stage == "preliminary_interview" %>
       <% if @candidate.intake_token.present? %>
         <%= button_to @candidate.no_show? ? "✓ Undo No Show" : "⚠ No Show",
@@ -114,12 +115,6 @@
                 class: "btn", style: "background: #555; padding: 0.45rem 0.9rem; font-size: 0.85rem;" %>
         <% end %>
       <% end %>
-      <% if @candidate.intake_token.present? %>
-        <%= button_to "✕ Not Selected", not_selected_candidate_path(@candidate),
-              method: :post,
-              data: { turbo_confirm: "Mark #{@candidate.name} as not selected?" },
-              class: "btn", style: "background: #6b7280; padding: 0.45rem 1rem; font-size: 0.85rem;" %>
-      <% end %>
     <% elsif @candidate.pipeline_stage == "client_interview" %>
       <%= button_to "✓ Final Interview", final_interview_candidate_path(@candidate),
             method: :post, class: "btn",
@@ -146,10 +141,6 @@
             method: :post,
             data: { turbo_confirm: "Mark #{@candidate.name} as offer declined?" },
             class: "btn", style: "background: #dc2626; padding: 0.45rem 1rem; font-size: 0.85rem;" %>
-      <%= button_to "✕ Not Selected", not_selected_candidate_path(@candidate),
-            method: :post,
-            data: { turbo_confirm: "Mark #{@candidate.name} as not selected?" },
-            class: "btn", style: "background: #6b7280; padding: 0.45rem 1rem; font-size: 0.85rem;" %>
       <%= button_to "← Revert to Shortlisted", revert_candidate_path(@candidate),
             method: :post,
             data: { turbo_confirm: "Revert #{@candidate.name} back to Shortlisted?" },
@@ -258,18 +249,12 @@
             </div>
             <% if booking.google_event_id.present? %>
               <div style="font-size: 0.7rem; color: #166534; margin-bottom: 0.3rem;">✓ Calendar synced</div>
-            <% end %>
-            <% _ph_tz     = ActiveSupport::TimeZone["Asia/Manila"] %>
-            <% _cal_text  = ERB::Util.url_encode("Preliminary Interview — #{@candidate.name}") %>
-            <% _cal_det   = ERB::Util.url_encode("Candidate: #{@candidate.name}\nRole: #{@candidate.job_role&.title}\nEmail: #{@candidate.email}") %>
-            <% _cal_start = booking.starts_at.in_time_zone(_ph_tz).strftime("%Y%m%dT%H%M%S") %>
-            <% _cal_end   = booking.ends_at.in_time_zone(_ph_tz).strftime("%Y%m%dT%H%M%S") %>
-            <% _cal_url   = "https://calendar.google.com/calendar/render?action=TEMPLATE&text=#{_cal_text}&dates=#{_cal_start}/#{_cal_end}&ctz=Asia%2FManila&details=#{_cal_det}" %>
-            <%= link_to _cal_url, target: "_blank", rel: "noopener",
-                  style: "display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.72rem;
-                          padding: 0.2rem 0.5rem; border: 1px solid #ddd; border-radius: 5px;
-                          color: #555; text-decoration: none; background: #fff; white-space: nowrap;" do %>
-              📅 Add to Calendar
+            <% elsif current_user.google_connected? %>
+              <%= button_to "Sync to Calendar", sync_calendar_candidate_path(@candidate),
+                    method: :post,
+                    style: "font-size: 0.7rem; color: #1e40af; background: #eff6ff; border: 1px solid #bfdbfe;
+                            border-radius: 5px; padding: 0.15rem 0.5rem; cursor: pointer; margin-bottom: 0.3rem;
+                            white-space: nowrap;" %>
             <% end %>
           <% else %>
             <div style="font-weight: 500; color: #aaa; font-size: 0.82rem;">No slot booked</div>
@@ -300,6 +285,52 @@
       </div>
     <% end %>
 </div>
+<% end %>
+
+<%# ── Hiring Manager Decision ── %>
+<% if @shortlist_item %>
+  <%
+    hm_status_label  = { "pending" => "Hold", "approved" => "Invite", "rejected" => "Decline" }
+    hm_status_bg     = { "pending" => "#fef3c7", "approved" => "#d1fae5", "rejected" => "#fee2e2" }
+    hm_status_color  = { "pending" => "#92400e", "approved" => "#065f46", "rejected" => "#991b1b" }
+    hm_status_border = { "pending" => "#fcd34d", "approved" => "#6ee7b7", "rejected" => "#fca5a5" }
+    st = @shortlist_item.client_status
+  %>
+  <div class="card" style="margin-bottom: 1.25rem;">
+    <h2 style="margin-bottom: 0.85rem;">Hiring Manager Decision</h2>
+    <div style="display: flex; align-items: flex-start; gap: 1.25rem; flex-wrap: wrap;">
+
+      <%# Decision badge %>
+      <div style="flex-shrink: 0;">
+        <div style="font-size: 0.7rem; font-weight: 700; color: #aaa; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.35rem;">Decision</div>
+        <span style="display: inline-block; padding: 0.35rem 0.9rem; border-radius: 6px; font-size: 0.88rem; font-weight: 700;
+                     background: <%= hm_status_bg[st] %>; color: <%= hm_status_color[st] %>; border: 1.5px solid <%= hm_status_border[st] %>;">
+          <%= hm_status_label[st] %>
+        </span>
+      </div>
+
+      <%# Star rating %>
+      <% if @shortlist_item.client_rating.present? %>
+        <div style="flex-shrink: 0;">
+          <div style="font-size: 0.7rem; font-weight: 700; color: #aaa; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.35rem;">Rating</div>
+          <div style="font-size: 1.3rem; line-height: 1; letter-spacing: 0.05em;">
+            <% 5.times do |i| %>
+              <span style="color: <%= i < @shortlist_item.client_rating ? '#f59e0b' : '#e5e7eb' %>;">★</span>
+            <% end %>
+          </div>
+        </div>
+      <% end %>
+
+      <%# Notes %>
+      <% if @shortlist_item.client_comment.present? %>
+        <div style="flex: 1; min-width: 180px;">
+          <div style="font-size: 0.7rem; font-weight: 700; color: #aaa; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.35rem;">Notes</div>
+          <p style="font-size: 0.88rem; color: #444; line-height: 1.6; margin: 0;"><%= @shortlist_item.client_comment %></p>
+        </div>
+      <% end %>
+
+    </div>
+  </div>
 <% end %>
 
 <% if %w[client_interview final_interview].include?(@candidate.pipeline_stage) %>
@@ -472,7 +503,7 @@
     <div class="card" style="border-style: dashed; background: #fafafa;">
       <p style="color: #888; font-size: 0.9rem; text-align: center; padding: 0.5rem 0;">
         Interview video not uploaded yet.
-        <%= link_to "Upload now →", new_video_analysis_path(candidate_id: @candidate.id),
+        <%= link_to "Upload Video →", new_video_analysis_path(candidate_id: @candidate.id),
               style: "color: #1a1a1a; font-weight: 600;" %>
       </p>
     </div>
