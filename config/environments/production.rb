@@ -1,5 +1,7 @@
 require "active_support/core_ext/integer/time"
 
+Rails.application.config.secret_key_base = ENV['SECRET_KEY_BASE']
+
 Rails.application.configure do
 
 config.active_storage.service = :amazon
