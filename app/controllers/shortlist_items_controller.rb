@@ -30,8 +30,8 @@ class ShortlistItemsController < AuthenticatedController
         item.video_analysis = current_organization.video_analyses.find_by(id: params[:companion_video_analysis_id])
       end
       check_compliance_flags!(cv_analysis: item.cv_analysis, video_analysis: item.video_analysis) && return
-      candidate = Candidate.find_by(cv_analysis_id: item.cv_analysis_id) ||
-                  Candidate.find_by(video_analysis_id: item.video_analysis_id)
+      candidate = current_organization.candidates.find_by(cv_analysis_id: item.cv_analysis_id) ||
+                  current_organization.candidates.find_by(video_analysis_id: item.video_analysis_id)
       item.candidate = candidate if candidate
       item.save!
       candidate&.shortlist_for_client!

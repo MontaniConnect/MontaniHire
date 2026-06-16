@@ -53,7 +53,7 @@ class VideoAnalysesController < AuthenticatedController
       redirect_to video_analysis_path(@video_analysis), alert: "No transcript to re-analyse."
       return
     end
-    candidate = Candidate.find_by(video_analysis_id: @video_analysis.id)
+    candidate = current_organization.candidates.find_by(video_analysis_id: @video_analysis.id)
     unless candidate&.cv_analysis&.completed?
       redirect_to video_analysis_path(@video_analysis), alert: "CV analysis must be completed before running interview analysis."
       return
