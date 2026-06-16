@@ -1,5 +1,6 @@
 class JobRolesController < AuthenticatedController
   before_action :set_job_role, only: %i[show edit update destroy extract_requirements]
+  before_action :require_write_access!, only: %i[create update destroy extract_requirements]
 
   def index
     @job_roles = current_organization.job_roles.order(created_at: :desc)

@@ -1,5 +1,85 @@
 <h1>Settings</h1>
 
+<% if current_user.owner? %>
+  <div class="card">
+    <h2>Members</h2>
+    <p style="font-size: 0.85rem; color: #666; margin-bottom: 1.5rem;">
+      Manage who has access to your organisation's pipeline.
+    </p>
+
+    <%# Current members %>
+    <% if @members.any? %>
+      <div style="border: 1px solid #e5e5e5; border-radius: 8px; overflow: hidden; margin-bottom: 1.5rem;">
+        <% @members.each_with_index do |member, idx| %>
+          <div style="display: flex; align-items: center; justify-content: space-between; padding: 0.75rem 1rem;
+                      <%= idx > 0 ? 'border-top: 1px solid #f0f0f0;' : '' %>">
+            <div>
+              <div style="font-weight: 500; font-size: 0.9rem;"><%= member.name.presence || member.email %></div>
+              <div style="font-size: 0.78rem; color: #888;"><%= member.email %></div>
+            </div>
+            <span style="font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em;
+                         color: <%= member.owner? ? '#166534' : '#555' %>;
+                         background: <%= member.owner? ? '#dcfce7' : '#f0f0f0' %>;
+                         border-radius: 4px; padding: 0.2rem 0.55rem;">
+              <%= member.role.titleize %>
+            </span>
+          </div>
+        <% end %>
+      </div>
+    <% end %>
+
+    <%# Pending invites %>
+    <% if @pending_invites.any? %>
+      <h3 style="font-size: 0.9rem; font-weight: 600; margin-bottom: 0.75rem; color: #444;">Pending Invites</h3>
+      <div style="border: 1px solid #e5e5e5; border-radius: 8px; overflow: hidden; margin-bottom: 1.5rem;">
+        <% @pending_invites.each_with_index do |invite, idx| %>
+          <div style="display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 0.75rem 1rem;
+                      <%= idx > 0 ? 'border-top: 1px solid #f0f0f0;' : '' %>; flex-wrap: wrap;">
+            <div style="flex: 1; min-width: 0;">
+              <div style="font-size: 0.9rem; font-weight: 500;"><%= invite.email %></div>
+              <div style="font-size: 0.75rem; color: #888;">
+                <%= invite.role.titleize %> &middot; expires <%= time_ago_in_words(invite.expires_at) %> from now
+              </div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 0.5rem; flex-shrink: 0;">
+              <input type="text" value="<%= join_url(invite.token) %>" readonly
+                     style="font-size: 0.75rem; padding: 0.3rem 0.5rem; border: 1px solid #ddd; border-radius: 5px;
+                            width: 260px; color: #555; background: #fafafa; font-family: monospace;"
+                     onclick="this.select(); document.execCommand('copy'); this.blur(); this.nextElementSibling.textContent='Copied!';"
+                     title="Click to copy">
+              <span style="font-size: 0.72rem; color: #888; min-width: 40px;"></span>
+              <%= button_to invite_path(invite), method: :delete,
+                    style: "font-size: 0.75rem; color: #b91c1c; background: none; border: none; cursor: pointer; padding: 0;",
+                    data: { confirm: "Revoke this invite?" } do %>
+                Revoke
+              <% end %>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    <% end %>
+
+    <%# Invite form %>
+    <h3 style="font-size: 0.9rem; font-weight: 600; margin-bottom: 0.75rem; color: #444;">Invite someone</h3>
+    <%= form_with url: invites_path, method: :post, html: { style: "display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: flex-end;" } do |f| %>
+      <div class="form-group" style="margin: 0; flex: 1; min-width: 200px;">
+        <%= f.label :email, "Email address", style: "font-size: 0.82rem;" %>
+        <%= f.email_field :email, placeholder: "colleague@example.com",
+              style: "padding: 0.5rem 0.75rem; border: 1px solid #ddd; border-radius: 6px; font-size: 0.9rem; width: 100%;",
+              name: "invite[email]" %>
+      </div>
+      <div class="form-group" style="margin: 0;">
+        <%= f.label :role, "Role", style: "font-size: 0.82rem;" %>
+        <select name="invite[role]" style="padding: 0.5rem 0.75rem; border: 1px solid #ddd; border-radius: 6px; font-size: 0.9rem; background: #fff;">
+          <option value="member">Member — can upload and manage candidates</option>
+          <option value="viewer">Viewer — read-only access</option>
+        </select>
+      </div>
+      <button type="submit" class="btn" style="padding: 0.5rem 1rem; white-space: nowrap;">Send invite link</button>
+    <% end %>
+  </div>
+<% end %>
+
 <%# Upcoming bookings %>
 <% if @upcoming_bookings.any? %>
   <div class="card">

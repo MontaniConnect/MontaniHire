@@ -1,5 +1,6 @@
 class CvAnalysesController < AuthenticatedController
   before_action :set_cv_analysis, only: %i[show destroy reanalyse extracted_text]
+  before_action :require_write_access!, only: %i[create bulk_create destroy reanalyse]
 
   def index
     @cv_analyses = current_organization.cv_analyses.includes(:job_role).order(created_at: :desc)

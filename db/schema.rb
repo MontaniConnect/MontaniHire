@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_06_16_195635) do
+ActiveRecord::Schema[8.1].define(version: 2026_06_17_000002) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -114,6 +114,21 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_16_195635) do
     t.index ["user_id"], name: "index_cv_analyses_on_user_id"
   end
 
+  create_table "invites", force: :cascade do |t|
+    t.datetime "accepted_at"
+    t.datetime "created_at", null: false
+    t.string "email", null: false
+    t.datetime "expires_at", null: false
+    t.bigint "invited_by_id", null: false
+    t.bigint "organization_id", null: false
+    t.string "role", default: "viewer", null: false
+    t.string "token", null: false
+    t.datetime "updated_at", null: false
+    t.index ["invited_by_id"], name: "index_invites_on_invited_by_id"
+    t.index ["organization_id"], name: "index_invites_on_organization_id"
+    t.index ["token"], name: "index_invites_on_token", unique: true
+  end
+
   create_table "job_roles", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.text "description"
@@ -169,6 +184,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_16_195635) do
 
   create_table "shortlists", force: :cascade do |t|
     t.string "client_email", null: false
+    t.string "client_logo_url"
+    t.string "client_name"
     t.datetime "created_at", null: false
     t.text "message"
     t.bigint "organization_id"
@@ -244,6 +261,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_16_195635) do
   add_foreign_key "cv_analyses", "job_roles"
   add_foreign_key "cv_analyses", "organizations"
   add_foreign_key "cv_analyses", "users"
+  add_foreign_key "invites", "organizations"
+  add_foreign_key "invites", "users", column: "invited_by_id"
   add_foreign_key "job_roles", "organizations"
   add_foreign_key "job_roles", "users"
   add_foreign_key "shortlist_items", "candidates"

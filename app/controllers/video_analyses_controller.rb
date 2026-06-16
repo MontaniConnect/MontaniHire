@@ -1,5 +1,6 @@
 class VideoAnalysesController < AuthenticatedController
   before_action :set_video_analysis, only: %i[show destroy reanalyse transcript link_video]
+  before_action :require_write_access!, only: %i[create destroy reanalyse link_video]
 
   def new
     @candidate = current_organization.candidates.find_by(id: params[:candidate_id])

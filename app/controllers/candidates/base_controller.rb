@@ -1,6 +1,7 @@
 module Candidates
   class BaseController < AuthenticatedController
     before_action :set_candidate
+    before_action :require_write_access!
 
     private
 

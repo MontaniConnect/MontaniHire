@@ -29,7 +29,13 @@
                 <%= link_to shortlist.title, shortlist_path(shortlist),
                       style: "font-weight: 500; color: #1a1a1a; text-decoration: none;" %>
               </td>
-              <td style="color: #555; font-size: 0.88rem;"><%= shortlist.client_email %></td>
+              <td style="color: #555; font-size: 0.88rem;">
+                <% if shortlist.client_name.present? %>
+                  <span style="font-weight: 500; color: #333;"><%= shortlist.client_name %></span>
+                  <span style="color: #bbb; margin: 0 0.2rem;">·</span>
+                <% end %>
+                <%= shortlist.client_email %>
+              </td>
               <td><%= shortlist.shortlist_items.count %></td>
               <td style="color: #888; font-size: 0.85rem;">
                 <%= shortlist.created_at.strftime("%b %-d, %Y") %>

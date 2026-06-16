@@ -1,4 +1,6 @@
 class ShortlistItemsController < AuthenticatedController
+  before_action :require_write_access!
+
   def create
     shortlist = current_organization.shortlists.find(params[:shortlist_id])
 

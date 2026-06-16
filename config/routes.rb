@@ -74,6 +74,11 @@ Rails.application.routes.draw do
     end
   end
 
+  # Member invites
+  resources :invites, only: %i[create destroy]
+  get  "/join/:token", to: "invites#show",   as: :join
+  post "/join/:token", to: "invites#accept", as: :accept_join
+
   # Public candidate intake form (no auth)
   get  "/i/:token", to: "intake#show",   as: :candidate_intake
   post "/i/:token", to: "intake#submit", as: :candidate_intake_submit

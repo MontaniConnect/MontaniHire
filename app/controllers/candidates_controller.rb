@@ -1,5 +1,6 @@
 class CandidatesController < AuthenticatedController
   before_action :set_candidate, only: %i[show update destroy]
+  before_action :require_write_access!, only: %i[update destroy]
 
   def index
     @q           = params[:q].to_s.strip

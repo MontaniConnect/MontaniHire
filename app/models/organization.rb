@@ -5,6 +5,7 @@ class Organization < ApplicationRecord
   has_many :video_analyses, dependent: :destroy
   has_many :cv_analyses,    dependent: :destroy
   has_many :shortlists,     dependent: :destroy
+  has_many :invites,        dependent: :destroy
 
   validates :name, presence: true
   validates :slug, presence: true, uniqueness: true,

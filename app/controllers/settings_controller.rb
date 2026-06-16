@@ -7,7 +7,13 @@ class SettingsController < AuthenticatedController
                                      .includes(:candidate)
                                      .where("starts_at >= ?", Time.current)
                                      .order(:starts_at)
+    if current_user.owner?
+      @members = current_organization.users.order(:name, :email)
+      @pending_invites = current_organization.invites.pending.includes(:invited_by).order(created_at: :desc)
+    end
   end
+
+  before_action :require_write_access!, only: [:update_availability]
 
   def update_availability
     days = {}

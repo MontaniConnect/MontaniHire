@@ -1,8 +1,14 @@
 class User < ApplicationRecord
   belongs_to :organization, optional: true
 
-  ROLES = %w[owner admin member].freeze
+  ROLES = %w[owner member viewer super_admin].freeze
   validates :role, inclusion: { in: ROLES }
+
+  def owner?       = role == "owner"
+  def member?      = role == "member"
+  def viewer?      = role == "viewer"
+  def super_admin? = role == "super_admin"
+  def can_write?   = owner? || member?
 
   has_many :job_roles,      dependent: :nullify
   has_many :shortlists,     dependent: :nullify

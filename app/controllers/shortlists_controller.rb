@@ -1,5 +1,6 @@
 class ShortlistsController < AuthenticatedController
   before_action :set_shortlist, only: %i[show edit update destroy]
+  before_action :require_write_access!, only: %i[create update destroy]
 
   def index
     @shortlists = current_organization.shortlists.order(created_at: :desc)
@@ -43,7 +44,7 @@ class ShortlistsController < AuthenticatedController
 private
 
   def shortlist_params
-    params.require(:shortlist).permit(:title, :client_email, :message)
+    params.require(:shortlist).permit(:title, :client_email, :message, :client_name, :client_logo_url)
   end
 
   def set_shortlist
