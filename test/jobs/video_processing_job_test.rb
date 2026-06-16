@@ -54,6 +54,7 @@ class VideoProcessingJobTest < ActiveSupport::TestCase
 
   FakeCandidate = Struct.new(:cv_analysis, keyword_init: true) do
     def video_analysis = nil
+    def cv_ready? = cv_analysis&.completed?
   end
 
   NULL_SERVICE = ServiceSpy.new
