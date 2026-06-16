@@ -40,6 +40,11 @@ class Auth::GoogleController < ApplicationController
     expires_at = tokens["expires_in"] ? Time.current + tokens["expires_in"].to_i.seconds : nil
 
     if current_user
+      if info["email"] != current_user.email
+        redirect_to settings_path,
+                    alert: "Wrong Google account — you authorised #{info['email']} but are signed in as #{current_user.email}. No changes were made."
+        return
+      end
       current_user.update!(
         google_access_token:     tokens["access_token"],
         google_refresh_token:    tokens["refresh_token"] || current_user.google_refresh_token,
