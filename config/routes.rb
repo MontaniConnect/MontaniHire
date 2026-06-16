@@ -5,11 +5,16 @@ Rails.application.routes.draw do
   # Can be used by load balancers and uptime monitors to verify that the app is live.
   get "up" => "rails/health#show", as: :rails_health_check
 
+  # Login / logout
+  get    "/login",   to: "sessions#new",     as: :login
+  delete "/session", to: "sessions#destroy", as: :logout
+
   # Google OAuth
   namespace :auth do
-    get  "google",            to: "google#connect",    as: :google
-    get  "google/callback",   to: "google#callback",   as: :google_callback
-    delete "google",          to: "google#disconnect",  as: :google_disconnect
+    get    "google/login",     to: "google#login",       as: :google_login
+    get    "google/connect",   to: "google#connect",     as: :google
+    get    "google/callback",  to: "google#callback",    as: :google_callback
+    delete "google",           to: "google#disconnect",  as: :google_disconnect
   end
 
   get  "settings",             to: "settings#show",                as: :settings

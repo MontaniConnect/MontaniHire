@@ -197,15 +197,19 @@
     <nav class="nav">
       <%= link_to "HireAI", root_path, class: "brand" %>
       <%= link_to "Dashboard", dashboard_path %>
-      <% _unread = current_user.candidates.where.not(intake_submitted_at: nil).where(intake_viewed_at: nil).count if defined?(current_user) && current_user %>
+      <% _unread = current_user.candidates.where.not(intake_submitted_at: nil).where(intake_viewed_at: nil).count %>
       <%= link_to candidates_path do %>
-        Candidates<% if _unread&.positive? %><span style="display:inline-flex;align-items:center;justify-content:center;background:#ef4444;color:#fff;border-radius:99px;font-size:0.65rem;font-weight:700;min-width:16px;height:16px;padding:0 4px;margin-left:5px;line-height:1;"><%= _unread %></span><% end %>
+        Candidates<% if _unread.positive? %><span style="display:inline-flex;align-items:center;justify-content:center;background:#ef4444;color:#fff;border-radius:99px;font-size:0.65rem;font-weight:700;min-width:16px;height:16px;padding:0 4px;margin-left:5px;line-height:1;"><%= _unread %></span><% end %>
       <% end %>
       <%= link_to "CV Analysis", cv_analyses_path %>
       <%= link_to "Video Interviews", video_analyses_path %>
       <%= link_to "Job Roles", job_roles_path %>
       <%= link_to "Shortlists", shortlists_path %>
       <%= link_to "Settings", settings_path %>
+      <span style="flex: 1;"></span>
+      <span style="font-size: 0.8rem; color: #666;"><%= current_user.name.presence || current_user.email %></span>
+      <%= button_to "Sign out", logout_path, method: :delete,
+            style: "background: none; border: none; color: #888; font-size: 0.8rem; cursor: pointer; padding: 0; text-decoration: underline;" %>
     </nav>
     <div class="container">
       <% if notice %>
