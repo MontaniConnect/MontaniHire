@@ -2,9 +2,11 @@ require "test_helper"
 
 class CandidateTest < ActiveSupport::TestCase
   def build_candidate(cv_signals: {}, va_signals: {}, cv_score: nil, va_score: nil)
-    user     = User.create!(email: "test_#{SecureRandom.hex(4)}@example.com", name: "Test")
+    result   = UserRegistrationService.new(email: "test_#{SecureRandom.hex(4)}@example.com", name: "Test").call
+    user     = result.user
+    org      = user.organization
     job_role = JobRole.create!(
-      user: user,
+      user: user, organization: org,
       title: "Test Role",
       experience_level: "mid",
       required_skills: "CRM experience",
@@ -12,7 +14,7 @@ class CandidateTest < ActiveSupport::TestCase
     )
 
     cv = CvAnalysis.new(
-      user: user,
+      user: user, organization: org,
       job_role: job_role,
       candidate_name: "Test Candidate",
       status: "completed",
@@ -23,7 +25,7 @@ class CandidateTest < ActiveSupport::TestCase
     cv.save!
 
     va = VideoAnalysis.new(
-      user: user,
+      user: user, organization: org,
       job_role: job_role,
       candidate_name: "Test Candidate",
       status: "completed",
@@ -34,7 +36,7 @@ class CandidateTest < ActiveSupport::TestCase
     va.save!
 
     Candidate.create!(
-      user: user,
+      user: user, organization: org,
       job_role: job_role,
       name: "Test Candidate",
       pipeline_stage: "preliminary_interview",
@@ -96,15 +98,17 @@ class CandidateTest < ActiveSupport::TestCase
   end
 
   test "episode_score returns nil when video_analysis is absent" do
-    user     = User.create!(email: "test_#{SecureRandom.hex(4)}@example.com", name: "Test")
+    result   = UserRegistrationService.new(email: "test_#{SecureRandom.hex(4)}@example.com", name: "Test").call
+    user     = result.user
+    org      = user.organization
     job_role = JobRole.create!(
-      user: user,
+      user: user, organization: org,
       title: "Test Role",
       experience_level: "mid",
       required_skills: "CRM experience",
       responsibilities: "Manage pipeline"
     )
-    c = Candidate.create!(user: user, job_role: job_role, name: "No Video", pipeline_stage: "cv_review")
+    c = Candidate.create!(user: user, organization: org, job_role: job_role, name: "No Video", pipeline_stage: "cv_review")
     assert_nil c.episode_score
   end
 
@@ -233,6 +237,7 @@ class CandidateTest < ActiveSupport::TestCase
     user      = candidate.user
     shortlist = Shortlist.create!(
       user:         user,
+      organization: user.organization,
       title:        "SL #{SecureRandom.hex(3)}",
       client_email: "hm_#{SecureRandom.hex(3)}@test.com"
     )

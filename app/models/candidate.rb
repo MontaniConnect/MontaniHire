@@ -1,4 +1,5 @@
 class Candidate < ApplicationRecord
+  belongs_to :organization
   belongs_to :user
   belongs_to :job_role, optional: true
   belongs_to :cv_analysis,    optional: true, class_name: "CvAnalysis"

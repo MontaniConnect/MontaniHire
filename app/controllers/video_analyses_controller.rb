@@ -2,11 +2,11 @@ class VideoAnalysesController < AuthenticatedController
   before_action :set_video_analysis, only: %i[show destroy reanalyse transcript link_video]
 
   def new
-    @candidate = current_user.candidates.find_by(id: params[:candidate_id])
+    @candidate = current_organization.candidates.find_by(id: params[:candidate_id])
   end
 
   def index
-    @video_analyses = current_user.video_analyses.includes(:job_role).order(created_at: :desc)
+    @video_analyses = current_organization.video_analyses.includes(:job_role).order(created_at: :desc)
     respond_to do |format|
       format.html
       format.json { render json: @video_analyses.map { |a| serialize(a) } }
@@ -14,11 +14,11 @@ class VideoAnalysesController < AuthenticatedController
   end
 
   def create
-    @video_analysis = current_user.video_analyses.build(create_params)
+    @video_analysis = current_organization.video_analyses.build(create_params.merge(user: current_user))
 
     if @video_analysis.save
       if params[:candidate_id].present?
-        candidate = current_user.candidates.find_by(id: params[:candidate_id])
+        candidate = current_organization.candidates.find_by(id: params[:candidate_id])
         candidate&.update!(video_analysis: @video_analysis)
       end
       VideoProcessingJob.perform_later(@video_analysis.id)
@@ -27,7 +27,7 @@ class VideoAnalysesController < AuthenticatedController
         format.json { render json: serialize(@video_analysis), status: :created }
       end
     else
-      @video_analyses = current_user.video_analyses.includes(:job_role).order(created_at: :desc)
+      @video_analyses = current_organization.video_analyses.includes(:job_role).order(created_at: :desc)
       respond_to do |format|
         format.html { render :index, status: :unprocessable_entity }
         format.json { render json: { errors: @video_analysis.errors.full_messages }, status: :unprocessable_entity }
@@ -36,7 +36,7 @@ class VideoAnalysesController < AuthenticatedController
   end
 
   def show
-    @candidate = current_user.candidates.find_by(video_analysis_id: @video_analysis.id)
+    @candidate = current_organization.candidates.find_by(video_analysis_id: @video_analysis.id)
     respond_to do |format|
       format.html
       format.json { render json: serialize(@video_analysis) }
@@ -72,7 +72,7 @@ class VideoAnalysesController < AuthenticatedController
     file_id = raw.match(/\/d\/([a-zA-Z0-9_-]+)/)&.captures&.first ||
               (raw.match?(/\A[a-zA-Z0-9_-]+\z/) ? raw : nil)
 
-    candidate = current_user.candidates.find_by(video_analysis_id: @video_analysis.id)
+    candidate = current_organization.candidates.find_by(video_analysis_id: @video_analysis.id)
     back      = candidate ? candidate_path(candidate) : video_analysis_path(@video_analysis)
 
     if file_id.present?
@@ -100,7 +100,7 @@ class VideoAnalysesController < AuthenticatedController
   end
 
   def set_video_analysis
-    @video_analysis = current_user.video_analyses.find(params[:id])
+    @video_analysis = current_organization.video_analyses.find(params[:id])
   rescue ActiveRecord::RecordNotFound
     respond_to do |format|
       format.html { redirect_to video_analyses_path, alert: "Analysis not found." }

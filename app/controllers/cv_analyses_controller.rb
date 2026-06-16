@@ -2,14 +2,14 @@ class CvAnalysesController < AuthenticatedController
   before_action :set_cv_analysis, only: %i[show destroy reanalyse extracted_text]
 
   def index
-    @cv_analyses = current_user.cv_analyses.includes(:job_role).order(created_at: :desc)
+    @cv_analyses = current_organization.cv_analyses.includes(:job_role).order(created_at: :desc)
   end
 
   def create
-    @cv_analysis = current_user.cv_analyses.build(create_params)
+    @cv_analysis = current_organization.cv_analyses.build(create_params.merge(user: current_user))
 
     if @cv_analysis.save
-      current_user.candidates.create!(
+      current_organization.candidates.create!(user: current_user,
         name:           @cv_analysis.candidate_name.presence || @cv_analysis.display_name,
         job_role:       @cv_analysis.job_role,
         cv_analysis:    @cv_analysis,
@@ -18,13 +18,13 @@ class CvAnalysesController < AuthenticatedController
       CvProcessingJob.perform_later(@cv_analysis.id)
       redirect_to cv_analysis_path(@cv_analysis)
     else
-      @cv_analyses = current_user.cv_analyses.includes(:job_role).order(created_at: :desc)
+      @cv_analyses = current_organization.cv_analyses.includes(:job_role).order(created_at: :desc)
       render :index, status: :unprocessable_entity
     end
   end
 
   def bulk_create
-    job_role = current_user.job_roles.find_by(id: params[:job_role_id])
+    job_role = current_organization.job_roles.find_by(id: params[:job_role_id])
     unless job_role
       redirect_to cv_analyses_path, alert: "Please select a job role."
       return
@@ -44,14 +44,16 @@ class CvAnalysesController < AuthenticatedController
                .strip
       name = "Candidate #{created + 1}" if name.blank?
 
-      cv_analysis = current_user.cv_analyses.new(
+      cv_analysis = current_organization.cv_analyses.new(
+        user:           current_user,
         cv:             file,
         job_role:       job_role,
         candidate_name: name
       )
       next unless cv_analysis.save
 
-      current_user.candidates.create!(
+      current_organization.candidates.create!(
+        user:           current_user,
         name:           name,
         job_role:       job_role,
         cv_analysis:    cv_analysis,
@@ -66,7 +68,7 @@ class CvAnalysesController < AuthenticatedController
   end
 
   def show
-    @candidate = current_user.candidates.find_by(cv_analysis_id: @cv_analysis.id)
+    @candidate = current_organization.candidates.find_by(cv_analysis_id: @cv_analysis.id)
   end
 
   def destroy
@@ -105,7 +107,7 @@ class CvAnalysesController < AuthenticatedController
   end
 
   def set_cv_analysis
-    @cv_analysis = current_user.cv_analyses.find(params[:id])
+    @cv_analysis = current_organization.cv_analyses.find(params[:id])
   rescue ActiveRecord::RecordNotFound
     redirect_to cv_analyses_path, alert: "CV analysis not found."
   end

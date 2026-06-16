@@ -52,12 +52,13 @@ class Auth::GoogleController < ApplicationController
         return
       end
 
-      user = User.find_or_initialize_by(email: email)
-      user.name = info["name"] if user.name.blank?
-      user.google_access_token     = tokens["access_token"]
-      user.google_refresh_token    = tokens["refresh_token"] || user.google_refresh_token
-      user.google_token_expires_at = expires_at
-      user.save!
+      result = UserRegistrationService.new(email: email, name: info["name"].to_s).call
+      user   = result.user
+      user.update!(
+        google_access_token:     tokens["access_token"],
+        google_refresh_token:    tokens["refresh_token"] || user.google_refresh_token,
+        google_token_expires_at: expires_at
+      )
 
       session[:user_id] = user.id
       redirect_to session.delete(:return_to) || root_path,

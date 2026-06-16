@@ -1,9 +1,9 @@
 class ShortlistItemsController < AuthenticatedController
   def create
-    shortlist = current_user.shortlists.find(params[:shortlist_id])
+    shortlist = current_organization.shortlists.find(params[:shortlist_id])
 
     if params[:candidate_id].present?
-      candidate = current_user.candidates.find(params[:candidate_id])
+      candidate = current_organization.candidates.find(params[:candidate_id])
       check_compliance_flags!(cv_analysis: candidate.cv_analysis, video_analysis: candidate.video_analysis) && return
       item = shortlist.shortlist_items.find_or_initialize_by(candidate: candidate)
       item.cv_analysis    = candidate.cv_analysis
@@ -24,10 +24,10 @@ class ShortlistItemsController < AuthenticatedController
       when VideoAnalysis then item.video_analysis = primary
       end
       if params[:companion_cv_analysis_id].present?
-        item.cv_analysis = current_user.cv_analyses.find_by(id: params[:companion_cv_analysis_id])
+        item.cv_analysis = current_organization.cv_analyses.find_by(id: params[:companion_cv_analysis_id])
       end
       if params[:companion_video_analysis_id].present?
-        item.video_analysis = current_user.video_analyses.find_by(id: params[:companion_video_analysis_id])
+        item.video_analysis = current_organization.video_analyses.find_by(id: params[:companion_video_analysis_id])
       end
       check_compliance_flags!(cv_analysis: item.cv_analysis, video_analysis: item.video_analysis) && return
       candidate = Candidate.find_by(cv_analysis_id: item.cv_analysis_id) ||
@@ -44,14 +44,14 @@ class ShortlistItemsController < AuthenticatedController
 
   def update
     item = ShortlistItem.joins(:shortlist)
-                        .where(shortlists: { user_id: current_user.id })
+                        .where(shortlists: { organization_id: current_organization.id })
                         .find(params[:id])
 
     if params[:cv_analysis_id].present?
-      item.cv_analysis = current_user.cv_analyses.find_by(id: params[:cv_analysis_id])
+      item.cv_analysis = current_organization.cv_analyses.find_by(id: params[:cv_analysis_id])
     end
     if params[:video_analysis_id].present?
-      item.video_analysis = current_user.video_analyses.find_by(id: params[:video_analysis_id])
+      item.video_analysis = current_organization.video_analyses.find_by(id: params[:video_analysis_id])
     end
 
     item.save!
@@ -62,7 +62,7 @@ class ShortlistItemsController < AuthenticatedController
 
   def destroy
     item = ShortlistItem.joins(:shortlist)
-                        .where(shortlists: { user_id: current_user.id })
+                        .where(shortlists: { organization_id: current_organization.id })
                         .find(params[:id])
     shortlist  = item.shortlist
     candidate  = item.candidate
@@ -78,8 +78,8 @@ class ShortlistItemsController < AuthenticatedController
     type = params[type_key]
     id   = params[id_key]
     case type
-    when "CvAnalysis"    then current_user.cv_analyses.find_by(id: id)
-    when "VideoAnalysis" then current_user.video_analyses.find_by(id: id)
+    when "CvAnalysis"    then current_organization.cv_analyses.find_by(id: id)
+    when "VideoAnalysis" then current_organization.video_analyses.find_by(id: id)
     end
   end
 

@@ -1,4 +1,5 @@
 class Shortlist < ApplicationRecord
+  belongs_to :organization
   belongs_to :user
   has_many :shortlist_items, dependent: :destroy
 

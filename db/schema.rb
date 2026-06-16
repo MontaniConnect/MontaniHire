@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_06_16_064211) do
+ActiveRecord::Schema[8.1].define(version: 2026_06_16_195635) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -71,6 +71,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_16_064211) do
     t.string "job_source_other"
     t.string "name", null: false
     t.boolean "no_show", default: false, null: false
+    t.bigint "organization_id"
     t.datetime "outcome_confirmed_at"
     t.text "outcome_note"
     t.boolean "ph_residency_confirmed"
@@ -85,6 +86,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_16_064211) do
     t.index ["cv_analysis_id"], name: "index_candidates_on_cv_analysis_id"
     t.index ["intake_token"], name: "index_candidates_on_intake_token", unique: true
     t.index ["job_role_id"], name: "index_candidates_on_job_role_id"
+    t.index ["organization_id"], name: "index_candidates_on_organization_id"
     t.index ["user_id"], name: "index_candidates_on_user_id"
     t.index ["video_analysis_id"], name: "index_candidates_on_video_analysis_id"
   end
@@ -97,6 +99,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_16_064211) do
     t.text "error_message"
     t.text "extracted_text"
     t.bigint "job_role_id"
+    t.bigint "organization_id"
     t.string "prompt_version"
     t.decimal "score", precision: 4, scale: 2
     t.string "status", default: "pending", null: false
@@ -106,6 +109,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_16_064211) do
     t.bigint "user_id", null: false
     t.index ["drive_file_id"], name: "index_cv_analyses_on_drive_file_id"
     t.index ["job_role_id"], name: "index_cv_analyses_on_job_role_id"
+    t.index ["organization_id"], name: "index_cv_analyses_on_organization_id"
     t.index ["status"], name: "index_cv_analyses_on_status"
     t.index ["user_id"], name: "index_cv_analyses_on_user_id"
   end
@@ -116,10 +120,21 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_16_064211) do
     t.string "experience_level", default: "mid", null: false
     t.jsonb "must_have_requirements", default: [], null: false
     t.jsonb "nice_to_have_requirements", default: [], null: false
+    t.bigint "organization_id"
     t.string "title", null: false
     t.datetime "updated_at", null: false
     t.bigint "user_id", null: false
+    t.index ["organization_id"], name: "index_job_roles_on_organization_id"
     t.index ["user_id"], name: "index_job_roles_on_user_id"
+  end
+
+  create_table "organizations", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.string "logo_url"
+    t.string "name", null: false
+    t.string "slug", null: false
+    t.datetime "updated_at", null: false
+    t.index ["slug"], name: "index_organizations_on_slug", unique: true
   end
 
   create_table "salary_benchmarks", force: :cascade do |t|
@@ -156,10 +171,12 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_16_064211) do
     t.string "client_email", null: false
     t.datetime "created_at", null: false
     t.text "message"
+    t.bigint "organization_id"
     t.string "title", null: false
     t.string "token", null: false
     t.datetime "updated_at", null: false
     t.bigint "user_id", null: false
+    t.index ["organization_id"], name: "index_shortlists_on_organization_id"
     t.index ["token"], name: "index_shortlists_on_token", unique: true
     t.index ["user_id"], name: "index_shortlists_on_user_id"
   end
@@ -185,7 +202,11 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_16_064211) do
     t.text "google_refresh_token"
     t.datetime "google_token_expires_at"
     t.string "name"
+    t.bigint "organization_id"
+    t.string "role", default: "member", null: false
+    t.boolean "super_admin", default: false, null: false
     t.datetime "updated_at", null: false
+    t.index ["organization_id"], name: "index_users_on_organization_id"
   end
 
   create_table "video_analyses", force: :cascade do |t|
@@ -198,6 +219,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_16_064211) do
     t.string "drive_video_file_id"
     t.text "error_message"
     t.bigint "job_role_id"
+    t.bigint "organization_id"
     t.string "prompt_version"
     t.decimal "score", precision: 4, scale: 2
     t.string "status", default: "pending", null: false
@@ -209,6 +231,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_16_064211) do
     t.index ["assembly_transcript_id"], name: "index_video_analyses_on_assembly_transcript_id"
     t.index ["drive_file_id"], name: "index_video_analyses_on_drive_file_id"
     t.index ["job_role_id"], name: "index_video_analyses_on_job_role_id"
+    t.index ["organization_id"], name: "index_video_analyses_on_organization_id"
     t.index ["status"], name: "index_video_analyses_on_status"
     t.index ["user_id"], name: "index_video_analyses_on_user_id"
   end
@@ -216,15 +239,21 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_16_064211) do
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
   add_foreign_key "candidates", "job_roles"
+  add_foreign_key "candidates", "organizations"
   add_foreign_key "candidates", "users"
   add_foreign_key "cv_analyses", "job_roles"
+  add_foreign_key "cv_analyses", "organizations"
   add_foreign_key "cv_analyses", "users"
+  add_foreign_key "job_roles", "organizations"
   add_foreign_key "job_roles", "users"
   add_foreign_key "shortlist_items", "candidates"
   add_foreign_key "shortlist_items", "shortlists"
+  add_foreign_key "shortlists", "organizations"
   add_foreign_key "shortlists", "users"
   add_foreign_key "slot_bookings", "candidates"
   add_foreign_key "slot_bookings", "users"
+  add_foreign_key "users", "organizations"
   add_foreign_key "video_analyses", "job_roles"
+  add_foreign_key "video_analyses", "organizations"
   add_foreign_key "video_analyses", "users"
 end

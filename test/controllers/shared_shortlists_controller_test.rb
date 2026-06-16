@@ -2,14 +2,16 @@ require "test_helper"
 
 class SharedShortlistsControllerTest < ActionDispatch::IntegrationTest
   def setup
-    @user = User.create!(email: "recruiter_#{SecureRandom.hex(4)}@test.com", name: "Recruiter")
+    @user = UserRegistrationService.new(email: "recruiter_#{SecureRandom.hex(4)}@test.com", name: "Recruiter").call.user
     @shortlist = Shortlist.create!(
       user:         @user,
+      organization: @user.organization,
       title:        "Test Shortlist",
       client_email: "hm@test.com"
     )
     @candidate = Candidate.create!(
       user:           @user,
+      organization:   @user.organization,
       name:           "Test Candidate",
       pipeline_stage: "final_interview"
     )
@@ -115,6 +117,7 @@ class SharedShortlistsControllerTest < ActionDispatch::IntegrationTest
   test "feedback pipeline sync does not re-trigger after_save callback" do
     second_shortlist = Shortlist.create!(
       user:         @user,
+      organization: @user.organization,
       title:        "Second",
       client_email: "other@test.com"
     )

@@ -4,12 +4,13 @@ class ShortlistItemTest < ActiveSupport::TestCase
   # ── Helpers ───────────────────────────────────────────────────────────────
 
   def build_user
-    User.create!(email: "u_#{SecureRandom.hex(4)}@test.com", name: "Test User")
+    UserRegistrationService.new(email: "u_#{SecureRandom.hex(4)}@test.com", name: "Test User").call.user
   end
 
   def build_shortlist(user)
     Shortlist.create!(
       user:         user,
+      organization: user.organization,
       title:        "Test Shortlist",
       client_email: "client@test.com"
     )
@@ -18,6 +19,7 @@ class ShortlistItemTest < ActiveSupport::TestCase
   def build_candidate(user, stage: "client_interview")
     Candidate.create!(
       user:           user,
+      organization:   user.organization,
       name:           "Jane Doe #{SecureRandom.hex(3)}",
       pipeline_stage: stage
     )
@@ -72,7 +74,7 @@ class ShortlistItemTest < ActiveSupport::TestCase
     # A second shortlist item on the same candidate — if the after_save callback
     # fired, it would overwrite this item's client_status back to "pending"
     item2 = build_item(
-      Shortlist.create!(user: user, title: "Other", client_email: "other@test.com"),
+      Shortlist.create!(user: user, organization: user.organization, title: "Other", client_email: "other@test.com"),
       candidate,
       status: "approved"
     )

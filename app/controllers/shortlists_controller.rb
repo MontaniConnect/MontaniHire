@@ -2,7 +2,7 @@ class ShortlistsController < AuthenticatedController
   before_action :set_shortlist, only: %i[show edit update destroy]
 
   def index
-    @shortlists = current_user.shortlists.order(created_at: :desc)
+    @shortlists = current_organization.shortlists.order(created_at: :desc)
   end
 
   def show
@@ -10,12 +10,12 @@ class ShortlistsController < AuthenticatedController
   end
 
   def new
-    @shortlist = current_user.shortlists.build
+    @shortlist = current_organization.shortlists.build
     @candidate = candidate_from_params
   end
 
   def create
-    @shortlist = current_user.shortlists.build(shortlist_params)
+    @shortlist = current_organization.shortlists.build(shortlist_params.merge(user: current_user))
     if @shortlist.save
       add_candidate_to(@shortlist)
       redirect_to shortlist_path(@shortlist), notice: "Shortlist created."
@@ -47,7 +47,7 @@ private
   end
 
   def set_shortlist
-    @shortlist = current_user.shortlists.find(params[:id])
+    @shortlist = current_organization.shortlists.find(params[:id])
   rescue ActiveRecord::RecordNotFound
     redirect_to shortlists_path, alert: "Shortlist not found."
   end
@@ -57,8 +57,8 @@ private
     id    = params[:candidate_id]
     return nil unless type && id
     case type
-    when "CvAnalysis"    then current_user.cv_analyses.find_by(id: id)
-    when "VideoAnalysis" then current_user.video_analyses.find_by(id: id)
+    when "CvAnalysis"    then current_organization.cv_analyses.find_by(id: id)
+    when "VideoAnalysis" then current_organization.video_analyses.find_by(id: id)
     end
   end
 

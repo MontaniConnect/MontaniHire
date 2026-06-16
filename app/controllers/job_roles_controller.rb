@@ -2,7 +2,7 @@ class JobRolesController < AuthenticatedController
   before_action :set_job_role, only: %i[show edit update destroy extract_requirements]
 
   def index
-    @job_roles = current_user.job_roles.order(created_at: :desc)
+    @job_roles = current_organization.job_roles.order(created_at: :desc)
   end
 
   def show
@@ -22,11 +22,11 @@ class JobRolesController < AuthenticatedController
   end
 
   def new
-    @job_role = current_user.job_roles.build
+    @job_role = current_organization.job_roles.build
   end
 
   def create
-    @job_role = current_user.job_roles.build(job_role_params)
+    @job_role = current_organization.job_roles.build(job_role_params.merge(user: current_user))
     if @job_role.save
       redirect_to job_roles_path, notice: "Role \"#{@job_role.title}\" created."
     else
@@ -75,7 +75,7 @@ class JobRolesController < AuthenticatedController
   end
 
   def set_job_role
-    @job_role = current_user.job_roles.find(params[:id])
+    @job_role = current_organization.job_roles.find(params[:id])
   rescue ActiveRecord::RecordNotFound
     redirect_to job_roles_path, alert: "Role not found."
   end

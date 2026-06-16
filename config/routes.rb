@@ -5,6 +5,11 @@ Rails.application.routes.draw do
   # Can be used by load balancers and uptime monitors to verify that the app is live.
   get "up" => "rails/health#show", as: :rails_health_check
 
+  # Test-only sign-in endpoint (never loaded in production)
+  if Rails.env.test?
+    post "/test/sign_in", to: "test/sessions#create", as: :test_sign_in
+  end
+
   # Login / logout
   get    "/login",   to: "sessions#new",     as: :login
   delete "/session", to: "sessions#destroy", as: :logout

@@ -1,9 +1,9 @@
 class DashboardController < AuthenticatedController
   def index
-    @job_roles   = current_user.job_roles.order(:title)
+    @job_roles   = current_organization.job_roles.order(:title)
     @job_role_id = params[:job_role_id].presence
 
-    base = current_user.candidates
+    base = current_organization.candidates
     base = base.where(job_role_id: @job_role_id) if @job_role_id
 
     # ── Volume ────────────────────────────────────────────────────────────

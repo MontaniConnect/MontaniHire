@@ -3,6 +3,7 @@ class CvAnalysis < ApplicationRecord
 
   include Analyzable
 
+  belongs_to :organization
   belongs_to :user
   belongs_to :job_role
   has_one_attached :cv

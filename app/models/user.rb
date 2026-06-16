@@ -1,9 +1,14 @@
 class User < ApplicationRecord
-  has_many :job_roles,      dependent: :destroy
-  has_many :shortlists,     dependent: :destroy
-  has_many :video_analyses, dependent: :destroy
-  has_many :cv_analyses,    dependent: :destroy
-  has_many :candidates,     dependent: :destroy
+  belongs_to :organization, optional: true
+
+  ROLES = %w[owner admin member].freeze
+  validates :role, inclusion: { in: ROLES }
+
+  has_many :job_roles,      dependent: :nullify
+  has_many :shortlists,     dependent: :nullify
+  has_many :video_analyses, dependent: :nullify
+  has_many :cv_analyses,    dependent: :nullify
+  has_many :candidates,     dependent: :nullify
   has_many :slot_bookings,  dependent: :destroy
 
   DAY_NAMES = %w[sunday monday tuesday wednesday thursday friday saturday].freeze

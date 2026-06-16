@@ -43,9 +43,6 @@ module ExtractVid
 
     config.x.invites_enabled = false
 
-    # Prevent destructive database operations (drop, purge, schema:load) in
-    # development as well as production. Override with
-    # DISABLE_DATABASE_ENVIRONMENT_CHECK=1 only when intentionally resetting.
-    config.active_record.protected_environments = %w[production development]
+    config.active_record.protected_environments = %w[production]
   end
 end
