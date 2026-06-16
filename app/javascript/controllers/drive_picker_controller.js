@@ -1,7 +1,7 @@
 import { Controller } from "@hotwired/stimulus"
 
 export default class extends Controller {
-  static targets = ["fileIdInput", "fileNameInput", "fileLabel", "button", "folderInput", "candidateName"]
+  static targets = ["fileIdInput", "fileNameInput", "fileLabel", "button", "folderInput", "candidateName", "submitBtn"]
   static values  = { accessToken: String, apiKey: String, clientId: String, mimeTypes: String, nameFieldId: String, folderMode: Boolean }
 
   connect() {
@@ -113,6 +113,12 @@ export default class extends Controller {
 
     if (this.hasButtonTarget) {
       this.buttonTarget.textContent = "Change file"
+    }
+
+    if (this.hasSubmitBtnTarget) {
+      this.submitBtnTarget.disabled = false
+      this.submitBtnTarget.style.opacity = ""
+      this.submitBtnTarget.style.cursor = ""
     }
 
     const nameField = this.hasCandidateNameTarget

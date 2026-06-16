@@ -1,6 +1,6 @@
 class CvClaudeAnalysisService
   MODEL          = "claude-sonnet-4-6"
-  PROMPT_VERSION = "2026-06-15-v12"
+  PROMPT_VERSION = "2026-06-16-v13"
 
   SYSTEM_PROMPT = <<~PROMPT
     You are an expert recruiter evaluating a candidate's CV against a job description.
@@ -34,7 +34,10 @@ class CvClaudeAnalysisService
     Return a JSON object with exactly these keys:
     - "recommendation": "recommend" | "borderline" | "reject"
     - "score": a number from 0 to 10 (one decimal place) reflecting overall CV-to-JD fit — holistic assessment including career progression, credential signals, and experience anchoring
-    - "summary": 1-2 sentences maximum — candidate's key CV strength and the decisive factor for the recommendation. No filler.
+    - "summary": 1-2 sentences maximum. Must contain exactly two elements:
+        (1) Key Strength: a highly specific, data-driven behavioural spike or culture add grounded in CV evidence — not generic praise (e.g. "demonstrated strong pattern recognition by working backward from a failed project", not "great communicator")
+        (2) Core Weakness / Decisive Factor: a real, unmasked friction point or growth area linked to a specific gap, self-awareness signal, or unguarded red flag in the CV (e.g. "lacks deep Python experience but is actively upskilling") — no ruinous empathy, no fake weaknesses like "perfectionism"
+        Zero filler words. No praise-padding before the weakness.
     - "structured_feedback": an object with:
         - "cv_requirements_coverage": array of objects, one per must-have JD requirement, each with:
             - "requirement": the must-have requirement as stated or closely paraphrased from the JD
@@ -225,72 +228,11 @@ class CvClaudeAnalysisService
   end
 
   def outcome_examples_context
-    return nil unless @analysis.job_role
-
-    examples = Candidate
-      .where(job_role: @analysis.job_role, pipeline_stage: %w[final_interview not_invited])
-      .where.not(outcome_confirmed_at: nil)
-      .order(outcome_confirmed_at: :desc)
-      .includes(:cv_analysis)
-      .limit(6)
-
-    return nil if examples.empty?
-
-    invited     = examples.select { |c| c.pipeline_stage == "final_interview" }
-    not_invited = examples.select { |c| c.pipeline_stage == "not_invited" }
-
-    lines = [
-      "Anonymised outcomes from past CV screenings for this role, confirmed by the recruiter.",
+    OutcomeExamplesBuilder::CvScreening.new(
+      role: @analysis.job_role
+    ).build(intro: [
+      "Anonymised outcomes from past CV screenings for this role, reviewed by the hiring manager.",
       "Use these as calibration examples — they represent what the hiring team has validated as strong vs. weak CV fits."
-    ]
-
-    if invited.any?
-      lines << "\n### Invited to Final Interview"
-      invited.first(3).each_with_index do |c, i|
-        lines << format_cv_outcome_example(c, i + 1)
-      end
-    end
-
-    if not_invited.any?
-      lines << "\n### Not Invited to Final Interview"
-      not_invited.first(3).each_with_index do |c, i|
-        lines << format_cv_outcome_example(c, i + 1)
-      end
-    end
-
-    lines.join("\n")
-  end
-
-  def format_cv_outcome_example(candidate, index)
-    cv = candidate.cv_analysis
-    return nil unless cv&.structured_feedback.present? && cv.score.present?
-
-    fb    = cv.structured_feedback
-    lines = []
-    score_line = "CV Fit Score: #{fb['cv_fit_score']}/10" if fb["cv_fit_score"].present?
-    score_line = [score_line, "holistic: #{cv.score}/10"].compact.join(" · ")
-    lines << "\nExample #{index} (#{score_line}, recommendation: #{fb['recommendation']}):"
-
-    cov = Array(fb["cv_requirements_coverage"])
-    if cov.any?
-      lines << "  Must-have coverage:"
-      cov.each do |r|
-        tag  = { "evidenced" => "evidenced", "partial" => "partial  ", "not evidenced" => "missing  " }[r["coverage"]] || "unknown  "
-        line = "    #{tag} | #{r['requirement']}"
-        line += " — #{r['evidence']}" if r["evidence"].present?
-        lines << line
-      end
-    else
-      lines << "  Matched must-haves: #{Array(fb['matched_skills']).first(4).join(', ')}"  if fb["matched_skills"].present?
-      lines << "  Missing must-haves: #{Array(fb['missing_skills']).first(3).join(', ')}"  if fb["missing_skills"].present?
-    end
-
-    lines << "  Evidence gaps: #{Array(fb['skill_evidence_gaps']).first(2).join(', ')}"    if fb["skill_evidence_gaps"].present?
-    lines << "  Career progression: #{fb['career_progression']}"                           if fb["career_progression"].present?
-    lines << "  Experience level fit: #{fb['experience_level_fit']}"                       if fb["experience_level_fit"].present?
-    lines << "  Rationale: #{fb['decision_rationale']}"                                    if fb["decision_rationale"].present?
-    lines << "  Recruiter note: #{candidate.outcome_note}"                                 if candidate.outcome_note.present?
-
-    lines.join("\n")
+    ])
   end
 end

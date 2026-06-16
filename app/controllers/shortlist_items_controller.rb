@@ -85,10 +85,6 @@ class ShortlistItemsController < AuthenticatedController
 
   def compliance_flags_for(cv_analysis: nil, video_analysis: nil)
     flags = []
-    if video_analysis
-      fb = video_analysis.structured_feedback || {}
-      flags << "Significant CV–interview inconsistencies detected." if fb["cv_interview_consistency"] == "significant inconsistencies"
-    end
     if cv_analysis
       fb = cv_analysis.structured_feedback || {}
       Array(fb["credential_flags"]).each { |f| flags << "Credential flag: #{f}" }

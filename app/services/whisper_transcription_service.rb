@@ -9,20 +9,23 @@ class WhisperTranscriptionService
     @analysis = analysis
   end
 
-  def call
+  def call(video_tmp: nil)
     @analysis.transition_to!("transcribing")
     raise "Whisper model not found. Run: rails whisper:download_model" unless File.exist?(MODEL_PATH)
 
-    video_tmp = download_video
-    wav_path  = extract_audio(video_tmp.path)
-    transcript = transcribe(wav_path)
+    caller_owns_tmp = video_tmp.present?
+    video_tmp     ||= download_video
+    wav_path        = extract_audio(video_tmp.path)
+    transcript      = transcribe(wav_path)
 
     cleaned = TranscriptCleanerService.call(transcript)
     @analysis.update!(transcript: transcript, cleaned_transcript: cleaned)
     transcript
   ensure
-    video_tmp&.close
-    video_tmp&.unlink
+    unless caller_owns_tmp
+      video_tmp&.close
+      video_tmp&.unlink
+    end
     File.unlink(wav_path) if wav_path && File.exist?(wav_path)
   end
 

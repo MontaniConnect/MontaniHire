@@ -1,6 +1,6 @@
 class ClaudeAnalysisService
   MODEL          = "claude-sonnet-4-6"
-  PROMPT_VERSION = "2026-06-15-v7"
+  PROMPT_VERSION = "2026-06-16-v8"
 
   SYSTEM_PROMPT = <<~PROMPT
     You are an expert HR analyst evaluating a candidate's preliminary interview transcript against a specific job role.
@@ -13,7 +13,7 @@ class ClaudeAnalysisService
     - Treat missing must-have requirements as open questions that the interview must answer. If the interview does not address them, that absence should lower the score.
     - Treat skill evidence gaps as hypotheses to test: did the candidate demonstrate those skills in the interview, or do they remain unsubstantiated?
     - Do not simply re-score the CV. The interview is an independent signal. A weak CV can be partially redeemed by a strong interview, and a strong CV can be undermined by a poor one.
-    - If targeted interview questions are listed, note in strengths or red_flags whether gaps were addressed, evaded, or left unraised.
+    - If targeted interview questions are listed, note in strengths or red_flags whether gaps were addressed or evaded — do not flag gaps that were simply not raised by the interviewer.
 
     When a Candidate Pool Context is provided:
     - Use the score ranges as a calibration reference, not a ceiling or floor.
@@ -44,7 +44,10 @@ class ClaudeAnalysisService
     Return a JSON object with exactly these keys:
     - "recommendation": "recommend" | "borderline" | "reject"
     - "score": a number from 0 to 10 (one decimal place) reflecting overall candidate quality — holistic assessment including communication, depth, and impression
-    - "summary": 1-2 sentences maximum — candidate's key strength and the decisive factor for the recommendation. No filler.
+    - "summary": 1-2 sentences maximum. Must contain exactly two elements:
+        (1) Key Strength: a highly specific, data-driven behavioural spike or culture add grounded in transcript evidence — not generic praise (e.g. "demonstrated strong pattern recognition by working backward from a failed project", not "great communicator")
+        (2) Core Weakness / Decisive Factor: a real, unmasked friction point or growth area linked to a specific self-awareness signal, unguarded moment, or red flag in the interview (e.g. "was subtly dismissive during scheduling", "lacks deep Python experience but is proactively taking a course") — no ruinous empathy, no fake weaknesses like "perfectionism"
+        Zero filler words. No praise-padding before the weakness.
     - "structured_feedback": an object with:
         - "strengths": array of strings (3-5 points) — specific, evidence-based positive signals from the transcript that do not appear in jd_requirements_coverage
         - "communication_quality": "poor" | "fair" | "good" | "excellent"
@@ -252,82 +255,12 @@ class ClaudeAnalysisService
   end
 
   def outcome_examples_context
-    return @_outcome_examples_context if defined?(@_outcome_examples_context)
-    @_outcome_examples_context = build_outcome_examples_context
-  end
-
-  def build_outcome_examples_context
-    role = @analysis.job_role
-    return nil unless role
-
-    examples = Candidate
-      .where(job_role: role, pipeline_stage: %w[final_interview not_invited])
-      .where.not(outcome_confirmed_at: nil)
-      .where.not(id: candidate&.id)
-      .order(outcome_confirmed_at: :desc)
-      .includes(:video_analysis)
-      .limit(6)
-
-    return nil if examples.empty?
-
-    invited     = examples.select { |c| c.pipeline_stage == "final_interview" }
-    not_invited = examples.select { |c| c.pipeline_stage == "not_invited" }
-
-    lines = [
-      "Anonymised outcomes from past interviews for this role, confirmed by the recruiter.",
+    OutcomeExamplesBuilder::Interview.new(
+      role:              @analysis.job_role,
+      exclude_candidate: candidate
+    ).build(intro: [
+      "Anonymised outcomes from past interviews for this role, reviewed by the hiring manager.",
       "Use these to calibrate how the hiring team distinguishes strong from weak interview performance."
-    ]
-
-    if invited.any?
-      lines << "\n### Invited to Final Interview"
-      invited.first(3).each_with_index do |c, i|
-        lines << format_interview_outcome_example(c, i + 1)
-      end
-    end
-
-    if not_invited.any?
-      lines << "\n### Not Invited to Final Interview"
-      not_invited.first(3).each_with_index do |c, i|
-        lines << format_interview_outcome_example(c, i + 1)
-      end
-    end
-
-    lines.join("\n")
-  end
-
-  def format_interview_outcome_example(candidate, index)
-    va = candidate.video_analysis
-    return nil unless va&.structured_feedback.present? && va.score.present?
-
-    fb   = va.structured_feedback
-    jd   = fb["jd_fit_score"]
-    ep   = va.episode_score
-    dims = fb["episode_dimensions"] || {}
-
-    score_line = []
-    score_line << "Episode Score: #{ep}/10" if ep.present?
-    score_line << "holistic: #{va.score}/10"
-    score_line << "JD fit: #{jd}/10" if jd.present?
-
-    lines = []
-    lines << "\nExample #{index} (#{score_line.join(' · ')}):"
-
-    if dims.any?
-      dim_order = %w[relevance_discipline ownership_language outcome_orientation adaptability_signal communication_clarity]
-      lines << "  Episode dimensions:"
-      dim_order.each do |dim|
-        next unless dims[dim].present?
-        lines << "    #{dim.ljust(24)} #{dims[dim]}"
-      end
-    end
-
-    lines << "  Strengths: #{Array(fb['strengths']).first(3).join('; ')}"           if fb["strengths"].present?
-    lines << "  Communication: #{fb['communication_quality']}"                      if fb["communication_quality"].present?
-    lines << "  CV-interview consistency: #{fb['cv_interview_consistency']}"         if fb["cv_interview_consistency"].present?
-    lines << "  Red flags: #{Array(fb['red_flags']).first(2).join('; ')}"            if fb["red_flags"].present?
-    lines << "  Rationale: #{fb['decision_rationale']}"                              if fb["decision_rationale"].present?
-    lines << "  Recruiter note: #{candidate.outcome_note}"                           if candidate.outcome_note.present?
-
-    lines.join("\n")
+    ])
   end
 end

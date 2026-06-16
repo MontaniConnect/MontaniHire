@@ -60,6 +60,16 @@ class ShortlistItem < ApplicationRecord
     candidate&.update_columns(pipeline_stage: stage) if stage
   end
 
+  def self.hm_decided_for_role(role, exclude: nil)
+    q = joins(:candidate)
+          .where(client_status: %w[approved rejected])
+          .where(candidates: { job_role_id: role.id })
+          .includes(candidate: [:cv_analysis, :video_analysis])
+          .order(updated_at: :desc)
+    q = q.where.not(candidates: { id: exclude.id }) if exclude
+    q.limit(12).to_a.uniq { |i| i.candidate_id }.first(6)
+  end
+
   def toggle_final_interview_no_show!
     candidate&.update_columns(
       final_interview_no_show: !candidate.final_interview_no_show

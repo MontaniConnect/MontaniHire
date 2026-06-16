@@ -1,5 +1,7 @@
 module Candidates
   class CommunicationsController < BaseController
+    before_action :check_invites_enabled, only: [:send_invite_email, :send_followup_email]
+
     def send_invite_email
       if @candidate.email.blank?
         redirect_to candidate_path(@candidate),
@@ -43,7 +45,36 @@ module Candidates
       redirect_to candidate_path(@candidate), alert: "Could not save timeline: #{e.message}"
     end
 
+    def sync_calendar
+      booking = @candidate.slot_booking
+      unless booking
+        redirect_to candidate_path(@candidate), alert: "No slot booking found for #{@candidate.name}."
+        return
+      end
+
+      unless current_user.google_connected?
+        redirect_to candidate_path(@candidate),
+                    alert: "Connect your Google account in Settings before syncing to Calendar."
+        return
+      end
+
+      CalendarEventService.new(user: current_user, slot_booking: booking).call
+      redirect_to candidate_path(@candidate), notice: "Interview added to your Google Calendar."
+    rescue CalendarEventService::InsufficientScopeError
+      redirect_to candidate_path(@candidate),
+                  alert: "Calendar permission missing. Disconnect and reconnect your Google account in Settings, then try again."
+    rescue => e
+      Rails.logger.error "[CalendarEventService] #{e.class}: #{e.message}"
+      redirect_to candidate_path(@candidate), alert: "Could not sync calendar: #{e.message}"
+    end
+
     private
+
+    def check_invites_enabled
+      unless Rails.application.config.x.invites_enabled
+        redirect_to candidate_path(@candidate), notice: "Email invites are currently paused." and return
+      end
+    end
 
     def gmail_service
       GmailComposeUrlService.new(candidate: @candidate)

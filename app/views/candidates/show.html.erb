@@ -60,6 +60,10 @@
       <%= button_to "Advance to Interview →", advance_candidate_path(@candidate),
             method: :post, class: "btn",
             style: "padding: 0.45rem 1rem; font-size: 0.85rem;" %>
+      <%= button_to "✕ Reject", reject_candidate_path(@candidate),
+            method: :post,
+            data: { turbo_confirm: "Reject #{@candidate.name}? This will mark them as not qualified." },
+            class: "btn", style: "background: #dc2626; padding: 0.45rem 1rem; font-size: 0.85rem;" %>
     <% elsif @candidate.pipeline_stage == "preliminary_interview" %>
       <% if @candidate.intake_token.present? %>
         <%= button_to @candidate.no_show? ? "✓ Undo No Show" : "⚠ No Show",
@@ -75,44 +79,49 @@
               class: "btn", style: "background: #555; padding: 0.45rem 1rem; font-size: 0.85rem;" %>
       <% end %>
 
-      <% if !@candidate.intake_submitted? && @candidate.cv_analysis&.completed? && @candidate.video_analysis&.completed? && @shortlist_item.nil? %>
-        <% _shortlists = current_user.shortlists.order(:title) %>
-        <% _va_fb = @candidate.video_feedback %>
-        <% _cv_fb = @candidate.cv_feedback %>
-        <% _compliance_flags = [] %>
-        <% if _va_fb["cv_interview_consistency"] == "significant inconsistencies" %>
-          <% _compliance_flags << "Significant CV–interview inconsistencies detected." %>
-        <% end %>
-        <% Array(_cv_fb["credential_flags"]).each { |f| _compliance_flags << "Credential flag: #{f}" } %>
-        <% if _shortlists.any? %>
-          <details style="position: relative; display: inline-block;">
-            <summary style="list-style: none; cursor: pointer;" class="btn">＋ Shortlist</summary>
-            <div style="position: absolute; right: 0; top: calc(100% + 4px); background: #fff; border: 1px solid #e5e5e5; border-radius: 8px; padding: 1rem; min-width: 260px; z-index: 50; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
-              <form action="<%= shortlist_shortlist_items_path(_shortlists.first) %>" method="post"
-                    id="sl-add-cand-<%= @candidate.id %>"
-                    data-compliance-flags="<%= _compliance_flags.to_json %>">
-                <%= hidden_field_tag :authenticity_token, form_authenticity_token %>
-                <%= hidden_field_tag :candidate_id, @candidate.id %>
-                <div style="margin-bottom: 0.65rem;">
-                  <label style="font-size: 0.78rem; font-weight: 500; color: #555; display: block; margin-bottom: 0.3rem;">Shortlist</label>
-                  <select style="width: 100%; padding: 0.45rem 0.6rem; border: 1px solid #ddd; border-radius: 6px; font-size: 0.88rem; background: #fff;"
-                          onchange="document.getElementById('sl-add-cand-<%= @candidate.id %>').action='/shortlists/'+this.value+'/shortlist_items'">
-                    <% _shortlists.each do |sl| %>
-                      <option value="<%= sl.id %>"><%= sl.title %></option>
-                    <% end %>
-                  </select>
-                </div>
-                <button type="submit" class="btn" style="width: 100%; padding: 0.45rem; font-size: 0.85rem;">Add to shortlist</button>
-              </form>
-              <div style="text-align: center; margin-top: 0.5rem;">
-                <%= link_to "+ New shortlist", new_shortlist_path,
-                      style: "font-size: 0.8rem; color: #888; text-decoration: none;" %>
-              </div>
-            </div>
-          </details>
+      <% if !@candidate.intake_submitted? && @candidate.cv_analysis&.completed? && @candidate.video_analysis&.completed? %>
+        <% if @shortlist_item %>
+          <%= link_to shortlist_path(@shortlist_item.shortlist),
+                style: "display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.82rem; font-weight: 600;
+                        color: #166534; background: #dcfce7; border: 1.5px solid #86efac; border-radius: 6px;
+                        padding: 0.4rem 0.85rem; text-decoration: none; white-space: nowrap;" do %>
+            ✓ Shortlisted — <%= @shortlist_item.shortlist.title %>
+          <% end %>
         <% else %>
-          <%= link_to "＋ Shortlist", new_shortlist_path,
-                class: "btn", style: "background: #555; padding: 0.45rem 0.9rem; font-size: 0.85rem;" %>
+          <% _shortlists = current_user.shortlists.order(:title) %>
+          <% _cv_fb = @candidate.cv_feedback %>
+          <% _compliance_flags = [] %>
+          <% Array(_cv_fb["credential_flags"]).each { |f| _compliance_flags << "Credential flag: #{f}" } %>
+          <% if _shortlists.any? %>
+            <details style="position: relative; display: inline-block;">
+              <summary style="list-style: none; cursor: pointer;" class="btn">＋ Shortlist</summary>
+              <div style="position: absolute; right: 0; top: calc(100% + 4px); background: #fff; border: 1px solid #e5e5e5; border-radius: 8px; padding: 1rem; min-width: 260px; z-index: 50; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                <form action="<%= shortlist_shortlist_items_path(_shortlists.first) %>" method="post"
+                      id="sl-add-cand-<%= @candidate.id %>"
+                      data-compliance-flags="<%= _compliance_flags.to_json %>">
+                  <%= hidden_field_tag :authenticity_token, form_authenticity_token %>
+                  <%= hidden_field_tag :candidate_id, @candidate.id %>
+                  <div style="margin-bottom: 0.65rem;">
+                    <label style="font-size: 0.78rem; font-weight: 500; color: #555; display: block; margin-bottom: 0.3rem;">Shortlist</label>
+                    <select style="width: 100%; padding: 0.45rem 0.6rem; border: 1px solid #ddd; border-radius: 6px; font-size: 0.88rem; background: #fff;"
+                            onchange="document.getElementById('sl-add-cand-<%= @candidate.id %>').action='/shortlists/'+this.value+'/shortlist_items'">
+                      <% _shortlists.each do |sl| %>
+                        <option value="<%= sl.id %>"><%= sl.title %></option>
+                      <% end %>
+                    </select>
+                  </div>
+                  <button type="submit" class="btn" style="width: 100%; padding: 0.45rem; font-size: 0.85rem;">Add to shortlist</button>
+                </form>
+                <div style="text-align: center; margin-top: 0.5rem;">
+                  <%= link_to "+ New shortlist", new_shortlist_path,
+                        style: "font-size: 0.8rem; color: #888; text-decoration: none;" %>
+                </div>
+              </div>
+            </details>
+          <% else %>
+            <%= link_to "＋ Shortlist", new_shortlist_path,
+                  class: "btn", style: "background: #555; padding: 0.45rem 0.9rem; font-size: 0.85rem;" %>
+          <% end %>
         <% end %>
       <% end %>
     <% elsif @candidate.pipeline_stage == "client_interview" %>
@@ -174,8 +183,8 @@
 <% _tier_color = { "Shortlist" => "#166534", "Borderline" => "#854d0e", "Archive" => "#991b1b" } %>
 <% _tier_bg    = { "Shortlist" => "#dcfce7",  "Borderline" => "#fef9c3",  "Archive" => "#fee2e2" } %>
 
-<%# Intake invitation card — hidden once interview score exists %>
-<% unless @candidate.video_analysis&.episode_score.present? %>
+<%# Intake invitation card — only shown in preliminary_interview, hidden once score exists %>
+<% if @candidate.pipeline_stage == "preliminary_interview" && !@candidate.video_analysis&.episode_score.present? %>
 <div class="card" style="padding: 1rem 1.25rem;">
     <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.75rem;">
       <div style="font-size: 0.72rem; color: #888; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">
@@ -196,11 +205,11 @@
     <%# Email row %>
     <div style="display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; margin-bottom: 0.75rem; flex-wrap: wrap;">
       <div style="display: flex; align-items: center; gap: 0.5rem;">
-        <span style="font-size: 0.82rem; color: #555;">
+        <span style="font-size: 0.82rem; color: #aaa;">
           <% if @candidate.email.present? %>
             <%= @candidate.email %>
           <% else %>
-            <em style="color: #aaa;">No email found</em>
+            <em>No email found</em>
           <% end %>
         </span>
         <details style="position: relative; display: inline-block;">
@@ -344,31 +353,31 @@
 
   <%# CV Analysis card %>
   <% if cv %>
-    <div class="card">
-      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem; flex-wrap: wrap; gap: 0.5rem;">
-        <div style="display: flex; align-items: center; gap: 0.75rem;">
-          <% if cv.cv_fit_score %>
-            <%= link_to cv_analysis_path(cv), style: "text-decoration: none; flex-shrink: 0;" do %>
-              <div class="score-ring" style="--pct: <%= (cv.cv_fit_score / 10.0 * 100).round %>%; width: 44px; height: 44px; cursor: pointer;">
+    <%= link_to cv_analysis_path(cv), style: "text-decoration: none; color: inherit; display: block;" do %>
+      <div class="card" style="cursor: pointer; transition: box-shadow 0.15s;">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem; flex-wrap: wrap; gap: 0.5rem;">
+          <div style="display: flex; align-items: center; gap: 0.75rem;">
+            <% if cv.cv_fit_score %>
+              <div class="score-ring" style="--pct: <%= (cv.cv_fit_score / 10.0 * 100).round %>%; width: 44px; height: 44px; flex-shrink: 0;">
                 <span class="score-value" style="font-size: 0.75rem;"><%= cv.cv_fit_score %></span>
               </div>
             <% end %>
-          <% end %>
-          <div>
-            <h2 style="margin: 0;">CV Analysis</h2>
-            <% if cv.cv_fit_tier %>
-              <span style="font-size: 0.7rem; font-weight: 700; color: <%= _tier_color[cv.cv_fit_tier] %>; background: <%= _tier_bg[cv.cv_fit_tier] %>; border-radius: 99px; padding: 0.1rem 0.45rem; margin-top: 0.2rem; display: inline-block;"><%= cv.cv_fit_tier %></span>
-            <% end %>
+            <div>
+              <h2 style="margin: 0;">CV Analysis</h2>
+              <% if cv.cv_fit_tier %>
+                <span style="font-size: 0.7rem; font-weight: 700; color: <%= _tier_color[cv.cv_fit_tier] %>; background: <%= _tier_bg[cv.cv_fit_tier] %>; border-radius: 99px; padding: 0.1rem 0.45rem; margin-top: 0.2rem; display: inline-block;"><%= cv.cv_fit_tier %></span>
+              <% end %>
+            </div>
           </div>
+          <span class="badge badge-<%= cv.status %>"><%= cv.status %></span>
         </div>
-        <span class="badge badge-<%= cv.status %>"><%= cv.status %></span>
+        <% if cv.summary.present? %>
+          <p style="font-size: 0.92rem; color: #444; line-height: 1.7; margin: 0;"><%= cv.summary %></p>
+        <% else %>
+          <p style="color: #aaa; font-size: 0.88rem; margin: 0;">Analysis pending…</p>
+        <% end %>
       </div>
-      <% if cv.summary.present? %>
-        <p style="font-size: 0.92rem; color: #444; line-height: 1.7; margin: 0;"><%= cv.summary %></p>
-      <% else %>
-        <p style="color: #aaa; font-size: 0.88rem; margin: 0;">Analysis pending…</p>
-      <% end %>
-    </div>
+    <% end %>
   <% end %>
 
   <%# Preliminary Interview card %>
@@ -409,31 +418,31 @@
   <%# CV Analysis panel %>
   <% if @candidate.cv_analysis %>
     <% cv = @candidate.cv_analysis %>
-    <div class="card">
-      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem; flex-wrap: wrap; gap: 0.5rem;">
-        <div style="display: flex; align-items: center; gap: 0.75rem;">
-          <% if cv.cv_fit_score %>
-            <%= link_to cv_analysis_path(cv), style: "text-decoration: none; flex-shrink: 0;" do %>
-              <div class="score-ring" style="--pct: <%= (cv.cv_fit_score / 10.0 * 100).round %>%; width: 44px; height: 44px; cursor: pointer;">
+    <%= link_to cv_analysis_path(cv), style: "text-decoration: none; color: inherit; display: block;" do %>
+      <div class="card" style="cursor: pointer; transition: box-shadow 0.15s;">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem; flex-wrap: wrap; gap: 0.5rem;">
+          <div style="display: flex; align-items: center; gap: 0.75rem;">
+            <% if cv.cv_fit_score %>
+              <div class="score-ring" style="--pct: <%= (cv.cv_fit_score / 10.0 * 100).round %>%; width: 44px; height: 44px; flex-shrink: 0;">
                 <span class="score-value" style="font-size: 0.75rem;"><%= cv.cv_fit_score %></span>
               </div>
             <% end %>
-          <% end %>
-          <div>
-            <h2 style="margin: 0;">CV Analysis</h2>
-            <% if cv.cv_fit_tier %>
-              <span style="font-size: 0.7rem; font-weight: 700; color: <%= _tier_color[cv.cv_fit_tier] %>; background: <%= _tier_bg[cv.cv_fit_tier] %>; border-radius: 99px; padding: 0.1rem 0.45rem; margin-top: 0.2rem; display: inline-block;"><%= cv.cv_fit_tier %></span>
-            <% end %>
+            <div>
+              <h2 style="margin: 0;">CV Analysis</h2>
+              <% if cv.cv_fit_tier %>
+                <span style="font-size: 0.7rem; font-weight: 700; color: <%= _tier_color[cv.cv_fit_tier] %>; background: <%= _tier_bg[cv.cv_fit_tier] %>; border-radius: 99px; padding: 0.1rem 0.45rem; margin-top: 0.2rem; display: inline-block;"><%= cv.cv_fit_tier %></span>
+              <% end %>
+            </div>
           </div>
+          <span class="badge badge-<%= cv.status %>"><%= cv.status %></span>
         </div>
-        <span class="badge badge-<%= cv.status %>"><%= cv.status %></span>
+        <% if cv.summary.present? %>
+          <p style="font-size: 0.92rem; color: #444; line-height: 1.7; margin: 0;"><%= cv.summary %></p>
+        <% else %>
+          <p style="color: #aaa; font-size: 0.88rem; margin: 0;">Analysis pending…</p>
+        <% end %>
       </div>
-      <% if cv.summary.present? %>
-        <p style="font-size: 0.92rem; color: #444; line-height: 1.7; margin: 0;"><%= cv.summary %></p>
-      <% else %>
-        <p style="color: #aaa; font-size: 0.88rem; margin: 0;">Analysis pending…</p>
-      <% end %>
-    </div>
+    <% end %>
   <% end %>
 
   <%# Suggested interview questions (cv_review stage only) %>
@@ -499,7 +508,7 @@
         <% end %>
       </div>
     <% end %>
-  <% elsif @candidate.pipeline_stage == "preliminary_interview" %>
+  <% elsif %w[cv_review preliminary_interview].include?(@candidate.pipeline_stage) %>
     <div class="card" style="border-style: dashed; background: #fafafa;">
       <p style="color: #888; font-size: 0.9rem; text-align: center; padding: 0.5rem 0;">
         Interview video not uploaded yet.

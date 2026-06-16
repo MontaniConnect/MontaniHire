@@ -86,12 +86,18 @@
           <div style="display: flex; align-items: center; gap: 0.5rem; flex-shrink: 0; flex-wrap: wrap;">
             <% if item.candidate %>
               <% stage = item.candidate.pipeline_stage %>
-              <% if stage == "final_interview" %>
+              <% if stage == "hired" %>
+                <span class="badge badge-completed" style="font-size: 0.78rem;">✓ Hired</span>
+              <% elsif stage == "offer_declined" %>
+                <span class="badge badge-failed" style="font-size: 0.78rem;">✕ Offer Declined</span>
+              <% elsif stage == "not_selected" %>
+                <span class="badge badge-failed" style="font-size: 0.78rem;">✕ Not Selected</span>
+              <% elsif stage == "rejected" %>
+                <span class="badge badge-failed" style="font-size: 0.78rem;">✕ Rejected</span>
+              <% elsif stage == "final_interview" %>
                 <span class="badge badge-completed" style="font-size: 0.78rem;">✓ Final Interview</span>
-                <%= render partial: "shortlists/outcome_confirm", locals: { candidate: item.candidate } %>
               <% elsif stage == "not_invited" %>
                 <span class="badge badge-failed" style="font-size: 0.78rem;">✕ Not Invited</span>
-                <%= render partial: "shortlists/outcome_confirm", locals: { candidate: item.candidate } %>
               <% else %>
                 <%= button_to "✓ Final Interview", final_interview_candidate_path(item.candidate),
                       method: :post,

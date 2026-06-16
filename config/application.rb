@@ -41,6 +41,8 @@ module ExtractVid
     # Skip views, helpers and assets when generating a new resource.
     config.active_job.queue_adapter = :sidekiq
 
+    config.x.invites_enabled = false
+
     # Prevent destructive database operations (drop, purge, schema:load) in
     # development as well as production. Override with
     # DISABLE_DATABASE_ENVIRONMENT_CHECK=1 only when intentionally resetting.

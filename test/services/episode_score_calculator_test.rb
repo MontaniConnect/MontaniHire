@@ -89,4 +89,26 @@ class EpisodeScoreCalculatorTest < ActiveSupport::TestCase
     result = calc("adaptability_signal" => "meets", "ownership_language" => "does_not_meet").total_score
     assert_equal 7.1, result
   end
+
+  # ── hash-format dimensions (new prompt format) ─────────────────────────────
+
+  test "handles hash-format dimensions with rating and note keys" do
+    dims = ALL_DIMS.index_with { { "rating" => "meets", "note" => "some evaluator note" } }
+    assert_equal 10.0, EpisodeScoreCalculator.new(dimensions: dims).total_score
+  end
+
+  test "handles mixed plain-string and hash-format dimensions" do
+    # outcome_orientation hash meets (1.0, w=0.30) + communication_clarity plain partially_meets (0.7, w=0.15)
+    # total_raw = 0.30 + 0.105 = 0.405, total_weight = 0.45
+    # score = (0.405 / 0.45) * 10 = 9.0
+    result = calc(
+      "outcome_orientation"   => { "rating" => "meets", "note" => "driven by results" },
+      "communication_clarity" => "partially_meets"
+    ).total_score
+    assert_equal 9.0, result
+  end
+
+  test "returns nil when hash dimensions have no rating key" do
+    assert_nil calc("outcome_orientation" => { "note" => "no rating present" }).total_score
+  end
 end

@@ -146,8 +146,8 @@
           <input type="text" name="cv_analysis[candidate_name]" placeholder="e.g. Jane Smith" required
                  data-drive-picker-target="candidateName">
         </div>
-        <%= f.hidden_field :drive_file_id,   data: { "drive-picker-target": "fileIdInput" } %>
-        <%= f.hidden_field :drive_file_name, data: { "drive-picker-target": "fileNameInput" } %>
+        <%= hidden_field_tag "cv_analysis[drive_file_id]",   nil, data: { "drive-picker-target": "fileIdInput" } %>
+        <%= hidden_field_tag "cv_analysis[drive_file_name]", nil, data: { "drive-picker-target": "fileNameInput" } %>
 
         <% if current_user.google_connected? %>
           <div class="form-group">
@@ -181,8 +181,9 @@
         <% end %>
 
         <%= f.submit "Analyse CV", class: "btn",
-              disabled: !current_user.google_connected?,
-              style: current_user.google_connected? ? "" : "opacity: 0.4; cursor: not-allowed;" %>
+              disabled: true,
+              style: "opacity: 0.4; cursor: not-allowed;",
+              data: { "drive-picker-target": "submitBtn" } %>
       <% end %>
     </div>
   </div>

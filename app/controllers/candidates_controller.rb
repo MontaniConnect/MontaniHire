@@ -30,6 +30,20 @@ class CandidatesController < AuthenticatedController
                                    .where(shortlists: { user_id: current_user.id })
                                    .find_by(candidate_id: @candidate.id)
     @candidate.update_columns(intake_viewed_at: Time.current) if @candidate.intake_unread?
+    if @candidate.screened_at.blank? && @candidate.cv_analysis.present?
+      @candidate.update_columns(screened_at: @candidate.cv_analysis.created_at)
+    end
+    if @candidate.shortlisted_at.blank? && @candidate.shortlist_items.exists?
+      @candidate.update_columns(shortlisted_at: @candidate.shortlist_items.minimum(:created_at))
+    end
+    if @candidate.final_interview_at.blank? &&
+       %w[final_interview hired offer_declined not_selected].include?(@candidate.pipeline_stage)
+      booked_at = @candidate.slot_booking&.starts_at
+      @candidate.update_columns(final_interview_at: booked_at || Time.current)
+    end
+    if @candidate.hired_at.blank? && @candidate.pipeline_stage == "hired"
+      @candidate.update_columns(hired_at: Time.current)
+    end
   end
 
   def update

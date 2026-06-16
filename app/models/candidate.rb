@@ -107,6 +107,7 @@ class Candidate < ApplicationRecord
 
   def episode_score = video_analysis&.episode_score
   def episode_tier  = video_analysis&.episode_tier
+  def cv_ready?     = cv_analysis&.completed?
 
   def jd_fit_tier
     jd = video_analysis&.structured_feedback&.dig("jd_fit_score")&.to_f

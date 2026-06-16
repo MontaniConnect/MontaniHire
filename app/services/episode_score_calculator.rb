@@ -11,8 +11,10 @@ class EpisodeScoreCalculator
     total_raw    = 0.0
 
     WEIGHTS.each do |dim, weight|
-      level = @dims[dim]
-      next unless level.present?
+      raw   = @dims[dim]
+      next unless raw.present?
+      level = raw.is_a?(Hash) ? (raw["rating"] || raw.values.first) : raw
+      next unless level.is_a?(String) && level.present?
       value = LEVEL_VALUES.dig(dim, level)
       next unless value
       total_raw    += value * weight

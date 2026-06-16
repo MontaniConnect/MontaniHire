@@ -46,67 +46,77 @@
     <% end %>
 
     <%# Add to shortlist %>
-    <% shortlists = current_user.shortlists.order(:title) %>
     <% _linked_candidate = @video_analysis.candidate %>
     <% _use_candidate_path = _linked_candidate&.cv_analysis&.completed? %>
-    <% if shortlists.any? %>
-      <% _va_fb = @video_analysis.structured_feedback || {} %>
-      <% _compliance_flags = [] %>
-      <% if _va_fb["cv_interview_consistency"] == "significant inconsistencies" %>
-        <% _compliance_flags << "Significant CV–interview inconsistencies detected." %>
+    <% _existing_item = if _linked_candidate
+         ShortlistItem.joins(:shortlist).where(shortlists: { user_id: current_user.id }).find_by(candidate_id: _linked_candidate.id)
+       else
+         ShortlistItem.joins(:shortlist).where(shortlists: { user_id: current_user.id }).find_by(shareable_type: "VideoAnalysis", shareable_id: @video_analysis.id)
+       end %>
+    <% if _existing_item %>
+      <%= link_to shortlist_path(_existing_item.shortlist),
+            style: "display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.82rem; font-weight: 600;
+                    color: #166534; background: #dcfce7; border: 1.5px solid #86efac; border-radius: 6px;
+                    padding: 0.4rem 0.85rem; text-decoration: none; white-space: nowrap;" do %>
+        ✓ Shortlisted — <%= _existing_item.shortlist.title %>
       <% end %>
-      <% _linked_cv_fb = _linked_candidate&.cv_analysis&.structured_feedback || {} %>
-      <% Array(_linked_cv_fb["credential_flags"]).each { |f| _compliance_flags << "Credential flag: #{f}" } %>
-      <details style="position: relative; display: inline-block;">
-        <summary style="list-style: none; cursor: pointer;" class="btn">＋ Shortlist</summary>
-        <div style="position: absolute; right: 0; top: calc(100% + 4px); background: #fff; border: 1px solid #e5e5e5; border-radius: 8px; padding: 1rem; min-width: 260px; z-index: 50; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
-          <form action="<%= shortlist_shortlist_items_path(shortlists.first) %>" method="post"
-                id="sl-add-va-<%= @video_analysis.id %>"
-                data-compliance-flags="<%= _compliance_flags.to_json %>">
-            <%= hidden_field_tag :authenticity_token, form_authenticity_token %>
-            <% if _use_candidate_path %>
-              <%= hidden_field_tag :candidate_id, _linked_candidate.id %>
-            <% else %>
-              <%= hidden_field_tag :shareable_type, "VideoAnalysis" %>
-              <%= hidden_field_tag :shareable_id, @video_analysis.id %>
-            <% end %>
-            <div style="margin-bottom: 0.65rem;">
-              <label style="font-size: 0.78rem; font-weight: 500; color: #555; display: block; margin-bottom: 0.3rem;">Shortlist</label>
-              <select style="width: 100%; padding: 0.45rem 0.6rem; border: 1px solid #ddd; border-radius: 6px; font-size: 0.88rem; background: #fff;"
-                      onchange="document.getElementById('sl-add-va-<%= @video_analysis.id %>').action='/shortlists/'+this.value+'/shortlist_items'">
-                <% shortlists.each do |sl| %>
-                  <option value="<%= sl.id %>"><%= sl.title %></option>
-                <% end %>
-              </select>
-            </div>
-            <% unless _use_candidate_path %>
-              <% cv_analyses = current_user.cv_analyses.where(status: "completed").order(:candidate_name) %>
-              <% if cv_analyses.any? %>
-                <div style="margin-bottom: 0.65rem;">
-                  <label style="font-size: 0.78rem; font-weight: 500; color: #555; display: block; margin-bottom: 0.3rem;">
-                    Also attach CV (optional)
-                  </label>
-                  <select name="companion_cv_analysis_id"
-                          style="width: 100%; padding: 0.45rem 0.6rem; border: 1px solid #ddd; border-radius: 6px; font-size: 0.88rem; background: #fff;">
-                    <option value="">— none —</option>
-                    <% cv_analyses.each do |cv| %>
-                      <option value="<%= cv.id %>"><%= cv.display_name %></option>
-                    <% end %>
-                  </select>
-                </div>
-              <% end %>
-            <% end %>
-            <button type="submit" class="btn" style="width: 100%; padding: 0.45rem; font-size: 0.85rem;">Add to shortlist</button>
-          </form>
-          <div style="text-align: center; margin-top: 0.5rem;">
-            <%= link_to "+ New shortlist", new_shortlist_path(type: "VideoAnalysis", candidate_id: @video_analysis.id),
-                  style: "font-size: 0.8rem; color: #888; text-decoration: none;" %>
-          </div>
-        </div>
-      </details>
     <% else %>
-      <%= link_to "＋ Shortlist", new_shortlist_path(type: "VideoAnalysis", candidate_id: @video_analysis.id),
-            class: "btn", style: "background: #555; padding: 0.45rem 0.9rem; font-size: 0.85rem;" %>
+      <% shortlists = current_user.shortlists.order(:title) %>
+      <% if shortlists.any? %>
+        <% _compliance_flags = [] %>
+        <% _linked_cv_fb = _linked_candidate&.cv_analysis&.structured_feedback || {} %>
+        <% Array(_linked_cv_fb["credential_flags"]).each { |f| _compliance_flags << "Credential flag: #{f}" } %>
+        <details style="position: relative; display: inline-block;">
+          <summary style="list-style: none; cursor: pointer;" class="btn">＋ Shortlist</summary>
+          <div style="position: absolute; right: 0; top: calc(100% + 4px); background: #fff; border: 1px solid #e5e5e5; border-radius: 8px; padding: 1rem; min-width: 260px; z-index: 50; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+            <form action="<%= shortlist_shortlist_items_path(shortlists.first) %>" method="post"
+                  id="sl-add-va-<%= @video_analysis.id %>"
+                  data-compliance-flags="<%= _compliance_flags.to_json %>">
+              <%= hidden_field_tag :authenticity_token, form_authenticity_token %>
+              <% if _use_candidate_path %>
+                <%= hidden_field_tag :candidate_id, _linked_candidate.id %>
+              <% else %>
+                <%= hidden_field_tag :shareable_type, "VideoAnalysis" %>
+                <%= hidden_field_tag :shareable_id, @video_analysis.id %>
+              <% end %>
+              <div style="margin-bottom: 0.65rem;">
+                <label style="font-size: 0.78rem; font-weight: 500; color: #555; display: block; margin-bottom: 0.3rem;">Shortlist</label>
+                <select style="width: 100%; padding: 0.45rem 0.6rem; border: 1px solid #ddd; border-radius: 6px; font-size: 0.88rem; background: #fff;"
+                        onchange="document.getElementById('sl-add-va-<%= @video_analysis.id %>').action='/shortlists/'+this.value+'/shortlist_items'">
+                  <% shortlists.each do |sl| %>
+                    <option value="<%= sl.id %>"><%= sl.title %></option>
+                  <% end %>
+                </select>
+              </div>
+              <% unless _use_candidate_path %>
+                <% cv_analyses = current_user.cv_analyses.where(status: "completed").order(:candidate_name) %>
+                <% if cv_analyses.any? %>
+                  <div style="margin-bottom: 0.65rem;">
+                    <label style="font-size: 0.78rem; font-weight: 500; color: #555; display: block; margin-bottom: 0.3rem;">
+                      Also attach CV (optional)
+                    </label>
+                    <select name="companion_cv_analysis_id"
+                            style="width: 100%; padding: 0.45rem 0.6rem; border: 1px solid #ddd; border-radius: 6px; font-size: 0.88rem; background: #fff;">
+                      <option value="">— none —</option>
+                      <% cv_analyses.each do |cv| %>
+                        <option value="<%= cv.id %>"><%= cv.display_name %></option>
+                      <% end %>
+                    </select>
+                  </div>
+                <% end %>
+              <% end %>
+              <button type="submit" class="btn" style="width: 100%; padding: 0.45rem; font-size: 0.85rem;">Add to shortlist</button>
+            </form>
+            <div style="text-align: center; margin-top: 0.5rem;">
+              <%= link_to "+ New shortlist", new_shortlist_path(type: "VideoAnalysis", candidate_id: @video_analysis.id),
+                    style: "font-size: 0.8rem; color: #888; text-decoration: none;" %>
+            </div>
+          </div>
+        </details>
+      <% else %>
+        <%= link_to "＋ Shortlist", new_shortlist_path(type: "VideoAnalysis", candidate_id: @video_analysis.id),
+              class: "btn", style: "background: #555; padding: 0.45rem 0.9rem; font-size: 0.85rem;" %>
+      <% end %>
     <% end %>
 
 
@@ -245,30 +255,16 @@
 <% end %>
 
 <%# Flags %>
-<% _consistency = fb["cv_interview_consistency"].to_s %>
-<% _has_consistency_flag = %w[significant\ inconsistencies minor\ inconsistencies].include?(_consistency) %>
-<% if Array(fb["red_flags"]).any? || _has_consistency_flag %>
+<% if Array(fb["red_flags"]).any? %>
   <div class="card" style="padding: 1rem 1.25rem;">
     <div style="font-size: 0.63rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #bbb; margin-bottom: 0.75rem;">Flags</div>
-    <div style="display: flex; flex-direction: column; gap: 0.75rem;">
-      <% if Array(fb["red_flags"]).any? %>
-        <div>
-          <div style="font-size: 0.72rem; font-weight: 600; color: #854d0e; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 0.35rem;">Red Flags</div>
-          <ul style="margin: 0; padding-left: 1rem; display: flex; flex-direction: column; gap: 0.2rem;">
-            <% Array(fb["red_flags"]).each do |flag| %>
-              <li style="font-size: 0.82rem; color: #555; line-height: 1.4;"><%= flag %></li>
-            <% end %>
-          </ul>
-        </div>
-      <% end %>
-      <% if _has_consistency_flag %>
-        <div>
-          <div style="font-size: 0.72rem; font-weight: 600; color: #991b1b; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 0.35rem;">CV / Interview Consistency</div>
-          <ul style="margin: 0; padding-left: 1rem; display: flex; flex-direction: column; gap: 0.2rem;">
-            <li style="font-size: 0.82rem; color: #555; line-height: 1.4;"><%= _consistency.humanize %> detected between CV and interview responses.</li>
-          </ul>
-        </div>
-      <% end %>
+    <div>
+      <div style="font-size: 0.72rem; font-weight: 600; color: #854d0e; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 0.35rem;">Red Flags</div>
+      <ul style="margin: 0; padding-left: 1rem; display: flex; flex-direction: column; gap: 0.2rem;">
+        <% Array(fb["red_flags"]).each do |flag| %>
+          <li style="font-size: 0.82rem; color: #555; line-height: 1.4;"><%= flag %></li>
+        <% end %>
+      </ul>
     </div>
   </div>
 <% end %>

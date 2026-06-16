@@ -1,5 +1,4 @@
 class IntakeController < ApplicationController
-  skip_before_action :authenticate!
   layout "intake"
 
   def show
@@ -51,7 +50,11 @@ class IntakeController < ApplicationController
     )
 
     if booking && @candidate.user.google_connected?
-      CalendarEventService.new(user: @candidate.user, slot_booking: booking).call rescue nil
+      begin
+        CalendarEventService.new(user: @candidate.user, slot_booking: booking).call
+      rescue => e
+        Rails.logger.error "[CalendarEventService] #{e.class}: #{e.message}"
+      end
     end
   end
 

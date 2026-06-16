@@ -61,7 +61,7 @@ class User < ApplicationRecord
   validates :email, presence: true, uniqueness: true, format: { with: URI::MailTo::EMAIL_REGEXP }
 
   def google_connected?
-    google_access_token.present?
+    google_refresh_token.present?
   end
 
   def google_token_fresh?
