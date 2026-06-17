@@ -1,0 +1,60 @@
+<div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem;">
+  <h1 style="margin: 0;">Clients</h1>
+  <%= link_to "+ New client", new_client_path, class: "btn" %>
+</div>
+
+<% if @clients.none? %>
+  <div class="card">
+    <p class="empty" style="padding: 1.5rem 0;">
+      No clients yet. Create one to link job roles and shortlists to specific clients.
+    </p>
+  </div>
+<% else %>
+  <div class="card" style="padding: 0;">
+    <div class="table-wrapper">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Client</th>
+            <th>Contact</th>
+            <th>Roles</th>
+            <th>Shortlists</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <% @clients.each do |client| %>
+            <tr>
+              <td>
+                <div style="display: flex; align-items: center; gap: 0.6rem;">
+                  <% if client.logo_url.present? %>
+                    <img src="<%= client.logo_url %>"
+                         alt="<%= client.name %>"
+                         style="height: 24px; width: auto; border-radius: 3px; object-fit: contain;
+                                background: #f5f5f5; padding: 1px 4px; border: 1px solid #e5e5e5;"
+                         onerror="this.style.display='none'">
+                  <% end %>
+                  <%= link_to client.name, edit_client_path(client),
+                        style: "font-weight: 500; color: #1a1a1a; text-decoration: none;" %>
+                </div>
+              </td>
+              <td style="color: #888; font-size: 0.88rem;">
+                <%= client.contact_email.presence || "—" %>
+              </td>
+              <td style="color: #555; font-size: 0.88rem;"><%= client.job_roles.size %></td>
+              <td style="color: #555; font-size: 0.88rem;"><%= client.shortlists.size %></td>
+              <td style="text-align: right; white-space: nowrap;">
+                <%= link_to "Edit", edit_client_path(client),
+                      style: "font-size: 0.85rem; color: #555; text-decoration: none; margin-right: 0.75rem;" %>
+                <%= button_to "Delete", client_path(client),
+                      method: :delete,
+                      data: { turbo_confirm: "Delete \"#{client.name}\"? Job roles and shortlists linked to this client will be unlinked." },
+                      style: "background: none; border: none; padding: 0; cursor: pointer; font-size: 0.85rem; color: #dc2626;" %>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+<% end %>

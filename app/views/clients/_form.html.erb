@@ -1,0 +1,45 @@
+<%= form_with model: @client do |f| %>
+  <% if @client.errors.any? %>
+    <div class="alert alert-alert" style="margin-bottom: 1rem;">
+      <% @client.errors.full_messages.each do |msg| %>
+        <div><%= msg %></div>
+      <% end %>
+    </div>
+  <% end %>
+
+  <div class="form-group">
+    <%= f.label :name, "Client name" %>
+    <%= f.text_field :name, placeholder: "e.g. Acme Corporation" %>
+  </div>
+
+  <div class="form-group">
+    <%= f.label :contact_email, "Primary contact email (optional)" %>
+    <%= f.text_field :contact_email, placeholder: "hiring@client.com", type: "email" %>
+    <span style="font-size: 0.8rem; color: #888; margin-top: 0.25rem; display: block;">
+      Your main point of contact. Not used for shortlist access control.
+    </span>
+  </div>
+
+  <div class="form-group">
+    <%= f.label :logo_url, "Logo URL (optional — HTTPS, image file)" %>
+    <%= f.url_field :logo_url, placeholder: "https://client.com/logo.png" %>
+    <span style="font-size: 0.8rem; color: #888; margin-top: 0.25rem; display: block;">
+      Shown alongside your agency name on shared shortlist pages.
+    </span>
+  </div>
+
+  <% if @client.logo_url.present? %>
+    <div style="margin-bottom: 1rem;">
+      <p style="font-size: 0.8rem; color: #888; margin-bottom: 0.35rem;">Logo preview</p>
+      <img src="<%= @client.logo_url %>"
+           alt="<%= @client.name %>"
+           style="height: 36px; width: auto; border-radius: 4px; object-fit: contain;
+                  background: #f5f5f5; padding: 2px 6px; border: 1px solid #e5e5e5;"
+           onerror="this.style.display='none'">
+    </div>
+  <% end %>
+
+  <%= f.submit @client.persisted? ? "Save changes" : "Create client", class: "btn" %>
+  <%= link_to "Cancel", clients_path,
+        style: "margin-left: 1rem; color: #555; font-size: 0.9rem;" %>
+<% end %>
