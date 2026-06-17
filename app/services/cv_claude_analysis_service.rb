@@ -153,9 +153,10 @@ class CvClaudeAnalysisService
     job_context = @analysis.job_role.to_prompt
 
     result = @client.complete(
-      model:    MODEL,
-      system:   [{ type: "text", text: SYSTEM_PROMPT, cache_control: { type: "ephemeral" } }],
-      messages: [{ role: "user", content: build_user_content(job_context) }]
+      model:      MODEL,
+      system:     [{ type: "text", text: SYSTEM_PROMPT, cache_control: { type: "ephemeral" } }],
+      messages:   [{ role: "user", content: build_user_content(job_context) }],
+      max_tokens: 8000
     )
 
     sf = result["structured_feedback"] || {}
