@@ -87,3 +87,13 @@ test:
 production:
   <<: *default
   url: <%= ENV['DATABASE_URL'] %>
+  
+  # Separate databases for solid_cable, solid_queue (optional but reduces errors)
+  # All point to same database for simplicity
+  primary: &primary_production
+    <<: *default
+    url: <%= ENV['DATABASE_URL'] %>
+  cable:
+    <<: *primary_production
+  queue:
+    <<: *primary_production
