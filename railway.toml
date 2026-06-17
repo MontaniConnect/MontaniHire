@@ -1,0 +1,5 @@
+[deploy]
+healthcheckPath = "/up"
+
+[[deploy.preDeployCommands]]
+command = "bundle exec rails db:migrate"
