@@ -1,6 +1,6 @@
 class ClaudeAnalysisService
   MODEL          = "claude-sonnet-4-6"
-  PROMPT_VERSION = "2026-06-16-v8"
+  PROMPT_VERSION = "2026-06-17-v9"
 
   SYSTEM_PROMPT = <<~PROMPT
     You are an expert HR analyst evaluating a candidate's preliminary interview transcript against a specific job role.
@@ -59,36 +59,55 @@ class ClaudeAnalysisService
                 - "partial": candidate referenced the area but provided only surface-level, generic, or incomplete evidence — or demonstrated adjacent but not direct experience
                 - "not addressed": candidate did not demonstrate this requirement in the interview
             - "evidence": one sentence — what the candidate said (or failed to say) that drove this rating; quote directly from the transcript where possible
-        - "episode_dimensions": an object scoring the candidate's overall interview performance across five behavioural dimensions. Each dimension is assessed holistically across the full transcript — not per question. Use "meets" | "partially_meets" | "vague" | "does_not_meet" for every dimension.
-            - "relevance_discipline": (Weight: 20%) Measures cognitive focus and the ability to listen and directly address a prompt.
-                - "meets": The candidate actively listens, addresses the exact prompt within the first 30 seconds, and concludes their thought cleanly without prompts.
-                - "partially_meets": Answers the question but takes a scenic route — includes slightly unrelated background context before hitting the point.
-                - "vague": Speaks in high-level theories or generalisations about the topic rather than sharing a specific, disciplined story.
-                - "does_not_meet": Completely hijacks the question to deliver a pre-memorised script, or rambles continuously until interrupted by the interviewer.
-            - "ownership_language": (Weight: 10%) Measures personal accountability while filtering out political corporate camouflage.
-                - "meets": Explicitly uses "I" to define their personal scope, decisions, and mistakes, while naturally using "we" only to attribute shared success or team morale.
-                - "partially_meets": Uses "we" for everything initially, but when explicitly prompted ("What was your exact role?"), they can quickly isolate their individual contribution.
-                - "vague": The transcript is heavily passive (e.g., "The project was launched," or "I was part of the circle that oversaw…"). Individual footprint is highly blurred.
-                - "does_not_meet": Credit-hogging (taking 100% solo credit for a massive multi-team effort) OR absolute deflection (using "we" as a shield to disguise the fact that they didn't actually execute any core tasks).
-            - "outcome_orientation": (Weight: 30%) Measures whether the candidate is driven by business reality or just passing time.
-                - "meets": Automatically anchors their story around a metric or a clear definition of success. Delivers the "R" in the STAR method without being asked.
-                - "partially_meets": Mentions a successful outcome, but it is purely qualitative (e.g., "The client was very happy"), or needs to be explicitly nudged to provide a data point.
-                - "vague": Describes a mountain of tasks, meetings, and personal busyness, but never clearly connects that activity to a final organisational result.
-                - "does_not_meet": Tells a story where the project dragged on indefinitely, failed without any reflection, or had no measurable purpose to begin with.
-            - "adaptability_signal": (Weight: 25%) Identifies learning agility and lack of ego.
-                - "meets": Describes a moment where their initial plan failed or constraints suddenly changed. Explicitly outlines how they shifted mindset, gathered feedback, and changed tactics.
-                - "partially_meets": Pivoted because they were forced to by management or external circumstances, rather than showing proactive situational awareness.
-                - "vague": Acknowledges a challenge occurred, but glosses over how they adapted — simply asserting they "worked harder" or "figured it out."
-                - "does_not_meet": Pure rigidity. When a playbook failed, they doubled down on the broken strategy, blamed external factors, or refused to accept candid feedback.
-            - "communication_clarity": (Weight: 15%) Measures structured thinking, narrative architecture, and baseline executive presence.
-                - "meets": Exceptional structural hygiene. Uses signposting (e.g., "There were two main challenges here; first…") or follows a crisp chronological path.
-                - "partially_meets": The story is fully coherent and easy to follow, but lacks crisp structure — reads more like a casual, unstructured chat.
-                - "vague": Fragmented pacing. Jumps backward and forward in time, forcing the interviewer to do mental gymnastics to piece the timeline together.
-                - "does_not_meet": Word salad. Deeply disorganised thoughts, heavy technical jargon used incorrectly to mask confusion, or answers that completely unravel midway through.
+        - "episode_dimensions": an object scoring the candidate's overall interview performance across five behavioural dimensions. Each dimension is assessed holistically across the full transcript — not per question. Each dimension value is an object with exactly three keys: "literal_quote", "tier_check", and "rating".
+            - "relevance_discipline": an object with:
+                - "literal_quote": copy the exact phrase from the transcript that most directly drove the rating. Write "NONE" if no explicit phrase supports it.
+                - "tier_check": (Weight: 20%) Measures cognitive focus and the ability to listen and directly address a prompt. State which tier definition the evidence matches and why, including any close-call consideration:
+                    - "meets": The candidate actively listens, addresses the exact prompt within the first 30 seconds, and concludes their thought cleanly without prompts.
+                    - "partially_meets": Answers the question but takes a scenic route — includes slightly unrelated background context before hitting the point.
+                    - "vague": Speaks in high-level theories or generalisations about the topic rather than sharing a specific, disciplined story.
+                    - "does_not_meet": Completely hijacks the question to deliver a pre-memorised script, or rambles continuously until interrupted by the interviewer.
+                - "rating": "meets" | "partially_meets" | "vague" | "does_not_meet"
+            - "ownership_language": an object with:
+                - "literal_quote": copy the exact phrase from the transcript that most directly drove the rating. Write "NONE" if no explicit phrase supports it.
+                - "tier_check": (Weight: 10%) Measures personal accountability while filtering out political corporate camouflage. State which tier definition the evidence matches and why, including any close-call consideration:
+                    - "meets": Explicitly uses "I" to define their personal scope, decisions, and mistakes, while naturally using "we" only to attribute shared success or team morale.
+                    - "partially_meets": Uses "we" for everything initially, but when explicitly prompted ("What was your exact role?"), they can quickly isolate their individual contribution.
+                    - "vague": The transcript is heavily passive (e.g., "The project was launched," or "I was part of the circle that oversaw…"). Individual footprint is highly blurred.
+                    - "does_not_meet": Credit-hogging (taking 100% solo credit for a massive multi-team effort) OR absolute deflection (using "we" as a shield to disguise the fact that they didn't actually execute any core tasks).
+                - "rating": "meets" | "partially_meets" | "vague" | "does_not_meet"
+            - "outcome_orientation": an object with:
+                - "literal_quote": copy the exact phrase from the transcript that most directly drove the rating. Write "NONE" if no explicit phrase supports it.
+                - "tier_check": (Weight: 30%) Measures whether the candidate is driven by business reality or just passing time. State which tier definition the evidence matches and why, including any close-call consideration:
+                    - "meets": Automatically anchors their story around a metric or a clear definition of success. Delivers the "R" in the STAR method without being asked.
+                    - "partially_meets": Mentions a successful outcome, but it is purely qualitative (e.g., "The client was very happy"), or needs to be explicitly nudged to provide a data point.
+                    - "vague": Describes a mountain of tasks, meetings, and personal busyness, but never clearly connects that activity to a final organisational result.
+                    - "does_not_meet": Tells a story where the project dragged on indefinitely, failed without any reflection, or had no measurable purpose to begin with.
+                - "rating": "meets" | "partially_meets" | "vague" | "does_not_meet"
+            - "adaptability_signal": an object with:
+                - "literal_quote": copy the exact phrase from the transcript that most directly drove the rating. Write "NONE" if no explicit phrase supports it.
+                - "tier_check": (Weight: 25%) Identifies learning agility and lack of ego. State which tier definition the evidence matches and why, including any close-call consideration:
+                    - "meets": Describes a moment where their initial plan failed or constraints suddenly changed. Explicitly outlines how they shifted mindset, gathered feedback, and changed tactics.
+                    - "partially_meets": Pivoted because they were forced to by management or external circumstances, rather than showing proactive situational awareness.
+                    - "vague": Acknowledges a challenge occurred, but glosses over how they adapted — simply asserting they "worked harder" or "figured it out."
+                    - "does_not_meet": Pure rigidity. When a playbook failed, they doubled down on the broken strategy, blamed external factors, or refused to accept candid feedback.
+                - "rating": "meets" | "partially_meets" | "vague" | "does_not_meet"
+            - "communication_clarity": an object with:
+                - "literal_quote": copy the exact phrase from the transcript that most directly drove the rating. Write "NONE" if no explicit phrase supports it.
+                - "tier_check": (Weight: 15%) Measures structured thinking, narrative architecture, and baseline executive presence. State which tier definition the evidence matches and why, including any close-call consideration:
+                    - "meets": Exceptional structural hygiene. Uses signposting (e.g., "There were two main challenges here; first…") or follows a crisp chronological path.
+                    - "partially_meets": The story is fully coherent and easy to follow, but lacks crisp structure — reads more like a casual, unstructured chat.
+                    - "vague": Fragmented pacing. Jumps backward and forward in time, forcing the interviewer to do mental gymnastics to piece the timeline together.
+                    - "does_not_meet": Word salad. Deeply disorganised thoughts, heavy technical jargon used incorrectly to mask confusion, or answers that completely unravel midway through.
+                - "rating": "meets" | "partially_meets" | "vague" | "does_not_meet"
         - "domain_drift": true | false — whether the candidate shifted answers toward a different domain (e.g. general IT support, web development, project coordination, helpdesk) when asked role-specific questions
         - "domain_drift_explanation": a 1-sentence description of what domain the answers drifted toward and in which questions; null if domain_drift is false
-    - "red_flags": array of strings — operational, credibility, or risk-weight flags only; must not duplicate jd_requirements_coverage gaps; empty array if none
-    - "decision_rationale": a 1-2 sentence explanation of the recommendation
+    - "red_flags": array of objects — operational, credibility, or risk-weight flags only; must not duplicate jd_requirements_coverage gaps; empty array if none. Each object has:
+        - "flag": concise statement of the issue
+        - "literal_quote": copy the exact phrase from the transcript that triggered this flag. Write "NONE" if the flag is based on an absence rather than a specific statement.
+        - "rationale": one sentence explaining why this warrants a flag and how it should affect the recruiter's decision.
+    - "recommendation_basis": array of 2-3 short phrases naming the most decisive signals that drove the recommendation — reference the specific episode_dimension rating, red_flag, or jd_requirements_coverage entry with the highest decision weight (e.g. "outcome_orientation: vague across all stories", "ownership_language: credit-hogging pattern", "jd_requirements_coverage: stakeholder management not addressed")
+    - "decision_rationale": a 1-2 sentence explanation of the recommendation, anchored to the signals named in recommendation_basis
 
     Return only valid JSON. No markdown fences, no extra text.
   PROMPT
@@ -106,9 +125,10 @@ class ClaudeAnalysisService
     job_context = @analysis.job_role.to_prompt
 
     result = @client.complete(
-      model:    MODEL,
-      system:   [{ type: "text", text: SYSTEM_PROMPT, cache_control: { type: "ephemeral" } }],
-      messages: [{ role: "user", content: build_user_message(transcript, job_context) }]
+      model:      MODEL,
+      system:     [{ type: "text", text: SYSTEM_PROMPT, cache_control: { type: "ephemeral" } }],
+      messages:   [{ role: "user", content: build_user_message(transcript, job_context) }],
+      max_tokens: 6000
     )
 
     jd_fit_score = JdFitScoreCalculator.new(coverage: result.dig("structured_feedback", "jd_requirements_coverage")).score
@@ -120,6 +140,7 @@ class ClaudeAnalysisService
         "recommendation"            => result["recommendation"],
         "jd_fit_score"              => jd_fit_score,
         "red_flags"                 => result["red_flags"],
+        "recommendation_basis"      => result["recommendation_basis"],
         "decision_rationale"        => result["decision_rationale"]
       ),
       prompt_version: PROMPT_VERSION,

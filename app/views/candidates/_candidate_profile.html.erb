@@ -124,8 +124,11 @@
       <div style="font-size:0.72rem; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color:#aaa; margin-bottom:0.65rem;">Episode Breakdown</div>
       <div style="display:flex; flex-direction:column; gap:0.5rem;">
         <% Candidate::EPISODE_WEIGHTS.each do |dim, weight| %>
-          <% level = dims[dim] %>
-          <% next unless level.present? %>
+          <% raw   = dims[dim] %>
+          <% next unless raw.present? %>
+          <%# Support both legacy flat string and new CoT object shape {literal_quote:, tier_check:, rating:} %>
+          <% level = raw.is_a?(Hash) ? (raw["rating"] || raw.values.first) : raw %>
+          <% next unless level.is_a?(String) && level.present? %>
           <% val   = Candidate::EPISODE_LEVEL_VALUES.dig(dim, level) || 0 %>
           <% label, wt_label = dim_labels[dim] %>
           <% bar_color = val >= 1.0 ? "#16a34a" : val >= 0.7 ? "#3b82f6" : val >= 0.4 ? "#f59e0b" : "#dc2626" %>
