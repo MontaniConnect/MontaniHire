@@ -1,6 +1,6 @@
 class CvClaudeAnalysisService
   MODEL          = "claude-sonnet-4-6"
-  PROMPT_VERSION = "2026-06-16-v13"
+  PROMPT_VERSION = "2026-06-17-v14"
 
   SYSTEM_PROMPT = <<~PROMPT
     You are an expert recruiter evaluating a candidate's CV against a job description.
@@ -41,6 +41,8 @@ class CvClaudeAnalysisService
     - "structured_feedback": an object with:
         - "cv_requirements_coverage": array of objects, one per must-have JD requirement, each with:
             - "requirement": the must-have requirement as stated or closely paraphrased from the JD
+            - "literal_quote": copy the exact sentence or keyword phrase from the CV that relates to this requirement. If nothing exists, write "NONE".
+            - "uncertainty_check": state whether the exact tool/technology/competency name is present verbatim, or whether you are mapping an adjacent term. If any ambiguity exists, state it here and confirm you are applying the round-down rule.
             - "coverage": "evidenced" | "partial" | "not evidenced"
                 Coverage ratings must be based solely on what appears in the CV text. Pool context and historical outcome examples are for score calibration only — do not let them influence individual coverage ratings.
                 - "evidenced" (1.0): The CV explicitly names the exact tool, framework, technology, or core competency — or a standard abbreviation of it — anywhere in the document (role description OR skills list). Explicit naming is the only criterion; location does not matter.
@@ -53,7 +55,9 @@ class CvClaudeAnalysisService
             - "evidence": one sentence from the CV that drove this rating, or what is absent
         - "nice_to_have_requirements_coverage": array of objects, one per nice-to-have requirement (use exact wording from the list provided), each with:
             - "requirement": the nice-to-have requirement exactly as stated
-            - "coverage": "evidenced" | "partial" | "not evidenced" — same definitions as cv_requirements_coverage
+            - "literal_quote": copy the exact sentence or keyword phrase from the CV. If none, write "NONE".
+            - "uncertainty_check": is the exact name present, or are you mapping an adjacent technology? If any ambiguity, confirm round-down rule is applied.
+            - "coverage": "evidenced" | "partial" | "not evidenced" — same definitions and tiebreaker rule as cv_requirements_coverage
             - "evidence": one sentence from the CV that drove this rating, or what is absent
         - "matched_skills": array of strings — must-have JD requirements evidenced in the CV, with role-description evidence where possible
         - "missing_skills": array of strings — must-have JD requirements absent from the CV
@@ -66,13 +70,20 @@ class CvClaudeAnalysisService
         - "experience_level_fit": "below requirements" | "meets requirements" | "exceeds requirements"
         - "cv_fit_score_raw": omit this field — the server computes it from cv_requirements_coverage
         - "cv_fit_adjustments": omit this field — the server computes it from your growth_curve, tenure_ownership, and leverage ratings below
+        - "growth_curve_cot": an object with:
+            - "literal_quote": copy the exact titles and dates from the CV showing promotion or scope change. If none, write "NONE".
+            - "tiebreaker_check": is a promotion or materially larger scope explicitly written in the CV text — not inferred from company name or size alone? If not explicitly written, round down to "solid" or "stagnant".
         - "growth_curve": "exceptional" | "solid" | "stagnant"
             Rate the candidate's career growth trajectory:
-            - "exceptional": Explicit internal promotion within 18 months OR clear evidence of a massive scope leap when changing companies (e.g., moving from managing a single feature to owning an entire product line).
+            - "exceptional": Explicit internal promotion within 18 months, OR a role transition where the CV text itself (titles, dates, or role description language) demonstrates a materially larger scope. A company name change alone does not qualify.
             - "solid": Steady, linear career progression. Upward trajectory is visible, but at a standard corporate pace (e.g., moving from Engineer I to II to III over 4–5 years).
             - "stagnant": The candidate has held the exact same title with the exact same level of responsibility for 3 or more years without horizontal or vertical growth.
             Tiebreaker — if uncertain between "exceptional" and "solid": assign "solid".
         - "growth_curve_note": one sentence naming the specific role(s) or transition(s) that drove this rating — factual, no prose
+        - "tenure_ownership_cot": an object with:
+            - "literal_quote": copy the exact dates proving 2.5+ years of tenure, or exact dates showing 10–14 month hops. If dates are absent, write "NONE".
+            - "verb_check": are the action verbs in this candidate's bullet points primarily active (built, scaled, owned, designed) or passive (assisted, supported, involved)? State the dominant pattern with one or two examples.
+            - "tiebreaker_check": if uncertain between high_ownership and moderate_ownership, confirm you are assigning moderate_ownership.
         - "tenure_ownership": "high_ownership" | "moderate_ownership" | "flight_risk"
             Rate the candidate's depth of ownership:
             - "high_ownership": Evidence of long-term tenure (2.5+ years) at a single company AND bullet points showing they optimised, scaled, or maintained a system after they built it.
@@ -80,9 +91,12 @@ class CvClaudeAnalysisService
             - "flight_risk": A pattern of leaving companies or teams every 10–14 months, OR a CV that uses passive verbs like "assisted with" or "participated in" which fails to prove individual accountability.
             Tiebreaker — if uncertain between "high_ownership" and "moderate_ownership": assign "moderate_ownership".
         - "tenure_ownership_note": comma-separated role + duration pairs (e.g. "Simplus 3 years, TruDiagnostic 14 months")
+        - "leverage_cot": an object with:
+            - "literal_quote": copy the exact numeric metrics proving mentorship or process gains (e.g. "Mentored 3 juniors to promotion", "saved team 10 hours/week"). If none, write "NONE".
+            - "tiebreaker_check": are there verifiable numbers attached to the candidate's team or process impact? If genuine uncertainty exists between multiplier and contributor and no numeric evidence is present, confirm you are assigning "contributor".
         - "leverage": "multiplier" | "contributor" | "solitary"
             Rate the candidate's people and process impact:
-            - "multiplier": Verifiable evidence of building others up with metrics attached to mentorship, process optimisation, or cross-functional bridge-building (e.g., "Mentored 3 juniors to promotion" or "Redesigned QA pipeline, saving the team 10 hours/week").
+            - "multiplier": Verifiable evidence of building others up WITH numeric metrics attached (e.g. headcount, time saved, promotion outcomes). Qualitative descriptions of mentorship or collaboration without numbers do not qualify.
             - "contributor": Mentions of culture or collaboration, but lacks hard data or clear ownership (e.g., "Participated in university hiring" or "Conducted peer code reviews").
             - "solitary": Zero mention of people, processes, mentorship, or culture. The CV focuses entirely on individual technical or financial output.
             Tiebreaker — if uncertain between "multiplier" and "contributor": assign "contributor".
