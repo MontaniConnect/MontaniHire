@@ -4,6 +4,9 @@
 # belong in git's global ignore instead:
 # `$XDG_CONFIG_HOME/git/ignore` or `~/.config/git/ignore`
 
+# JetBrains IDE project files.
+/.idea
+
 # Ignore bundler config.
 /.bundle
 
@@ -27,6 +30,11 @@
 /tmp/storage/*
 !/tmp/storage/
 !/tmp/storage/.keep
+
+# Suppress directory-level noise when .keep files are absent locally.
+/log/
+/storage/
+/tmp/
 
 # Ignore key files for decrypting credentials and more.
 /config/*.key
