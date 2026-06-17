@@ -16,11 +16,15 @@ class WhisperTranscriptionService
     caller_owns_tmp = video_tmp.present?
     video_tmp     ||= download_video
     wav_path        = extract_audio(video_tmp.path)
-    transcript      = transcribe(wav_path)
+    result          = transcribe(wav_path)
 
-    cleaned = TranscriptCleanerService.call(transcript)
-    @analysis.update!(transcript: transcript, cleaned_transcript: cleaned)
-    transcript
+    cleaned = TranscriptCleanerService.call(result[:text])
+    @analysis.update!(
+      transcript:          result[:text],
+      transcript_segments: result[:segments],
+      cleaned_transcript:  cleaned
+    )
+    result[:text]
   ensure
     unless caller_owns_tmp
       video_tmp&.close
@@ -54,16 +58,17 @@ class WhisperTranscriptionService
       WHISPER_CLI,
       "-m", MODEL_PATH,
       "-f", wav_path,
-      "-otxt", "-of", out_base,
+      "-ovtt", "-of", out_base,
       "--no-prints"
     )
     raise "whisper-cli failed: #{stderr}" unless status.success?
 
-    txt_path = "#{out_base}.txt"
-    raise "Whisper output not found: #{txt_path}" unless File.exist?(txt_path)
+    vtt_path = "#{out_base}.vtt"
+    raise "Whisper output not found: #{vtt_path}" unless File.exist?(vtt_path)
 
-    transcript = File.read(txt_path).strip
-    File.unlink(txt_path)
-    transcript
+    raw    = File.read(vtt_path)
+    parser = TranscriptParsers::Vtt.new
+    File.unlink(vtt_path)
+    { text: parser.parse(raw), segments: parser.parse_segments(raw) }
   end
 end

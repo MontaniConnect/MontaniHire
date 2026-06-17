@@ -14,6 +14,19 @@
       <span style="position: absolute; left: 0.6rem; top: 50%; transform: translateY(-50%);
                    font-size: 0.9rem; color: #aaa; pointer-events: none;">🔍</span>
     </div>
+    <% if @clients.any? %>
+      <select name="client_id"
+              onchange="this.form.job_role_id.value=''; this.form.submit();"
+              style="padding: 0.55rem 0.75rem; border: 1px solid #ddd; border-radius: 6px;
+                     font-size: 0.9rem; background: #fff; color: #555; outline: none; width: 180px; flex-shrink: 0;">
+        <option value="">All clients</option>
+        <% @clients.each do |c| %>
+          <option value="<%= c.id %>" <%= "selected" if @client_id == c.id.to_s %>>
+            <%= c.name %>
+          </option>
+        <% end %>
+      </select>
+    <% end %>
     <% if @job_roles.any? %>
       <select name="job_role_id"
               style="padding: 0.55rem 0.75rem; border: 1px solid #ddd; border-radius: 6px;
@@ -27,7 +40,7 @@
       </select>
     <% end %>
     <%= f.submit "Filter", class: "btn", style: "padding: 0.55rem 1rem; font-size: 0.9rem; flex-shrink: 0;" %>
-    <% if @q.present? || @job_role_id.present? %>
+    <% if @q.present? || @job_role_id.present? || @client_id.present? %>
       <%= link_to "Clear", candidates_path,
             style: "padding: 0.55rem 0.75rem; font-size: 0.9rem; color: #555; text-decoration: none;
                     border: 1px solid #ddd; border-radius: 6px; background: #fff; flex-shrink: 0;" %>
@@ -37,8 +50,10 @@
 
 <% grouped    = @candidates.group_by(&:pipeline_stage) %>
 <%
-  _tier_text = { "Shortlist" => "#166534", "Borderline" => "#854d0e", "Archive" => "#991b1b" }
-  _tier_bg   = { "Shortlist" => "#dcfce7", "Borderline" => "#fef9c3", "Archive" => "#fee2e2" }
+  _cv_rec_labels = { "high_match" => "High Match", "moderate_match" => "Moderate Match", "low_match" => "Low Match" }
+  _ep_rec_labels = { "comprehensive" => "Comprehensive", "substantive" => "Substantive", "superficial" => "Superficial" }
+  _rec_tc = { "high_match" => "#166534", "moderate_match" => "#854d0e", "low_match" => "#991b1b", "comprehensive" => "#166534", "substantive" => "#854d0e", "superficial" => "#991b1b" }
+  _rec_bg = { "high_match" => "#dcfce7", "moderate_match" => "#fef9c3", "low_match" => "#fee2e2", "comprehensive" => "#dcfce7", "substantive" => "#fef9c3", "superficial" => "#fee2e2" }
 %>
 
 <%# Pipeline columns %>
@@ -84,23 +99,23 @@
             <div style="display: flex; gap: 0.6rem; flex-wrap: wrap; margin-bottom: 0.75rem;">
               <% cv_fit = c.cv_analysis&.cv_fit_score %>
               <% if cv_fit.present? %>
-                <% cv_tier  = c.cv_analysis.cv_fit_tier %>
-                <% cv_tc    = _tier_text[cv_tier] || "#555" %>
-                <% cv_bg    = _tier_bg[cv_tier]   || "#f5f5f5" %>
+                <% cv_rec = c.cv_analysis.structured_feedback&.dig("recommendation") %>
+                <% cv_tc  = _rec_tc[cv_rec] || "#555" %>
+                <% cv_bg  = _rec_bg[cv_rec] || "#f5f5f5" %>
                 <%= link_to cv_analysis_path(c.cv_analysis),
                       style: "font-size: 0.78rem; background: #{cv_bg}; border-radius: 4px;
                              padding: 0.2rem 0.5rem; color: #{cv_tc}; text-decoration: none; font-weight: 600;" do %>
-                  CV <strong style="color: #{cv_tc};"><%= cv_fit %></strong>
+                  CV <%= cv_fit %>
                 <% end %>
               <% end %>
               <% if c.episode_score %>
-                <% ep_tier = c.episode_tier %>
-                <% ep_tc   = _tier_text[ep_tier] || "#555" %>
-                <% ep_bg   = _tier_bg[ep_tier]   || "#f5f5f5" %>
+                <% ep_rec = c.video_analysis&.structured_feedback&.dig("recommendation") %>
+                <% ep_tc  = _rec_tc[ep_rec] || "#555" %>
+                <% ep_bg  = _rec_bg[ep_rec] || "#f5f5f5" %>
                 <%= link_to video_analysis_path(c.video_analysis),
                       style: "font-size: 0.78rem; background: #{ep_bg}; border-radius: 4px;
                              padding: 0.2rem 0.5rem; color: #{ep_tc}; text-decoration: none; font-weight: 600;" do %>
-                  Ep <strong style="color: #{ep_tc};"><%= c.episode_score %></strong>
+                  Ep <%= c.episode_score %>
                 <% end %>
               <% end %>
             </div>
@@ -162,23 +177,23 @@
             <span style="font-size: 0.72rem; color: <%= color %>; font-weight: 600;"><%= label %></span>
             <% t_cv_fit = c.cv_analysis&.cv_fit_score %>
             <% if t_cv_fit.present? %>
-              <% t_cv_tier = c.cv_analysis.cv_fit_tier %>
-              <% t_cv_tc   = _tier_text[t_cv_tier] || "#555" %>
-              <% t_cv_bg   = _tier_bg[t_cv_tier]   || "#f5f5f5" %>
+              <% t_cv_rec = c.cv_analysis.structured_feedback&.dig("recommendation") %>
+              <% t_cv_tc  = _rec_tc[t_cv_rec] || "#555" %>
+              <% t_cv_bg  = _rec_bg[t_cv_rec] || "#f5f5f5" %>
               <%= link_to cv_analysis_path(c.cv_analysis),
                     style: "font-size: 0.72rem; background: #{t_cv_bg}; border-radius: 4px;
                            padding: 0.15rem 0.45rem; color: #{t_cv_tc}; text-decoration: none; font-weight: 600;" do %>
-                CV <strong style="color: #{t_cv_tc};"><%= t_cv_fit %></strong>
+                CV <%= t_cv_fit %>
               <% end %>
             <% end %>
             <% if c.episode_score %>
-              <% t_ep_tier = c.episode_tier %>
-              <% t_ep_tc   = _tier_text[t_ep_tier] || "#555" %>
-              <% t_ep_bg   = _tier_bg[t_ep_tier]   || "#f5f5f5" %>
+              <% t_ep_rec = c.video_analysis&.structured_feedback&.dig("recommendation") %>
+              <% t_ep_tc  = _rec_tc[t_ep_rec] || "#555" %>
+              <% t_ep_bg  = _rec_bg[t_ep_rec] || "#f5f5f5" %>
               <%= link_to video_analysis_path(c.video_analysis),
                     style: "font-size: 0.72rem; background: #{t_ep_bg}; border-radius: 4px;
                            padding: 0.15rem 0.45rem; color: #{t_ep_tc}; text-decoration: none; font-weight: 600;" do %>
-                Ep <strong style="color: #{t_ep_tc};"><%= c.episode_score %></strong>
+                Ep <%= c.episode_score %>
               <% end %>
             <% end %>
           </div>

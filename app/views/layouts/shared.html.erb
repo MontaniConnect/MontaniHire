@@ -144,17 +144,16 @@
   <body>
     <header class="shared-header">
       <span class="agency-name">MontaniHire</span>
-      <% if defined?(@shortlist) && @shortlist&.client_name.present? || @shortlist&.client_logo_url.present? %>
+      <% _client = defined?(@shortlist) && @shortlist&.client %>
+      <% if _client %>
         <span class="cobranding-divider">×</span>
-        <% if @shortlist.client_logo_url.present? %>
-          <img src="<%= @shortlist.client_logo_url %>"
-               alt="<%= @shortlist.client_name %>"
+        <% if _client.logo_url.present? %>
+          <img src="<%= _client.logo_url %>"
+               alt="<%= _client.name %>"
                class="client-logo"
                onerror="this.style.display='none'">
         <% end %>
-        <% if @shortlist.client_name.present? %>
-          <span class="client-name"><%= @shortlist.client_name %></span>
-        <% end %>
+        <span class="client-name"><%= _client.name %></span>
       <% else %>
         <span class="sub">Candidate Shortlist</span>
       <% end %>

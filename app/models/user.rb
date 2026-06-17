@@ -1,4 +1,6 @@
 class User < ApplicationRecord
+  class GoogleTokenRevoked < StandardError; end
+
   belongs_to :organization, optional: true
 
   ROLES = %w[owner member viewer super_admin].freeze
@@ -76,7 +78,7 @@ class User < ApplicationRecord
   end
 
   def google_token_fresh?
-    google_token_expires_at.nil? || google_token_expires_at > 5.minutes.from_now
+    google_token_expires_at.present? && google_token_expires_at > 5.minutes.from_now
   end
 
   # Returns a valid access token, refreshing if expired.
@@ -99,7 +101,10 @@ class User < ApplicationRecord
     }
     response = Net::HTTP.post_form(uri, body)
     data     = JSON.parse(response.body)
-    return if data["error"].present?
+    if data["error"].present?
+      raise GoogleTokenRevoked,
+        "Google token refresh failed (#{data['error']}): #{data['error_description'] || 'no details'}"
+    end
 
     update_columns(
       google_access_token:     data["access_token"],

@@ -90,6 +90,88 @@ class TranscriptParsersTest < ActiveSupport::TestCase
     assert_equal "Test", TranscriptParsers::Vtt.new.parse(raw)
   end
 
+  # ── TranscriptParsers::Vtt#parse_segments ─────────────────────────────────
+
+  WHISPER_VTT = <<~VTT
+    WEBVTT
+
+    00:00:01.000 --> 00:00:03.500
+     Hello, my name is John.
+
+    00:00:03.500 --> 00:00:07.200
+     I have five years of experience.
+
+    00:00:07.200 --> 00:00:10.000
+     <c>Goodbye</c> and thanks.
+  VTT
+
+  MEET_VTT = <<~VTT
+    WEBVTT
+
+    1
+    00:00:00.000 --> 00:00:04.000
+    Welcome to the interview.
+
+    2
+    00:00:04.000 --> 00:00:08.500
+    Please introduce yourself.
+  VTT
+
+  test "parse_segments returns correct start/end/text from Whisper VTT" do
+    segs = TranscriptParsers::Vtt.new.parse_segments(WHISPER_VTT)
+    assert_equal 3, segs.size
+
+    assert_in_delta 1.0,  segs[0]["start"], 0.001
+    assert_in_delta 3.5,  segs[0]["end"],   0.001
+    assert_equal "Hello, my name is John.", segs[0]["text"]
+
+    assert_in_delta 3.5,  segs[1]["start"], 0.001
+    assert_in_delta 7.2,  segs[1]["end"],   0.001
+    assert_equal "I have five years of experience.", segs[1]["text"]
+  end
+
+  test "parse_segments strips VTT markup tags from segment text" do
+    segs = TranscriptParsers::Vtt.new.parse_segments(WHISPER_VTT)
+    assert_equal "Goodbye and thanks.", segs[2]["text"]
+    refute_match(/<[^>]+>/, segs[2]["text"])
+  end
+
+  test "parse_segments handles Google Meet VTT with numeric cue IDs" do
+    segs = TranscriptParsers::Vtt.new.parse_segments(MEET_VTT)
+    assert_equal 2, segs.size
+    assert_in_delta 0.0, segs[0]["start"], 0.001
+    assert_in_delta 4.0, segs[0]["end"],   0.001
+    assert_equal "Welcome to the interview.", segs[0]["text"]
+  end
+
+  test "parse_segments converts HH:MM:SS.mmm to float seconds correctly" do
+    vtt = "WEBVTT\n\n01:02:03.456 --> 01:02:07.000\nText\n"
+    segs = TranscriptParsers::Vtt.new.parse_segments(vtt)
+    assert_equal 1, segs.size
+    assert_in_delta 3723.456, segs[0]["start"], 0.001
+  end
+
+  test "parse_segments returns empty array for blank input" do
+    assert_equal [], TranscriptParsers::Vtt.new.parse_segments("")
+    assert_equal [], TranscriptParsers::Vtt.new.parse_segments("WEBVTT\n\n")
+  end
+
+  test "parse_segments returns string-keyed hashes (JSONB round-trip safe)" do
+    segs = TranscriptParsers::Vtt.new.parse_segments(WHISPER_VTT)
+    assert segs.first.key?("start"), "expected string key 'start'"
+    assert segs.first.key?("end"),   "expected string key 'end'"
+    assert segs.first.key?("text"),  "expected string key 'text'"
+  end
+
+  test "parse is unchanged by adding parse_segments — flat text regression" do
+    result = TranscriptParsers::Vtt.new.parse(WHISPER_VTT)
+    assert_kind_of String, result
+    assert_includes result, "Hello, my name is John."
+    assert_includes result, "I have five years of experience."
+    assert_includes result, "Goodbye"
+    refute_match(/\d{2}:\d{2}:\d{2}/, result)
+  end
+
   # ── TranscriptParsers::PlainText ───────────────────────────────────────────
 
   test "PlainText returns stripped string" do

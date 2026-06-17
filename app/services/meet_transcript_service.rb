@@ -21,7 +21,9 @@ class MeetTranscriptService
     transcript_file = find_transcript(drive, folder_id)
     return nil unless transcript_file
 
-    download_and_parse(drive, transcript_file)
+    result = download_and_parse(drive, transcript_file)
+    @analysis.update_columns(transcript_segments: result[:segments]) if result[:segments].any?
+    result[:text]
   rescue => e
     Rails.logger.warn "[MeetTranscriptService] #{e.class}: #{e.message}"
     nil
@@ -61,6 +63,10 @@ class MeetTranscriptService
   def download_and_parse(drive, file)
     buf = StringIO.new
     drive.get_file(file.id, download_dest: buf)
-    TranscriptParsers.for(file.mime_type).parse(buf.string)
+    raw      = buf.string
+    parser   = TranscriptParsers.for(file.mime_type)
+    text     = parser.parse(raw)
+    segments = file.mime_type == VTT_MIME ? parser.parse_segments(raw) : []
+    { text: text, segments: segments }
   end
 end

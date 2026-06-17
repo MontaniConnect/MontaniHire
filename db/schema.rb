@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_06_17_000002) do
+ActiveRecord::Schema[8.1].define(version: 2026_06_17_023004) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -91,6 +91,17 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_17_000002) do
     t.index ["video_analysis_id"], name: "index_candidates_on_video_analysis_id"
   end
 
+  create_table "clients", force: :cascade do |t|
+    t.string "contact_email"
+    t.datetime "created_at", null: false
+    t.string "logo_url"
+    t.string "name", null: false
+    t.bigint "organization_id", null: false
+    t.datetime "updated_at", null: false
+    t.index ["organization_id", "name"], name: "index_clients_on_organization_id_and_name"
+    t.index ["organization_id"], name: "index_clients_on_organization_id"
+  end
+
   create_table "cv_analyses", force: :cascade do |t|
     t.string "candidate_name"
     t.datetime "created_at", null: false
@@ -130,6 +141,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_17_000002) do
   end
 
   create_table "job_roles", force: :cascade do |t|
+    t.bigint "client_id"
     t.datetime "created_at", null: false
     t.text "description"
     t.string "experience_level", default: "mid", null: false
@@ -139,6 +151,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_17_000002) do
     t.string "title", null: false
     t.datetime "updated_at", null: false
     t.bigint "user_id", null: false
+    t.index ["client_id"], name: "index_job_roles_on_client_id"
     t.index ["organization_id"], name: "index_job_roles_on_organization_id"
     t.index ["user_id"], name: "index_job_roles_on_user_id"
   end
@@ -184,8 +197,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_17_000002) do
 
   create_table "shortlists", force: :cascade do |t|
     t.string "client_email", null: false
-    t.string "client_logo_url"
-    t.string "client_name"
+    t.bigint "client_id"
     t.datetime "created_at", null: false
     t.text "message"
     t.bigint "organization_id"
@@ -193,6 +205,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_17_000002) do
     t.string "token", null: false
     t.datetime "updated_at", null: false
     t.bigint "user_id", null: false
+    t.index ["client_id"], name: "index_shortlists_on_client_id"
     t.index ["organization_id"], name: "index_shortlists_on_organization_id"
     t.index ["token"], name: "index_shortlists_on_token", unique: true
     t.index ["user_id"], name: "index_shortlists_on_user_id"
@@ -235,6 +248,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_17_000002) do
     t.string "drive_file_name"
     t.string "drive_video_file_id"
     t.text "error_message"
+    t.jsonb "highlight_indices", default: []
     t.bigint "job_role_id"
     t.bigint "organization_id"
     t.string "prompt_version"
@@ -243,6 +257,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_17_000002) do
     t.jsonb "structured_feedback", default: {}
     t.text "summary"
     t.text "transcript"
+    t.jsonb "transcript_segments", default: []
     t.datetime "updated_at", null: false
     t.bigint "user_id", null: false
     t.index ["assembly_transcript_id"], name: "index_video_analyses_on_assembly_transcript_id"
@@ -258,15 +273,18 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_17_000002) do
   add_foreign_key "candidates", "job_roles"
   add_foreign_key "candidates", "organizations"
   add_foreign_key "candidates", "users"
+  add_foreign_key "clients", "organizations"
   add_foreign_key "cv_analyses", "job_roles"
   add_foreign_key "cv_analyses", "organizations"
   add_foreign_key "cv_analyses", "users"
   add_foreign_key "invites", "organizations"
   add_foreign_key "invites", "users", column: "invited_by_id"
+  add_foreign_key "job_roles", "clients"
   add_foreign_key "job_roles", "organizations"
   add_foreign_key "job_roles", "users"
   add_foreign_key "shortlist_items", "candidates"
   add_foreign_key "shortlist_items", "shortlists"
+  add_foreign_key "shortlists", "clients"
   add_foreign_key "shortlists", "organizations"
   add_foreign_key "shortlists", "users"
   add_foreign_key "slot_bookings", "candidates"

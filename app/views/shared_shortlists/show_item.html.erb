@@ -51,10 +51,13 @@
 
 <%# ── Video interview ── %>
 <% va = @item.resolved_video_analysis %>
+<% _va_segs     = va&.transcript_segments || [] %>
+<% _va_hi       = va&.highlight_indices   || [] %>
+<% _inline_video = va&.video&.attached? && va.video.blob&.content_type.to_s.start_with?("video/") %>
 <% if va %>
-  <% if va.video.attached? && va.video.blob&.content_type.to_s.start_with?("video/") %>
+  <% if _inline_video %>
     <div class="card" style="padding: 0; overflow: hidden;">
-      <video controls preload="metadata"
+      <video id="interview-video" controls preload="metadata"
              style="width: 100%; display: block; background: #000; max-height: 480px;">
         <source src="<%= rails_blob_url(va.video, disposition: 'inline') %>"
                 type="<%= va.video.blob.content_type %>">
@@ -71,6 +74,41 @@
     </div>
   <% end %>
 <% end %>
+
+<%# ── Key Moments ── %>
+<% if _va_hi.any? && _va_segs.any? %>
+  <div class="card">
+    <h2 style="margin: 0 0 0.15rem;">Key Moments</h2>
+    <p style="font-size: 0.78rem; color: #aaa; margin: 0 0 0.85rem;">
+      Excerpts from the interview worth reviewing.
+      <% if _inline_video %>Click a moment to jump to that point in the recording.<% end %>
+    </p>
+    <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+      <% _va_hi.each do |idx| %>
+        <% seg = _va_segs[idx] %>
+        <% next unless seg %>
+        <% start_s = seg["start"].to_f %>
+        <% ts_label = format("%d:%02d", (start_s / 60).to_i, (start_s % 60).to_i) %>
+        <div style="display: flex; gap: 0.75rem; align-items: flex-start;
+                    padding: 0.5rem 0.6rem; border-radius: 6px; border: 1px solid #f0f0f0;
+                    cursor: <%= _inline_video ? "pointer" : "default" %>; transition: background 0.15s;"
+             onclick="jumpTo(<%= start_s.round(1) %>, <%= idx %>)"
+             onmouseover="this.style.background='#fafafa'"
+             onmouseout="this.style.background=''">
+          <span style="font-size: 0.72rem; font-weight: 700; color: #fff; background: #1a1a1a;
+                       border-radius: 4px; padding: 0.2rem 0.5rem; white-space: nowrap;
+                       flex-shrink: 0; margin-top: 0.15rem; font-variant-numeric: tabular-nums;">
+            <%= ts_label %>
+          </span>
+          <span style="font-size: 0.88rem; color: #333; line-height: 1.55;">
+            "<%= seg["text"].truncate(240) %>"
+          </span>
+        </div>
+      <% end %>
+    </div>
+  </div>
+<% end %>
+
 
 <%# ── Feedback form ── %>
 <div class="card">
@@ -150,6 +188,28 @@
 <% end %>
 
 <script>
+  function jumpTo(seconds, segIdx) {
+    var video = document.getElementById('interview-video');
+    if (video) {
+      video.currentTime = seconds;
+      video.play();
+      video.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+    var seg = document.getElementById('seg-' + segIdx);
+    if (!seg) return;
+    var container = document.getElementById('transcript-segments');
+    if (container) {
+      container.scrollTop = seg.offsetTop - container.offsetTop - 40;
+    } else {
+      seg.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+    seg.style.transition = 'background 0.2s';
+    var orig = seg.dataset.origBg || seg.style.background;
+    seg.dataset.origBg = orig;
+    seg.style.background = '#fef08a';
+    setTimeout(function() { seg.style.background = orig; seg.style.transition = ''; }, 1800);
+  }
+
   function highlightStars(hoveredLabel, upTo) {
     const container = hoveredLabel.closest("div")
     const labels    = Array.from(container.querySelectorAll("label")).reverse()

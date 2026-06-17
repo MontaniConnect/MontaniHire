@@ -7,6 +7,7 @@ class ShortlistItem < ApplicationRecord
 
   STATUSES = %w[pending approved rejected].freeze
   validates :client_status, inclusion: { in: STATUSES }
+  validate :candidate_client_matches_shortlist
 
   def candidate_name
     candidate&.name ||
@@ -83,5 +84,16 @@ class ShortlistItem < ApplicationRecord
     parts << "CV"    if resolved_cv_analysis.present?
     parts << "Video" if resolved_video_analysis.present?
     parts.any? ? parts.join(" + ") : "—"
+  end
+
+  private
+
+  def candidate_client_matches_shortlist
+    candidate_client = candidate&.job_role&.client_id
+    shortlist_client = shortlist&.client_id
+    return unless candidate_client.present? && shortlist_client.present?
+    if candidate_client != shortlist_client
+      errors.add(:candidate, "belongs to a different client's pipeline and cannot be added to this shortlist")
+    end
   end
 end

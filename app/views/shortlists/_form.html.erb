@@ -26,24 +26,17 @@
           placeholder: "Hi, here are the shortlisted candidates for your review…" %>
   </div>
 
-  <hr style="border: none; border-top: 1px solid #f0f0f0; margin: 1.25rem 0;">
-
-  <p style="font-size: 0.82rem; font-weight: 600; color: #555; margin-bottom: 0.75rem;">
-    Client branding <span style="font-weight: 400; color: #aaa;">(optional — shown on the shared link)</span>
-  </p>
-
-  <div class="form-group">
-    <%= f.label :client_name, "Client company name" %>
-    <%= f.text_field :client_name, placeholder: "e.g. Acme Corp" %>
-  </div>
-
-  <div class="form-group">
-    <%= f.label :client_logo_url, "Client logo URL" %>
-    <%= f.url_field :client_logo_url, placeholder: "https://company.com/logo.png" %>
-    <span style="font-size: 0.8rem; color: #888; margin-top: 0.25rem; display: block;">
-      Paste a direct link to the client's logo. Their logo will appear alongside yours on the shared page.
-    </span>
-  </div>
+  <% if @clients&.any? %>
+    <div class="form-group">
+      <%= f.label :client_id, "Client (optional)" %>
+      <%= f.select :client_id,
+            @clients.map { |c| [c.name, c.id] },
+            { include_blank: "— No client —" } %>
+      <span style="font-size: 0.8rem; color: #888; margin-top: 0.25rem; display: block;">
+        Links this shortlist to a client. The client's logo will appear alongside yours on the shared link.
+      </span>
+    </div>
+  <% end %>
 
   <% if @candidate %>
     <%= hidden_field_tag :type,         @candidate.class.name %>

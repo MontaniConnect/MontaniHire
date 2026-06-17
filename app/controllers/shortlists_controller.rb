@@ -13,6 +13,7 @@ class ShortlistsController < AuthenticatedController
   def new
     @shortlist = current_organization.shortlists.build
     @candidate = candidate_from_params
+    @clients   = current_organization.clients.order(:name)
   end
 
   def create
@@ -22,16 +23,20 @@ class ShortlistsController < AuthenticatedController
       redirect_to shortlist_path(@shortlist), notice: "Shortlist created."
     else
       @candidate = candidate_from_params
+      @clients   = current_organization.clients.order(:name)
       render :new, status: :unprocessable_entity
     end
   end
 
-  def edit; end
+  def edit
+    @clients = current_organization.clients.order(:name)
+  end
 
   def update
     if @shortlist.update(shortlist_params)
       redirect_to shortlist_path(@shortlist), notice: "Shortlist updated."
     else
+      @clients = current_organization.clients.order(:name)
       render :edit, status: :unprocessable_entity
     end
   end
@@ -44,7 +49,8 @@ class ShortlistsController < AuthenticatedController
 private
 
   def shortlist_params
-    params.require(:shortlist).permit(:title, :client_email, :message, :client_name, :client_logo_url)
+    params.require(:shortlist).permit(:title, :client_email, :message, :client_id)
+    # client_name and client_logo_url intentionally excluded — now on Client model.
   end
 
   def set_shortlist

@@ -4,6 +4,15 @@
     <%= f.text_field :title, placeholder: "e.g. Senior Software Engineer" %>
   </div>
 
+  <% if @clients&.any? %>
+    <div class="form-group">
+      <%= f.label :client_id, "Client (optional)" %>
+      <%= f.select :client_id,
+            @clients.map { |c| [c.name, c.id] },
+            { include_blank: "— No client —" } %>
+    </div>
+  <% end %>
+
   <div class="form-group">
     <%= f.label :experience_level, "Experience Level" %>
     <%= f.select :experience_level,

@@ -23,6 +23,10 @@ class CvProcessingJob < ApplicationJob
     if candidate&.video_analysis&.awaiting_cv?
       VideoProcessingJob.perform_later(candidate.video_analysis.id)
     end
+  rescue User::GoogleTokenRevoked => e
+    # Retrying won't help — the refresh token is revoked. Fail fast.
+    analysis&.transition_to!("failed",
+      error: "Google account disconnected. Reconnect it in Settings and re-submit. (#{e.message})")
   rescue => e
     analysis&.transition_to!("failed", error: e.message)
     raise
