@@ -1,0 +1,2 @@
+[deploy]
+startCommand = "bundle exec sidekiq -c 3"
