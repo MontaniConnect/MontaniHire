@@ -60,6 +60,9 @@ module Candidates
 
       CalendarEventService.new(user: current_user, slot_booking: booking).call
       redirect_to candidate_path(@candidate), notice: "Interview added to your Google Calendar."
+    rescue User::GoogleTokenRevoked
+      redirect_to settings_path,
+                  alert: "Your Google account needs to be reconnected. Go to Settings and reconnect it, then try again."
     rescue CalendarEventService::InsufficientScopeError
       redirect_to candidate_path(@candidate),
                   alert: "Calendar permission missing. Disconnect and reconnect your Google account in Settings, then try again."

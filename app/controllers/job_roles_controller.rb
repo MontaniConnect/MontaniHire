@@ -24,6 +24,7 @@ class JobRolesController < AuthenticatedController
 
   def new
     @job_role = current_organization.job_roles.build
+    @clients  = current_organization.clients.order(:name)
   end
 
   def create
@@ -31,17 +32,20 @@ class JobRolesController < AuthenticatedController
     if @job_role.save
       redirect_to job_roles_path, notice: "Role \"#{@job_role.title}\" created."
     else
+      @clients = current_organization.clients.order(:name)
       render :new, status: :unprocessable_entity
     end
   end
 
   def edit
+    @clients = current_organization.clients.order(:name)
   end
 
   def update
     if @job_role.update(job_role_params)
       redirect_to job_roles_path, notice: "Role updated."
     else
+      @clients = current_organization.clients.order(:name)
       render :edit, status: :unprocessable_entity
     end
   end
@@ -67,7 +71,7 @@ class JobRolesController < AuthenticatedController
 
   def job_role_params
     permitted = params.require(:job_role).permit(
-      :title, :experience_level, :required_skills, :responsibilities, :description,
+      :title, :experience_level, :required_skills, :responsibilities, :description, :client_id,
       must_have_requirements: [], nice_to_have_requirements: []
     )
     permitted[:must_have_requirements]    = Array(permitted[:must_have_requirements]).map(&:strip).reject(&:blank?)

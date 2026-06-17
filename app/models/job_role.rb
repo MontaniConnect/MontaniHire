@@ -1,6 +1,7 @@
 class JobRole < ApplicationRecord
   belongs_to :organization
   belongs_to :user
+  belongs_to :client, optional: true
   has_many :video_analyses, dependent: :nullify
   has_many :cv_analyses,    dependent: :nullify
 

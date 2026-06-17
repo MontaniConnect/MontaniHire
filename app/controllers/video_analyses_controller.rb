@@ -7,7 +7,21 @@ class VideoAnalysesController < AuthenticatedController
   end
 
   def index
-    @video_analyses = current_organization.video_analyses.includes(:job_role).order(created_at: :desc)
+    @client_id   = params[:client_id].presence
+    @job_role_id = params[:job_role_id].presence
+
+    @clients   = current_organization.clients.order(:name)
+    @job_roles = (@client_id ? current_organization.job_roles.where(client_id: @client_id) : current_organization.job_roles).order(:title)
+
+    scope = current_organization.video_analyses.includes(:job_role).order(created_at: :desc)
+    if @job_role_id
+      scope = scope.where(job_role_id: @job_role_id)
+    elsif @client_id
+      client_role_ids = current_organization.job_roles.where(client_id: @client_id).pluck(:id)
+      scope = scope.where(job_role_id: client_role_ids)
+    end
+    @video_analyses = scope
+
     respond_to do |format|
       format.html
       format.json { render json: @video_analyses.map { |a| serialize(a) } }

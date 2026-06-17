@@ -22,8 +22,9 @@ Rails.application.routes.draw do
     delete "google",           to: "google#disconnect",  as: :google_disconnect
   end
 
-  get  "settings",             to: "settings#show",                as: :settings
-  patch "settings/availability", to: "settings#update_availability", as: :update_availability_settings
+  get   "settings",                    to: "settings#show",                  as: :settings
+  patch "settings/availability",       to: "settings#update_availability",   as: :update_availability_settings
+  patch "settings/organization",       to: "settings#update_organization",   as: :update_organization_settings
 
   root "video_analyses#index"
   get "dashboard", to: "dashboard#index", as: :dashboard
@@ -73,6 +74,12 @@ Rails.application.routes.draw do
       end
     end
   end
+
+  # Client engagement management
+  resources :clients
+
+  # Member management (owner-only)
+  resources :members, only: %i[update destroy]
 
   # Member invites
   resources :invites, only: %i[create destroy]

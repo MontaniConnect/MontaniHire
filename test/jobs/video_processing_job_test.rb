@@ -8,8 +8,9 @@ class VideoProcessingJobTest < ActiveSupport::TestCase
   class ServiceSpy
     attr_reader :called_with
 
-    def initialize(return_value: nil)
+    def initialize(return_value: nil, raise_with: nil)
       @return_value = return_value
+      @raise_with   = raise_with
       @called_with  = nil
     end
 
@@ -18,19 +19,29 @@ class VideoProcessingJobTest < ActiveSupport::TestCase
       self
     end
 
-    def call = @return_value
+    def call
+      raise @raise_with if @raise_with
+      @return_value
+    end
+
     def called? = !@called_with.nil?
   end
 
   class FakeAnalysis
-    attr_accessor :status, :transcript, :drive_file_id, :last_error
+    attr_accessor :status, :transcript, :transcript_segments, :highlight_indices,
+                  :structured_feedback, :score, :drive_file_id, :last_error
     attr_reader :id
 
-    def initialize(id: 1, status: "pending", transcript: nil, drive_file_id: nil)
-      @id            = id
-      @status        = status
-      @transcript    = transcript
-      @drive_file_id = drive_file_id
+    def initialize(id: 1, status: "pending", transcript: nil, drive_file_id: nil,
+                   transcript_segments: [], structured_feedback: nil, score: nil)
+      @id                  = id
+      @status              = status
+      @transcript          = transcript
+      @drive_file_id       = drive_file_id
+      @transcript_segments = transcript_segments
+      @structured_feedback = structured_feedback
+      @score               = score
+      @highlight_indices   = []
     end
 
     def completed? = @status == "completed"
@@ -43,7 +54,12 @@ class VideoProcessingJobTest < ActiveSupport::TestCase
     end
 
     def update!(attrs)
-      @transcript = attrs[:transcript] if attrs.key?(:transcript)
+      @transcript          = attrs[:transcript]          if attrs.key?(:transcript)
+      @transcript_segments = attrs[:transcript_segments] if attrs.key?(:transcript_segments)
+    end
+
+    def update_columns(attrs)
+      @highlight_indices   = attrs[:highlight_indices]   if attrs.key?(:highlight_indices)
     end
   end
 
@@ -60,8 +76,6 @@ class VideoProcessingJobTest < ActiveSupport::TestCase
   NULL_SERVICE = ServiceSpy.new
 
   # ── Stub helpers ───────────────────────────────────────────────────────────
-  # Temporarily define a singleton method on a class and restore via
-  # remove_method so AR's inherited chain is unaffected afterward.
 
   def with_ar_stubs(analysis:, candidate:, &block)
     VideoAnalysis.define_singleton_method(:find)   { |*| analysis }
@@ -72,12 +86,14 @@ class VideoProcessingJobTest < ActiveSupport::TestCase
     Candidate.singleton_class.remove_method(:find_by)   rescue nil
   end
 
-  def run_job(analysis, transcript_service: NULL_SERVICE, analysis_service: NULL_SERVICE, candidate: nil)
+  def run_job(analysis, transcript_service: NULL_SERVICE, analysis_service: NULL_SERVICE,
+              highlight_service: NULL_SERVICE, candidate: nil)
     with_ar_stubs(analysis: analysis, candidate: candidate) do
       VideoProcessingJob.new.perform(
         analysis.id,
         transcript_service: transcript_service,
-        analysis_service:   analysis_service
+        analysis_service:   analysis_service,
+        highlight_service:  highlight_service
       )
     end
   end
@@ -178,5 +194,29 @@ class VideoProcessingJobTest < ActiveSupport::TestCase
     assert_match(/network timeout/, err.message)
     assert_equal "failed", analysis.status
     assert_equal "network timeout", analysis.last_error
+  end
+
+  # ── SegmentHighlightService isolation ─────────────────────────────────────
+
+  test "highlight failure does not change analysis status or re-raise" do
+    analysis          = FakeAnalysis.new(transcript: "Hello")
+    candidate         = FakeCandidate.new(cv_analysis: FakeCvAnalysis.new(completed: true))
+    boom_highlight    = ServiceSpy.new(raise_with: RuntimeError.new("Claude timeout"))
+
+    assert_nothing_raised do
+      run_job(analysis, highlight_service: boom_highlight, candidate: candidate)
+    end
+
+    assert_not_equal "failed", analysis.status
+  end
+
+  test "highlight service is called after scoring completes" do
+    analysis          = FakeAnalysis.new(transcript: "Hello")
+    candidate         = FakeCandidate.new(cv_analysis: FakeCvAnalysis.new(completed: true))
+    highlight_spy     = ServiceSpy.new
+
+    run_job(analysis, highlight_service: highlight_spy, candidate: candidate)
+
+    assert highlight_spy.called?, "expected SegmentHighlightService#call to have been invoked"
   end
 end

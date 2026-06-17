@@ -1,4 +1,7 @@
 class Organization < ApplicationRecord
+  include ValidatesLogoUrl
+
+  has_many :clients,        dependent: :destroy
   has_many :users,          dependent: :nullify
   has_many :candidates,     dependent: :destroy
   has_many :job_roles,      dependent: :destroy
@@ -12,6 +15,11 @@ class Organization < ApplicationRecord
             format: { with: /\A[a-z0-9-]+\z/, message: "only lowercase letters, numbers, and hyphens" }
 
   before_validation :generate_slug, on: :create
+
+  def sole_owner?(user)
+    owners = users.where(role: "owner")
+    owners.count == 1 && owners.first == user
+  end
 
   private
 

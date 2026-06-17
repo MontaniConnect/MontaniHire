@@ -4,10 +4,14 @@ class CandidatesController < AuthenticatedController
 
   def index
     @q           = params[:q].to_s.strip
+    @client_id   = params[:client_id].presence
     @job_role_id = params[:job_role_id].presence
 
-    @job_roles = JobRole.where(id: current_organization.candidates.where.not(job_role_id: nil).select(:job_role_id))
-                        .order(:title)
+    @clients = current_organization.clients.order(:name)
+
+    base_roles = current_organization.job_roles
+                                     .where(id: current_organization.candidates.where.not(job_role_id: nil).select(:job_role_id))
+    @job_roles = (@client_id ? base_roles.where(client_id: @client_id) : base_roles).order(:title)
 
     scope = current_organization.candidates.includes(:job_role, :cv_analysis, :video_analysis)
                                 .order(created_at: :desc)
@@ -21,6 +25,9 @@ class CandidatesController < AuthenticatedController
 
     if @job_role_id
       scope = scope.where(job_role_id: @job_role_id)
+    elsif @client_id
+      client_role_ids = current_organization.job_roles.where(client_id: @client_id).pluck(:id)
+      scope = scope.where(job_role_id: client_role_ids)
     end
 
     @candidates = scope
