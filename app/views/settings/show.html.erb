@@ -11,18 +11,41 @@
     <% if @members.any? %>
       <div style="border: 1px solid #e5e5e5; border-radius: 8px; overflow: hidden; margin-bottom: 1.5rem;">
         <% @members.each_with_index do |member, idx| %>
-          <div style="display: flex; align-items: center; justify-content: space-between; padding: 0.75rem 1rem;
-                      <%= idx > 0 ? 'border-top: 1px solid #f0f0f0;' : '' %>">
-            <div>
+          <div style="display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; padding: 0.75rem 1rem;
+                      <%= idx > 0 ? 'border-top: 1px solid #f0f0f0;' : '' %>; flex-wrap: wrap;">
+            <div style="flex: 1; min-width: 0;">
               <div style="font-weight: 500; font-size: 0.9rem;"><%= member.name.presence || member.email %></div>
               <div style="font-size: 0.78rem; color: #888;"><%= member.email %></div>
             </div>
-            <span style="font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em;
-                         color: <%= member.owner? ? '#166534' : '#555' %>;
-                         background: <%= member.owner? ? '#dcfce7' : '#f0f0f0' %>;
-                         border-radius: 4px; padding: 0.2rem 0.55rem;">
-              <%= member.role.titleize %>
-            </span>
+            <div style="display: flex; align-items: center; gap: 0.5rem; flex-shrink: 0;">
+              <%# Role badge / change dropdown for non-owners %>
+              <% if member.owner? %>
+                <span style="font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em;
+                             color: #166534; background: #dcfce7; border-radius: 4px; padding: 0.2rem 0.55rem;">
+                  Owner
+                </span>
+              <% else %>
+                <%= form_with url: member_path(member), method: :patch,
+                      html: { style: "display: inline-flex; align-items: center; gap: 0.4rem;" } do |f| %>
+                  <select name="role" onchange="this.form.submit()"
+                          style="font-size: 0.78rem; padding: 0.2rem 0.4rem; border: 1px solid #ddd;
+                                 border-radius: 4px; background: #f9f9f9; cursor: pointer;">
+                    <option value="member" <%= "selected" if member.member? %>>Member</option>
+                    <option value="viewer" <%= "selected" if member.viewer? %>>Viewer</option>
+                  </select>
+                <% end %>
+              <% end %>
+              <%# Remove button — owners can't remove themselves if sole owner %>
+              <% unless member == current_user && @sole_owner %>
+                <%= button_to member_path(member), method: :delete,
+                      style: "font-size: 0.75rem; color: #b91c1c; background: none; border: none; cursor: pointer; padding: 0 0.25rem;",
+                      data: { confirm: "Remove #{member.name.presence || member.email} from the organisation?" } do %>
+                  Remove
+                <% end %>
+              <% else %>
+                <span style="font-size: 0.75rem; color: #ccc; padding: 0 0.25rem;">Remove</span>
+              <% end %>
+            </div>
           </div>
         <% end %>
       </div>
@@ -76,6 +99,79 @@
         </select>
       </div>
       <button type="submit" class="btn" style="padding: 0.5rem 1rem; white-space: nowrap;">Send invite link</button>
+    <% end %>
+  </div>
+<% end %>
+
+<%# Clients (owners only) %>
+<% if current_user.owner? %>
+  <div class="card">
+    <div style="display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 1.25rem;">
+      <div>
+        <h2 style="margin: 0 0 0.2rem;">Clients</h2>
+        <p style="font-size: 0.85rem; color: #666; margin: 0;">Companies you recruit for.</p>
+      </div>
+      <%= link_to "Add Client", new_client_path, class: "btn", style: "padding: 0.4rem 0.9rem; font-size: 0.85rem; flex-shrink: 0;" %>
+    </div>
+    <% if @clients.any? %>
+      <div style="border: 1px solid #e5e5e5; border-radius: 8px; overflow: hidden;">
+        <% @clients.each_with_index do |client, idx| %>
+          <div style="display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; padding: 0.75rem 1rem;
+                      <%= idx > 0 ? 'border-top: 1px solid #f0f0f0;' : '' %>; flex-wrap: wrap;">
+            <div style="display: flex; align-items: center; gap: 0.65rem; flex: 1; min-width: 0;">
+              <% if client.logo_url.present? %>
+                <img src="<%= client.logo_url %>" alt=""
+                     style="height: 28px; width: 28px; object-fit: contain; border-radius: 4px; background: #f5f5f5; flex-shrink: 0;"
+                     onerror="this.style.display='none'">
+              <% end %>
+              <div style="font-weight: 500; font-size: 0.9rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                <%= client.name %>
+              </div>
+            </div>
+            <%= link_to "Edit", edit_client_path(client),
+                  style: "font-size: 0.8rem; color: #555; text-decoration: none; flex-shrink: 0;" %>
+          </div>
+        <% end %>
+      </div>
+    <% else %>
+      <p style="font-size: 0.88rem; color: #aaa; margin: 0;">No clients yet.</p>
+    <% end %>
+  </div>
+<% end %>
+
+<%# Organisation settings (owners only) %>
+<% if current_user.owner? %>
+  <div class="card">
+    <h2>Organisation</h2>
+    <p style="font-size: 0.85rem; color: #666; margin-bottom: 1.5rem;">
+      Update your organisation's display name and logo shown on shortlists.
+    </p>
+    <%= form_with url: update_organization_settings_path, method: :patch do |f| %>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+        <div class="form-group" style="margin: 0;">
+          <label>Organisation name</label>
+          <input type="text" name="organization[name]"
+                 value="<%= current_organization.name %>"
+                 style="width: 100%; padding: 0.6rem 0.75rem; border: 1px solid #ddd; border-radius: 6px; font-size: 0.95rem;">
+        </div>
+        <div class="form-group" style="margin: 0;">
+          <label>Logo URL <span style="font-weight: 400; color: #999;">(HTTPS, image file)</span></label>
+          <input type="url" name="organization[logo_url]"
+                 value="<%= current_organization.logo_url %>"
+                 placeholder="https://example.com/logo.png"
+                 style="width: 100%; padding: 0.6rem 0.75rem; border: 1px solid #ddd; border-radius: 6px; font-size: 0.95rem;">
+        </div>
+      </div>
+      <% if current_organization.logo_url.present? %>
+        <div style="margin-bottom: 1rem;">
+          <p style="font-size: 0.8rem; color: #888; margin-bottom: 0.35rem;">Preview</p>
+          <img src="<%= current_organization.logo_url %>"
+               alt="<%= current_organization.name %>"
+               style="height: 36px; width: auto; border-radius: 4px; object-fit: contain; background: #f5f5f5; padding: 2px 6px; border: 1px solid #e5e5e5;"
+               onerror="this.style.display='none'">
+        </div>
+      <% end %>
+      <button type="submit" class="btn">Save Organisation</button>
     <% end %>
   </div>
 <% end %>

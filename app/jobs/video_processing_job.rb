@@ -5,7 +5,8 @@ class VideoProcessingJob < ApplicationJob
 
   def perform(video_analysis_id,
               transcript_service: DriveTranscriptionService,
-              analysis_service:   ClaudeAnalysisService)
+              analysis_service:   ClaudeAnalysisService,
+              highlight_service:  SegmentHighlightService)
     analysis = VideoAnalysis.find(video_analysis_id)
     return if analysis.completed? || analysis.failed?
 
@@ -32,6 +33,15 @@ class VideoProcessingJob < ApplicationJob
     end
 
     analysis_service.new(analysis: analysis).call
+    begin
+      highlight_service.new(analysis: analysis).call
+    rescue => e
+      Rails.logger.warn "[VideoProcessingJob] SegmentHighlightService failed: #{e.class}: #{e.message}"
+    end
+  rescue User::GoogleTokenRevoked => e
+    # Retrying won't help — the refresh token is revoked. Fail fast.
+    analysis&.transition_to!("failed",
+      error: "Google account disconnected. Reconnect it in Settings and re-submit. (#{e.message})")
   rescue => e
     analysis&.transition_to!("failed", error: e.message)
     raise
@@ -54,11 +64,17 @@ class VideoProcessingJob < ApplicationJob
     blob = analysis.video.blob
     raise "No transcript file attached." unless blob
 
-    raw        = blob.download
-    mime_type  = blob.filename.to_s.end_with?(".vtt") ? TranscriptParsers::Vtt::MIME_TYPE : "text/plain"
-    transcript = TranscriptParsers.for(mime_type).parse(raw)
+    raw = blob.download
 
-    analysis.update!(transcript: transcript)
+    if blob.filename.to_s.end_with?(".vtt")
+      parser   = TranscriptParsers::Vtt.new
+      text     = parser.parse(raw)
+      segments = parser.parse_segments(raw)
+      analysis.update!(transcript: text, transcript_segments: segments)
+    else
+      analysis.update!(transcript: TranscriptParsers::PlainText.new.parse(raw))
+    end
+
     analysis.video.purge_later
   end
 end

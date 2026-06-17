@@ -1,25 +1,45 @@
 <%# ── Header ── %>
-<div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 0.75rem;">
-  <h1 style="margin: 0;">Recruitment Dashboard</h1>
-  <% if @job_roles.any? %>
-    <%= form_with url: dashboard_path, method: :get, style: "display: flex; gap: 0.5rem; align-items: center;" do |f| %>
-      <select name="job_role_id"
-              style="padding: 0.45rem 0.75rem; border: 1px solid #ddd; border-radius: 6px;
-                     font-size: 0.85rem; background: #fff; color: #555; outline: none;">
-        <option value="">All roles</option>
-        <% @job_roles.each do |jr| %>
-          <option value="<%= jr.id %>" <%= "selected" if @job_role_id == jr.id.to_s %>><%= jr.title %></option>
-        <% end %>
-      </select>
-      <%= f.submit "Filter", class: "btn", style: "padding: 0.45rem 0.9rem; font-size: 0.85rem;" %>
-      <% if @job_role_id.present? %>
-        <%= link_to "Clear", dashboard_path,
-              style: "font-size: 0.85rem; color: #555; text-decoration: none; padding: 0.45rem 0.75rem;
-                      border: 1px solid #ddd; border-radius: 6px; background: #fff;" %>
+<h1 style="margin: 0 0 1rem;">Recruitment Dashboard</h1>
+
+<div style="display: inline-flex; gap: 0.5rem; align-items: center; margin-bottom: 1.5rem;">
+  <% if @clients.any? %>
+    <select id="dash-client" onchange="dashFilter()"
+            style="padding: 0.45rem 0.75rem; border: 1px solid #ddd; border-radius: 6px;
+                   font-size: 0.85rem; background: #fff; color: #555; outline: none; width: auto;">
+      <option value="">All clients</option>
+      <% @clients.each do |c| %>
+        <option value="<%= c.id %>" <%= "selected" if @client_id == c.id.to_s %>><%= c.name %></option>
       <% end %>
+    </select>
+  <% end %>
+  <% visible_roles = @client_id.present? ? @job_roles.select { |jr| jr.client_id.to_s == @client_id } : @job_roles %>
+  <select id="dash-role"
+          style="padding: 0.45rem 0.75rem; border: 1px solid #ddd; border-radius: 6px;
+                 font-size: 0.85rem; background: #fff; color: #555; outline: none; width: auto;
+                 <%= visible_roles.empty? ? 'display: none;' : '' %>">
+    <option value="">All roles</option>
+    <% visible_roles.each do |jr| %>
+      <option value="<%= jr.id %>" <%= "selected" if @job_role_id == jr.id.to_s %>><%= jr.title %></option>
     <% end %>
+  </select>
+  <% if @client_id.present? || @job_role_id.present? %>
+    <button onclick="dashFilter()" class="btn" style="padding: 0.45rem 0.9rem; font-size: 0.85rem;">Filter</button>
+    <%= link_to "Clear", dashboard_path,
+          style: "font-size: 0.85rem; color: #555; text-decoration: none; padding: 0.45rem 0.75rem;
+                  border: 1px solid #ddd; border-radius: 6px; background: #fff;" %>
   <% end %>
 </div>
+
+<script>
+  function dashFilter() {
+    var p = new URLSearchParams();
+    var c = document.getElementById('dash-client');
+    var r = document.getElementById('dash-role');
+    if (c && c.value) p.set('client_id', c.value);
+    if (r && r.value && r.style.display !== 'none') p.set('job_role_id', r.value);
+    window.location = '<%= dashboard_path %>' + (p.toString() ? '?' + p.toString() : '');
+  }
+</script>
 
 <%# ── Funnel strip ── %>
 <div class="card" style="padding: 1.25rem 1.5rem; margin-bottom: 1.25rem;">

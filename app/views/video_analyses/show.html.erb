@@ -183,18 +183,22 @@
           <div class="score-ring" style="--pct: <%= ep_pct %>%">
             <span class="score-value"><%= ep_score %></span>
           </div>
-          <% if ep_tier.present? %>
-            <span style="font-size: 0.72rem; font-weight: 700; color: <%= tier_color %>; background: <%= tier_bg %>; border-radius: 99px; padding: 0.15rem 0.55rem;"><%= ep_tier %></span>
+          <% ep_rec = fb["recommendation"] %>
+          <% ep_rec_label = { "comprehensive" => "Comprehensive", "substantive" => "Substantive", "superficial" => "Superficial" }[ep_rec] %>
+          <% ep_rec_style = { "comprehensive" => "color:#166534;background:#dcfce7", "substantive" => "color:#854d0e;background:#fef9c3", "superficial" => "color:#991b1b;background:#fee2e2" }[ep_rec] %>
+          <% if ep_rec_label %>
+            <span style="font-size: 0.7rem; font-weight: 700; border-radius: 99px; padding: 0.15rem 0.55rem; <%= ep_rec_style %>"><%= ep_rec_label %></span>
           <% end %>
         </div>
       <% end %>
 
       <%# CV Fit Score ring %>
       <% if _cv_fit %>
-        <% _cv_tier   = _cv.cv_fit_tier %>
         <% _cv_pct    = (_cv_fit / 10.0 * 100).round %>
-        <% _tier_color = { "Shortlist" => "#166534", "Borderline" => "#854d0e", "Archive" => "#991b1b" }[_cv_tier] %>
-        <% _tier_bg    = { "Shortlist" => "#dcfce7", "Borderline" => "#fef9c3", "Archive" => "#fee2e2" }[_cv_tier] %>
+        <% _cv_rec    = _cv.structured_feedback&.dig("recommendation") %>
+        <% _cv_rec_label = { "high_match" => "High Match", "moderate_match" => "Moderate Match", "low_match" => "Low Match" }[_cv_rec] %>
+        <% _cv_rec_tc    = { "high_match" => "#166534", "moderate_match" => "#854d0e", "low_match" => "#991b1b" }[_cv_rec] %>
+        <% _cv_rec_bg    = { "high_match" => "#dcfce7", "moderate_match" => "#fef9c3", "low_match" => "#fee2e2" }[_cv_rec] %>
         <div style="display: flex; flex-direction: column; align-items: center; gap: 0.45rem;">
           <div style="font-size: 0.63rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #bbb;">CV Fit Score</div>
           <%= link_to cv_analysis_path(_cv), style: "text-decoration: none;" do %>
@@ -202,7 +206,9 @@
               <span class="score-value"><%= _cv_fit %></span>
             </div>
           <% end %>
-          <span style="font-size: 0.72rem; font-weight: 700; color: <%= _tier_color %>; background: <%= _tier_bg %>; border-radius: 99px; padding: 0.15rem 0.55rem;"><%= _cv_tier %></span>
+          <% if _cv_rec_label %>
+            <span style="font-size: 0.7rem; font-weight: 700; border-radius: 99px; padding: 0.15rem 0.55rem; color: <%= _cv_rec_tc %>; background: <%= _cv_rec_bg %>;"><%= _cv_rec_label %></span>
+          <% end %>
         </div>
       <% end %>
     </div>

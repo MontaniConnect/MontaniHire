@@ -87,10 +87,11 @@
             </div>
             <% if inv_recs.any? %>
               <div style="display: flex; gap: 0.4rem; flex-wrap: wrap;">
-                <% { "recommend" => "completed", "borderline" => "pending", "reject" => "failed" }.each do |rec, cls| %>
+                <% rec_labels = { "comprehensive" => "Comprehensive", "substantive" => "Substantive", "superficial" => "Superficial" } %>
+                <% { "comprehensive" => "completed", "substantive" => "pending", "superficial" => "failed" }.each do |rec, cls| %>
                   <% n = inv_recs.count(rec) %>
                   <% if n > 0 %>
-                    <span class="badge badge-<%= cls %>" style="font-size: 0.7rem;"><%= n %> <%= rec %></span>
+                    <span class="badge badge-<%= cls %>" style="font-size: 0.7rem;"><%= n %> <%= rec_labels[rec] %></span>
                   <% end %>
                 <% end %>
               </div>
@@ -135,10 +136,11 @@
             </div>
             <% if ni_recs.any? %>
               <div style="display: flex; gap: 0.4rem; flex-wrap: wrap;">
-                <% { "recommend" => "completed", "borderline" => "pending", "reject" => "failed" }.each do |rec, cls| %>
+                <% rec_labels = { "comprehensive" => "Comprehensive", "substantive" => "Substantive", "superficial" => "Superficial" } %>
+                <% { "comprehensive" => "completed", "substantive" => "pending", "superficial" => "failed" }.each do |rec, cls| %>
                   <% n = ni_recs.count(rec) %>
                   <% if n > 0 %>
-                    <span class="badge badge-<%= cls %>" style="font-size: 0.7rem;"><%= n %> <%= rec %></span>
+                    <span class="badge badge-<%= cls %>" style="font-size: 0.7rem;"><%= n %> <%= rec_labels[rec] %></span>
                   <% end %>
                 <% end %>
               </div>
@@ -254,7 +256,8 @@
         <% cv_score     = cva&.score %>
         <% cv_fit_score = cva&.structured_feedback&.dig("cv_fit_score") %>
         <% rec          = fb["recommendation"] %>
-        <% rec_class    = { "recommend" => "completed", "borderline" => "pending", "reject" => "failed" }[rec] || "pending" %>
+        <% rec_labels   = { "comprehensive" => "Comprehensive", "substantive" => "Substantive", "superficial" => "Superficial" } %>
+        <% rec_class    = { "comprehensive" => "completed", "substantive" => "pending", "superficial" => "failed" }[rec] || "pending" %>
         <% outcome_label = c.pipeline_stage == "final_interview" ? "Invited" : "Not invited" %>
         <% outcome_style = c.pipeline_stage == "final_interview" ? "color:#166534;background:#dcfce7" : "color:#991b1b;background:#fee2e2" %>
         <div style="padding: 0.85rem 0; border-bottom: 1px solid #f0f0f0;">
@@ -264,7 +267,7 @@
               <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center;">
                 <span class="badge" style="<%= outcome_style %>; font-size: 0.72rem;"><%= outcome_label %></span>
                 <% if rec.present? %>
-                  <span class="badge badge-<%= rec_class %>" style="font-size: 0.72rem;"><%= rec.capitalize %></span>
+                  <span class="badge badge-<%= rec_class %>" style="font-size: 0.72rem;"><%= rec_labels[rec] || rec.capitalize %></span>
                 <% end %>
                 <% if int_score.present? %>
                   <span style="font-size: 0.8rem; color: #555;">Interview: <strong><%= int_score %>/10</strong></span>

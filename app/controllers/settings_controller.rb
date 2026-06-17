@@ -10,10 +10,21 @@ class SettingsController < AuthenticatedController
     if current_user.owner?
       @members = current_organization.users.order(:name, :email)
       @pending_invites = current_organization.invites.pending.includes(:invited_by).order(created_at: :desc)
+      @sole_owner = current_organization.sole_owner?(current_user)
+      @clients = current_organization.clients.order(:name)
     end
   end
 
   before_action :require_write_access!, only: [:update_availability]
+  before_action :require_owner!, only: [:update_organization]
+
+  def update_organization
+    if current_organization.update(org_params)
+      redirect_to settings_path, notice: "Organisation updated."
+    else
+      redirect_to settings_path, alert: current_organization.errors.full_messages.to_sentence
+    end
+  end
 
   def update_availability
     days = {}
@@ -32,5 +43,11 @@ class SettingsController < AuthenticatedController
     })
 
     redirect_to settings_path, notice: "Availability saved."
+  end
+
+  private
+
+  def org_params
+    params.require(:organization).permit(:name, :logo_url)
   end
 end

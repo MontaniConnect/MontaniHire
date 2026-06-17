@@ -32,7 +32,7 @@ class CvClaudeAnalysisService
     - Skills or qualifications listed in a skills section that have no supporting evidence in any role description
 
     Return a JSON object with exactly these keys:
-    - "recommendation": "recommend" | "borderline" | "reject"
+    - "recommendation": "high_match" | "moderate_match" | "low_match"
     - "score": a number from 0 to 10 (one decimal place) reflecting overall CV-to-JD fit — holistic assessment including career progression, credential signals, and experience anchoring
     - "summary": 1-2 sentences maximum. Must contain exactly two elements:
         (1) Key Strength: a highly specific, data-driven behavioural spike or culture add grounded in CV evidence — not generic praise (e.g. "demonstrated strong pattern recognition by working backward from a failed project", not "great communicator")

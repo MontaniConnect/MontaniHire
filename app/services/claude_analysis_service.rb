@@ -42,7 +42,7 @@ class ClaudeAnalysisService
     Red flags must NOT restate items already logged as "not addressed" in jd_requirements_coverage — those gaps are fully captured there. Only include flags with operational significance, credibility concerns, consistency issues, or risk weight that cannot be expressed through coverage status alone.
 
     Return a JSON object with exactly these keys:
-    - "recommendation": "recommend" | "borderline" | "reject"
+    - "recommendation": "comprehensive" | "substantive" | "superficial"
     - "score": a number from 0 to 10 (one decimal place) reflecting overall candidate quality — holistic assessment including communication, depth, and impression
     - "summary": 1-2 sentences maximum. Must contain exactly two elements:
         (1) Key Strength: a highly specific, data-driven behavioural spike or culture add grounded in transcript evidence — not generic praise (e.g. "demonstrated strong pattern recognition by working backward from a failed project", not "great communicator")

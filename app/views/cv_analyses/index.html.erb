@@ -246,11 +246,14 @@
                 <td>
                   <% cf = ca.cv_fit_score %>
                   <% if cf %>
-                    <% tier = ca.cv_fit_tier %>
-                    <% tier_color = { "Shortlist" => "#166534", "Borderline" => "#854d0e", "Archive" => "#991b1b" }[tier] %>
-                    <% tier_bg    = { "Shortlist" => "#dcfce7", "Borderline" => "#fef9c3", "Archive" => "#fee2e2" }[tier] %>
+                    <% cv_rec = ca.structured_feedback&.dig("recommendation") %>
+                    <% cv_rec_label = { "high_match" => "High Match", "moderate_match" => "Moderate Match", "low_match" => "Low Match" }[cv_rec] %>
+                    <% cv_rec_tc = { "high_match" => "#166534", "moderate_match" => "#854d0e", "low_match" => "#991b1b" }[cv_rec] %>
+                    <% cv_rec_bg = { "high_match" => "#dcfce7", "moderate_match" => "#fef9c3", "low_match" => "#fee2e2" }[cv_rec] %>
                     <span style="font-weight: 700;"><%= cf %>/10</span>
-                    <span style="font-size: 0.72rem; font-weight: 600; color: <%= tier_color %>; background: <%= tier_bg %>; border-radius: 4px; padding: 0.1rem 0.4rem; margin-left: 0.35rem;"><%= tier %></span>
+                    <% if cv_rec_label %>
+                      <span style="font-size: 0.72rem; font-weight: 600; color: <%= cv_rec_tc %>; background: <%= cv_rec_bg %>; border-radius: 4px; padding: 0.1rem 0.4rem; margin-left: 0.35rem;"><%= cv_rec_label %></span>
+                    <% end %>
                   <% else %>
                     <span style="color: #bbb;">—</span>
                   <% end %>
