@@ -15,7 +15,7 @@ class ApplicationController < ActionController::Base
   def authenticate!
     return if current_user
 
-    session[:return_to] = request.fullpath if request.get?
+    session[:return_to] = request.fullpath if request.get? || request.head?
     redirect_to login_path, alert: "Please sign in to continue."
   end
 end
