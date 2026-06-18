@@ -66,7 +66,12 @@ class Auth::GoogleController < ApplicationController
       )
 
       session[:user_id] = user.id
-      redirect_to session.delete(:return_to) || root_path,
+      return_to = session.delete(:return_to)
+      if return_to.nil? && user.organization.nil?
+        pending = Invite.pending.find_by(email: user.email)
+        return_to = join_path(pending.token) if pending
+      end
+      redirect_to return_to || root_path,
                   notice: "Signed in as #{user.name.presence || user.email}."
     end
   end
