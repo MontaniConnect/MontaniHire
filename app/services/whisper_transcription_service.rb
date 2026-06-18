@@ -3,7 +3,7 @@ require "tempfile"
 
 class WhisperTranscriptionService
   MODEL_PATH  = Rails.root.join("vendor", "whisper_models", "ggml-small.en.bin").to_s
-  WHISPER_CLI = "/opt/homebrew/bin/whisper-cli"
+  WHISPER_CLI = ENV.fetch("WHISPER_CLI_PATH", "/usr/local/bin/whisper-cli")
 
   def initialize(analysis:)
     @analysis = analysis

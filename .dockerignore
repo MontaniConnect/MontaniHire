@@ -43,3 +43,6 @@
 # Ignore Docker-related files
 /.dockerignore
 /Dockerfile*
+
+# Whisper models are downloaded at build time; exclude local copy from build context
+vendor/whisper_models/
