@@ -28,7 +28,19 @@
       class="btn" style="padding: 0.45rem 0.9rem; font-size: 0.85rem; white-space: nowrap;">
       Copy link
     </button>
+    <% if @shortlist.client_email.present? %>
+      <%= link_to "Send to client →",
+            GmailComposeUrlService.shortlist_url(shortlist: @shortlist, share_url: shared_shortlist_url(@shortlist.token)),
+            target: "_blank", rel: "noopener",
+            class: "btn",
+            style: "padding: 0.45rem 0.9rem; font-size: 0.85rem; white-space: nowrap; background: #1a73e8;" %>
+    <% end %>
   </div>
+  <% if @shortlist.client_email.present? %>
+    <div style="margin-top: 0.5rem; font-size: 0.78rem; color: #888;">
+      Will open Gmail as <strong><%= current_user.email %></strong> · To: <%= @shortlist.client_email %>
+    </div>
+  <% end %>
   <% if @shortlist.message.present? %>
     <div style="margin-top: 0.75rem; font-size: 0.88rem; color: #555; border-top: 1px solid #e5e5e5; padding-top: 0.75rem;">
       <strong>Message to client:</strong> <%= @shortlist.message %>

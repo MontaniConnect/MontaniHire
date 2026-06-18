@@ -1,4 +1,39 @@
 class GmailComposeUrlService
+  class << self
+    def shortlist_url(shortlist:, share_url:)
+      subject = "Shortlist: #{shortlist.title}"
+      body = shortlist_body(shortlist, share_url)
+      cc = shortlist.client&.contact_email.presence
+      url = "https://mail.google.com/mail/?view=cm&fs=1" \
+        "&to=#{ERB::Util.url_encode(shortlist.client_email)}" \
+        "&su=#{ERB::Util.url_encode(subject)}" \
+        "&body=#{ERB::Util.url_encode(body)}"
+      url += "&cc=#{ERB::Util.url_encode(cc)}" if cc
+      url
+    end
+
+    private
+
+    def shortlist_body(shortlist, share_url)
+      client_name = shortlist.client&.name.presence || "there"
+      lines = [
+        "Hi #{client_name},",
+        "",
+        "I hope you're having a great week. We are forwarding the applicants for the #{shortlist.title} for your review.",
+        "",
+        share_url,
+        ""
+      ]
+      lines += [shortlist.message, ""] if shortlist.message.present?
+      lines += [
+        "Kindly let us know your feedback on the current candidates, and please feel free to reach out if you have any questions.",
+        "",
+        "Best regards,"
+      ]
+      lines.join("\n")
+    end
+  end
+
   def initialize(candidate:)
     @candidate = candidate
   end
