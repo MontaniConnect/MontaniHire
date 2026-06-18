@@ -29,7 +29,7 @@
       <span class="badge <%= stage_badge[@candidate.pipeline_stage] %>">
         <%= stage_label[@candidate.pipeline_stage] %>
       </span>
-      <% job_roles = current_user.job_roles.order(:title) %>
+      <% job_roles = current_organization.job_roles.order(:title) %>
       <span style="font-size: 0.82rem; color: #555;">
         <% if @candidate.job_role %>
           <%= @candidate.job_role.title %>
