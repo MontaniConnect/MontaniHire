@@ -1,6 +1,6 @@
 module Candidates
   class CommunicationsController < BaseController
-    before_action :check_invites_enabled, only: [:send_invite_email, :send_followup_email]
+    before_action :check_invites_enabled, only: [ :send_invite_email, :send_followup_email ]
 
     def send_invite_email
       if @candidate.email.blank?

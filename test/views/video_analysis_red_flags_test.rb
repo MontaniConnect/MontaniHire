@@ -27,7 +27,7 @@ class VideoAnalysisRedFlagsTest < ActionDispatch::IntegrationTest
   # ── Object shape (new CoT format) ────────────────────────────────────────────
 
   test "renders flag text from object-shaped red flag" do
-    va = make_va([{ "flag" => "Frequent job hopping", "literal_quote" => "Q1 2021 – Q2 2021 at Acme", "rationale" => "Four roles in under three years." }])
+    va = make_va([ { "flag" => "Frequent job hopping", "literal_quote" => "Q1 2021 – Q2 2021 at Acme", "rationale" => "Four roles in under three years." } ])
     sign_in @user
     get video_analysis_path(va)
     assert_response :success
@@ -35,7 +35,7 @@ class VideoAnalysisRedFlagsTest < ActionDispatch::IntegrationTest
   end
 
   test "renders rationale from object-shaped red flag" do
-    va = make_va([{ "flag" => "Ownership gap", "literal_quote" => "assisted the team", "rationale" => "Bullet points are consistently passive." }])
+    va = make_va([ { "flag" => "Ownership gap", "literal_quote" => "assisted the team", "rationale" => "Bullet points are consistently passive." } ])
     sign_in @user
     get video_analysis_path(va)
     assert_response :success
@@ -43,7 +43,7 @@ class VideoAnalysisRedFlagsTest < ActionDispatch::IntegrationTest
   end
 
   test "renders literal_quote in blockquote for object-shaped red flag" do
-    va = make_va([{ "flag" => "Scope exaggeration", "literal_quote" => "led company-wide transformation", "rationale" => "No headcount or budget evidence." }])
+    va = make_va([ { "flag" => "Scope exaggeration", "literal_quote" => "led company-wide transformation", "rationale" => "No headcount or budget evidence." } ])
     sign_in @user
     get video_analysis_path(va)
     assert_response :success
@@ -67,7 +67,7 @@ class VideoAnalysisRedFlagsTest < ActionDispatch::IntegrationTest
   end
 
   test "skips blockquote when object-shaped flag has no literal_quote" do
-    va = make_va([{ "flag" => "No evidence", "literal_quote" => "", "rationale" => "Nothing found." }])
+    va = make_va([ { "flag" => "No evidence", "literal_quote" => "", "rationale" => "Nothing found." } ])
     sign_in @user
     get video_analysis_path(va)
     assert_response :success
@@ -78,7 +78,7 @@ class VideoAnalysisRedFlagsTest < ActionDispatch::IntegrationTest
   # ── Legacy flat-string shape ───────────────────────────────────────────────────
 
   test "renders legacy flat-string red flags as plain list items" do
-    va = make_va(["Unexplained employment gap", "No measurable outcomes"])
+    va = make_va([ "Unexplained employment gap", "No measurable outcomes" ])
     sign_in @user
     get video_analysis_path(va)
     assert_response :success

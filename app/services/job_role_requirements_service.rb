@@ -35,7 +35,7 @@ class JobRoleRequirementsService
       model:      MODEL,
       max_tokens: 1024,
       system:     SYSTEM_PROMPT,
-      messages:   [{ role: "user", content: build_prompt }]
+      messages:   [ { role: "user", content: build_prompt } ]
     )
 
     {
@@ -47,7 +47,7 @@ class JobRoleRequirementsService
   private
 
   def build_prompt
-    parts = ["Job Title: #{@job_role.title}", "Experience Level: #{@job_role.experience_level.capitalize}"]
+    parts = [ "Job Title: #{@job_role.title}", "Experience Level: #{@job_role.experience_level.capitalize}" ]
     parts << "Required Skills:\n#{@job_role.required_skills.to_plain_text}" if @job_role.required_skills.present?
     parts << "Responsibilities:\n#{@job_role.responsibilities.to_plain_text}" if @job_role.responsibilities.present?
     parts << "Additional Context:\n#{@job_role.description}" if @job_role.description.present?

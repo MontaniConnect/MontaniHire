@@ -18,7 +18,7 @@ class DriveTranscriptionService
 
   def transcribe_video(drive, meta)
     ext = File.extname(meta.name.to_s).presence || ".mp4"
-    tmp = Tempfile.new(["drive_video", ext], binmode: true)
+    tmp = Tempfile.new([ "drive_video", ext ], binmode: true)
     begin
       drive.get_file(@analysis.drive_file_id, download_dest: tmp)
       tmp.rewind

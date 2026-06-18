@@ -59,7 +59,7 @@ class OutcomeExamplesBuilder::Interview < OutcomeExamplesBuilder
     score_line << "holistic: #{va.score}/10"
     score_line << "JD fit: #{jd}/10" if jd.present?
 
-    lines = ["\nExample #{index} (#{score_line.join(' · ')}):"]
+    lines = [ "\nExample #{index} (#{score_line.join(' · ')}):" ]
 
     if dims.any?
       dim_order = %w[relevance_discipline ownership_language outcome_orientation adaptability_signal communication_clarity]
@@ -87,8 +87,8 @@ class OutcomeExamplesBuilder::CvScreening < OutcomeExamplesBuilder
     return nil unless cv&.structured_feedback.present? && cv.score.present?
 
     fb         = cv.structured_feedback
-    score_line = ["CV Fit Score: #{fb['cv_fit_score']}/10", "holistic: #{cv.score}/10"].compact.join(" · ")
-    lines      = ["\nExample #{index} (#{score_line}, recommendation: #{fb['recommendation']}):"]
+    score_line = [ "CV Fit Score: #{fb['cv_fit_score']}/10", "holistic: #{cv.score}/10" ].compact.join(" · ")
+    lines      = [ "\nExample #{index} (#{score_line}, recommendation: #{fb['recommendation']}):" ]
 
     cov = Array(fb["cv_requirements_coverage"])
     if cov.any?

@@ -154,8 +154,8 @@ class CvClaudeAnalysisService
 
     result = @client.complete(
       model:      MODEL,
-      system:     [{ type: "text", text: SYSTEM_PROMPT, cache_control: { type: "ephemeral" } }],
-      messages:   [{ role: "user", content: build_user_content(job_context) }],
+      system:     [ { type: "text", text: SYSTEM_PROMPT, cache_control: { type: "ephemeral" } } ],
+      messages:   [ { role: "user", content: build_user_content(job_context) } ],
       max_tokens: 8000
     )
 
@@ -201,7 +201,7 @@ class CvClaudeAnalysisService
     tiers = pool.filter_map(&:cv_fit_tier)
     tier_counts = tiers.tally
 
-    lines = ["CV Fit Score range across #{pool.count} completed CV screening#{"s" if pool.count != 1} for this role:"]
+    lines = [ "CV Fit Score range across #{pool.count} completed CV screening#{"s" if pool.count != 1} for this role:" ]
     lines << "  min: #{scores.min}, max: #{scores.max}, avg: #{(scores.sum / scores.size).round(1)}"
     if tier_counts.any?
       lines << "  Tier breakdown: " + tier_counts.map { |t, n| "#{t} #{n}" }.join(", ")

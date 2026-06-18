@@ -9,10 +9,10 @@
 # Prints a brief quality report; flags anomalies for human review.
 
 TIER_KEYWORDS = {
-  "meets"         => ["meets", "meet"],
-  "partially_meets" => ["partially", "partial"],
-  "vague"         => ["vague"],
-  "does_not_meet" => ["does not meet", "doesn't meet", "does_not_meet", "fails"]
+  "meets"         => [ "meets", "meet" ],
+  "partially_meets" => [ "partially", "partial" ],
+  "vague"         => [ "vague" ],
+  "does_not_meet" => [ "does not meet", "doesn't meet", "does_not_meet", "fails" ]
 }.freeze
 
 DIMS = %w[relevance_discipline ownership_language outcome_orientation

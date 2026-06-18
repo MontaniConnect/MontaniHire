@@ -15,8 +15,8 @@ class SettingsController < AuthenticatedController
     end
   end
 
-  before_action :require_write_access!, only: [:update_availability, :update_calendar]
-  before_action :require_owner!, only: [:update_organization]
+  before_action :require_write_access!, only: [ :update_availability, :update_calendar ]
+  before_action :require_owner!, only: [ :update_organization ]
 
   def update_organization
     if current_organization.update(org_params)

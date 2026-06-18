@@ -52,19 +52,19 @@ class SegmentHighlightServiceTest < ActiveSupport::TestCase
 
   test "returns empty array when transcript_segments is blank" do
     analysis = FakeAnalysis.new(segments: [])
-    result   = SegmentHighlightService.new(analysis: analysis, client: fake_client([1, 2])).call
+    result   = SegmentHighlightService.new(analysis: analysis, client: fake_client([ 1, 2 ])).call
     assert_equal [], result
   end
 
   test "returns empty array when structured_feedback is blank" do
     analysis = FakeAnalysis.new(feedback: nil)
-    result   = SegmentHighlightService.new(analysis: analysis, client: fake_client([1, 2])).call
+    result   = SegmentHighlightService.new(analysis: analysis, client: fake_client([ 1, 2 ])).call
     assert_equal [], result
   end
 
   test "returns empty array when score is blank" do
     analysis = FakeAnalysis.new(score: nil)
-    result   = SegmentHighlightService.new(analysis: analysis, client: fake_client([1, 2])).call
+    result   = SegmentHighlightService.new(analysis: analysis, client: fake_client([ 1, 2 ])).call
     assert_equal [], result
   end
 
@@ -72,21 +72,21 @@ class SegmentHighlightServiceTest < ActiveSupport::TestCase
 
   test "returns highlight indices from Claude and stores them" do
     analysis = FakeAnalysis.new
-    result   = SegmentHighlightService.new(analysis: analysis, client: fake_client([1, 2, 4])).call
-    assert_equal [1, 2, 4], result
-    assert_equal [1, 2, 4], analysis.stored_indices
+    result   = SegmentHighlightService.new(analysis: analysis, client: fake_client([ 1, 2, 4 ])).call
+    assert_equal [ 1, 2, 4 ], result
+    assert_equal [ 1, 2, 4 ], analysis.stored_indices
   end
 
   test "clamps to maximum 4 returned indices" do
     analysis = FakeAnalysis.new
-    result   = SegmentHighlightService.new(analysis: analysis, client: fake_client([0, 1, 2, 3, 4])).call
+    result   = SegmentHighlightService.new(analysis: analysis, client: fake_client([ 0, 1, 2, 3, 4 ])).call
     assert result.size <= 4
   end
 
   test "maps returned values to integers" do
     analysis = FakeAnalysis.new
-    result   = SegmentHighlightService.new(analysis: analysis, client: fake_client(["1", "3"])).call
-    assert_equal [Integer, Integer], result.map(&:class)
+    result   = SegmentHighlightService.new(analysis: analysis, client: fake_client([ "1", "3" ])).call
+    assert_equal [ Integer, Integer ], result.map(&:class)
   end
 
   # ── Error isolation ────────────────────────────────────────────────────────

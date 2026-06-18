@@ -70,11 +70,11 @@ class MeetTranscriptServiceTest < ActiveSupport::TestCase
   DOCX_MIME = TranscriptParsers::Docx::MIME_TYPE
 
   def vtt_meta(folder_id: "folder1")
-    FakeMeta.new(name: "Interview Recording.vtt", mime_type: VTT_MIME, parents: [folder_id])
+    FakeMeta.new(name: "Interview Recording.vtt", mime_type: VTT_MIME, parents: [ folder_id ])
   end
 
   def recording_meta(folder_id: "folder1")
-    FakeMeta.new(name: "Interview Recording", mime_type: "video/mp4", parents: [folder_id])
+    FakeMeta.new(name: "Interview Recording", mime_type: "video/mp4", parents: [ folder_id ])
   end
 
   def vtt_file = FakeFile.new(id: "vtt1", name: "Interview Recording.vtt", mime_type: VTT_MIME)
@@ -113,7 +113,7 @@ class MeetTranscriptServiceTest < ActiveSupport::TestCase
     analysis = FakeAnalysis.new
     drive    = FakeDrive.new(
       meta:        recording_meta,
-      list_result: FakeList.new(files: [vtt_file]),
+      list_result: FakeList.new(files: [ vtt_file ]),
       raw_content: SAMPLE_VTT
     )
     build_service(analysis: analysis, drive: drive)
@@ -128,7 +128,7 @@ class MeetTranscriptServiceTest < ActiveSupport::TestCase
     analysis = FakeAnalysis.new
     drive    = FakeDrive.new(
       meta:        recording_meta,
-      list_result: FakeList.new(files: [vtt_file]),
+      list_result: FakeList.new(files: [ vtt_file ]),
       raw_content: SAMPLE_VTT
     )
     build_service(analysis: analysis, drive: drive)
@@ -147,7 +147,7 @@ class MeetTranscriptServiceTest < ActiveSupport::TestCase
     analysis = FakeAnalysis.new
     drive    = FakeDrive.new(
       meta:        recording_meta,
-      list_result: FakeList.new(files: [vtt_file]),
+      list_result: FakeList.new(files: [ vtt_file ]),
       raw_content: SAMPLE_VTT
     )
     build_service(analysis: analysis, drive: drive)
@@ -164,7 +164,7 @@ class MeetTranscriptServiceTest < ActiveSupport::TestCase
     analysis = FakeAnalysis.new
     drive    = FakeDrive.new(
       meta:        recording_meta,
-      list_result: FakeList.new(files: [docx_file]),
+      list_result: FakeList.new(files: [ docx_file ]),
       raw_content: "PK\x03\x04" # minimal non-empty DOCX stub
     )
     build_service(analysis: analysis, drive: drive)

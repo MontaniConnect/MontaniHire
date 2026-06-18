@@ -131,7 +131,7 @@ class Candidate < ApplicationRecord
     cv_line   = cv_analysis&.summary.to_s.split(/\.\s+/).first&.then { |s| s.end_with?(".") ? s : "#{s}." }
     va_line   = video_analysis&.summary.to_s.split(/\.\s+/).first&.then { |s| s.end_with?(".") ? s : "#{s}." }
     rationale = video_analysis&.structured_feedback&.dig("decision_rationale")
-    [cv_line, va_line, rationale].compact.select(&:present?)
+    [ cv_line, va_line, rationale ].compact.select(&:present?)
   end
 
   def first_name

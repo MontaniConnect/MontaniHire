@@ -53,7 +53,7 @@ module TranscriptParsers
 
     def parse(raw)
       require "docx"
-      tmp = Tempfile.new(["transcript", ".docx"], binmode: true)
+      tmp = Tempfile.new([ "transcript", ".docx" ], binmode: true)
       tmp.write(raw.force_encoding("UTF-8"))
       tmp.rewind
       doc = Docx::Document.open(tmp.path)

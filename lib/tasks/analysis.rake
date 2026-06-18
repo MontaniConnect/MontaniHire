@@ -46,8 +46,8 @@ namespace :analysis do
 
     # Cost estimate: first call of each type creates the cache, rest read it
     cv_cost = cv_scope.limit(limit).count * 0.054
-    va_first = [va_scope.limit(limit).count, 1].min * 0.053
-    va_rest  = ([va_scope.limit(limit).count - 1, 0].max) * 0.042
+    va_first = [ va_scope.limit(limit).count, 1 ].min * 0.053
+    va_rest  = ([ va_scope.limit(limit).count - 1, 0 ].max) * 0.042
     est_cost = (cv_cost + va_first + va_rest).round(3)
 
     puts ""

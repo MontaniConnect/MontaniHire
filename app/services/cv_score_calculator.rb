@@ -39,11 +39,11 @@ class CvScoreCalculator
       else 0.0
       end
     end
-    [raw, NH_CAP].min.round(2)
+    [ raw, NH_CAP ].min.round(2)
   end
 
   def total_score
     result = base_score + adjustments.values.sum + nice_to_have_bonus
-    [[result, SCORE_MAX].min, 0.0].max.round(1)
+    [ [ result, SCORE_MAX ].min, 0.0 ].max.round(1)
   end
 end

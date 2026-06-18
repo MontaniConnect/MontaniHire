@@ -126,8 +126,8 @@ class ClaudeAnalysisService
 
     result = @client.complete(
       model:      MODEL,
-      system:     [{ type: "text", text: SYSTEM_PROMPT, cache_control: { type: "ephemeral" } }],
-      messages:   [{ role: "user", content: build_user_message(transcript, job_context) }],
+      system:     [ { type: "text", text: SYSTEM_PROMPT, cache_control: { type: "ephemeral" } } ],
+      messages:   [ { role: "user", content: build_user_message(transcript, job_context) } ],
       max_tokens: 6000
     )
 
@@ -251,7 +251,7 @@ class ClaudeAnalysisService
     all_scores = pool.map { |va| va.score.to_f }
     all_jd     = pool.filter_map { |va| va.structured_feedback&.dig("jd_fit_score")&.to_f }
 
-    lines = ["Score range across all #{pool.count} completed interview#{"s" if pool.count != 1} for this role:"]
+    lines = [ "Score range across all #{pool.count} completed interview#{"s" if pool.count != 1} for this role:" ]
     lines << "  Score — min: #{all_scores.min}, max: #{all_scores.max}, avg: #{(all_scores.sum / all_scores.size).round(1)}"
     lines << "  JD fit — min: #{all_jd.min}, max: #{all_jd.max}, avg: #{(all_jd.sum / all_jd.size).round(1)}" if all_jd.any?
     lines << "Use these ranges to calibrate scores relative to the full candidate pool."

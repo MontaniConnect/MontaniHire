@@ -24,7 +24,7 @@ class GmailComposeUrlService
         share_url,
         ""
       ]
-      lines += [shortlist.message, ""] if shortlist.message.present?
+      lines += [ shortlist.message, "" ] if shortlist.message.present?
       lines += [
         "Kindly let us know your feedback on the current candidates, and please feel free to reach out if you have any questions.",
         "",

@@ -2,7 +2,7 @@ require "net/http"
 require "json"
 
 class Auth::GoogleController < ApplicationController
-  before_action :authenticate!, only: [:connect, :disconnect]
+  before_action :authenticate!, only: [ :connect, :disconnect ]
 
   SCOPE = [
     "openid",

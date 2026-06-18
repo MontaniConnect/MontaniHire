@@ -11,6 +11,6 @@ class AddAvailabilityFeature < ActiveRecord::Migration[8.1]
       t.timestamps
     end
 
-    add_index :slot_bookings, [:user_id, :starts_at], unique: true
+    add_index :slot_bookings, [ :user_id, :starts_at ], unique: true
   end
 end

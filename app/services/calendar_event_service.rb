@@ -13,11 +13,11 @@ class CalendarEventService
     candidate = @booking.candidate
     role      = candidate.job_role&.title || "Interview"
 
-    description_lines = ["Job Role: #{role}"]
+    description_lines = [ "Job Role: #{role}" ]
     description_lines << "Candidate Email: #{candidate.email}" if candidate.email.present?
     description_lines << "Asking Salary: #{candidate.asking_salary}" if candidate.asking_salary.present?
 
-    attendees = [{ email: @user.email }]
+    attendees = [ { email: @user.email } ]
     attendees << { email: candidate.email } if candidate.email.present?
 
     ph_tz = ActiveSupport::TimeZone["Asia/Manila"]

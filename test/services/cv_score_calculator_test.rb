@@ -43,19 +43,19 @@ class CvScoreCalculatorTest < ActiveSupport::TestCase
   test "base_score weights evidenced at 1.0 and partial at 0.5" do
     # 2 evidenced + 1 partial + 1 not evidenced = 4 total
     # (2*1.0 + 1*0.5) / 4 * 8.0 = 5.0
-    reqs = [req("evidenced"), req("evidenced"), req("partial"), req("not evidenced")]
+    reqs = [ req("evidenced"), req("evidenced"), req("partial"), req("not evidenced") ]
     assert_equal 5.0, calc("cv_requirements_coverage" => reqs).base_score
   end
 
   test "base_score rounds to 2 decimal places" do
     # 1 evidenced + 1 partial = 2 total
     # (1.0 + 0.5) / 2 * 8.0 = 6.0 (exact)
-    reqs = [req("evidenced"), req("partial")]
+    reqs = [ req("evidenced"), req("partial") ]
     assert_equal 6.0, calc("cv_requirements_coverage" => reqs).base_score
 
     # 1 evidenced + 2 not_evidenced = 3 total
     # (1.0) / 3 * 8.0 = 2.666... → 2.67
-    reqs2 = [req("evidenced"), req("not evidenced"), req("not evidenced")]
+    reqs2 = [ req("evidenced"), req("not evidenced"), req("not evidenced") ]
     assert_equal 2.67, calc("cv_requirements_coverage" => reqs2).base_score
   end
 
@@ -92,10 +92,10 @@ class CvScoreCalculatorTest < ActiveSupport::TestCase
   end
 
   test "nice_to_have_bonus counts evidenced as 0.5 and partial as 0.25" do
-    one_evidenced = calc("nice_to_have_requirements_coverage" => [req("evidenced")])
+    one_evidenced = calc("nice_to_have_requirements_coverage" => [ req("evidenced") ])
     assert_equal 0.5, one_evidenced.nice_to_have_bonus
 
-    one_partial = calc("nice_to_have_requirements_coverage" => [req("partial")])
+    one_partial = calc("nice_to_have_requirements_coverage" => [ req("partial") ])
     assert_equal 0.25, one_partial.nice_to_have_bonus
   end
 
@@ -105,7 +105,7 @@ class CvScoreCalculatorTest < ActiveSupport::TestCase
   end
 
   test "nice_to_have_bonus ignores not evidenced entries" do
-    reqs = [req("not evidenced"), req("not evidenced")]
+    reqs = [ req("not evidenced"), req("not evidenced") ]
     assert_equal 0.0, calc("nice_to_have_requirements_coverage" => reqs).nice_to_have_bonus
   end
 
@@ -134,8 +134,8 @@ class CvScoreCalculatorTest < ActiveSupport::TestCase
     # adjustments: solid(0.25) + moderate_ownership(0.25) + contributor(0.25) = 0.75
     # nice_to_have: 1 partial = 0.25
     # total: 5.0 + 0.75 + 0.25 = 6.0
-    reqs = [req("evidenced"), req("evidenced"), req("partial"), req("not evidenced")]
-    nh   = [req("partial")]
+    reqs = [ req("evidenced"), req("evidenced"), req("partial"), req("not evidenced") ]
+    nh   = [ req("partial") ]
     c = calc(
       "cv_requirements_coverage"           => reqs,
       "nice_to_have_requirements_coverage" => nh,

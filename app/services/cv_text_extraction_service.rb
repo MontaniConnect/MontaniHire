@@ -38,19 +38,19 @@ class CvTextExtractionService
     @analysis.update!(drive_file_name: filename) if @analysis.drive_file_name.blank?
 
     ext = File.extname(filename).downcase.presence || ".pdf"
-    tmp = Tempfile.new(["cv", ext], binmode: true)
+    tmp = Tempfile.new([ "cv", ext ], binmode: true)
     drive.get_file(@analysis.drive_file_id, download_dest: tmp)
     tmp.rewind
-    [tmp, filename]
+    [ tmp, filename ]
   end
 
   def download_from_storage
     filename = @analysis.cv.filename.to_s
     ext      = File.extname(filename)
-    tmp      = Tempfile.new(["cv", ext], binmode: true)
+    tmp      = Tempfile.new([ "cv", ext ], binmode: true)
     @analysis.cv.download { |chunk| tmp.write(chunk) }
     tmp.rewind
-    [tmp, filename]
+    [ tmp, filename ]
   end
 
   def extract_text(path, filename)

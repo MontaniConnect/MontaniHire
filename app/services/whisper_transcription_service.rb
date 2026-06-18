@@ -36,7 +36,7 @@ class WhisperTranscriptionService
   private
 
   def download_video
-    tmp = Tempfile.new(["video", File.extname(@analysis.video.filename.to_s)], binmode: true)
+    tmp = Tempfile.new([ "video", File.extname(@analysis.video.filename.to_s) ], binmode: true)
     @analysis.video.download { |chunk| tmp.write(chunk) }
     tmp.rewind
     tmp

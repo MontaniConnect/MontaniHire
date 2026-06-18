@@ -31,8 +31,8 @@ class SegmentHighlightService
   def select_indices(segments, fb)
     result = @client.complete(
       model:      MODEL,
-      system:     [{ type: "text", text: SYSTEM_PROMPT }],
-      messages:   [{ role: "user", content: build_prompt(segments, fb) }],
+      system:     [ { type: "text", text: SYSTEM_PROMPT } ],
+      messages:   [ { role: "user", content: build_prompt(segments, fb) } ],
       max_tokens: 64
     )
     Array(result["highlight_indices"]).first(4).map(&:to_i)

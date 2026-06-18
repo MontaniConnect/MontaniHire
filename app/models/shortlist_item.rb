@@ -65,7 +65,7 @@ class ShortlistItem < ApplicationRecord
     q = joins(:candidate)
           .where(client_status: %w[approved rejected])
           .where(candidates: { job_role_id: role.id })
-          .includes(candidate: [:cv_analysis, :video_analysis])
+          .includes(candidate: [ :cv_analysis, :video_analysis ])
           .order(updated_at: :desc)
     q = q.where.not(candidates: { id: exclude.id }) if exclude
     q.limit(12).to_a.uniq { |i| i.candidate_id }.first(6)
