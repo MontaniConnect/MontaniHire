@@ -51,6 +51,10 @@ COPY . .
 # -j 1 disable parallel compilation to avoid a QEMU bug: https://github.com/rails/bootsnap/issues/495
 RUN bundle exec bootsnap precompile -j 1 app/ lib/
 
+# Precompile assets into public/assets so Propshaft can serve digested filenames in production.
+# SECRET_KEY_BASE is not needed at build time — Propshaft asset compilation does not touch the DB or credentials.
+RUN SECRET_KEY_BASE=dummy bundle exec rails assets:precompile
+
 
 
 
