@@ -15,7 +15,7 @@ class SettingsController < AuthenticatedController
     end
   end
 
-  before_action :require_write_access!, only: [:update_availability]
+  before_action :require_write_access!, only: [:update_availability, :update_calendar]
   before_action :require_owner!, only: [:update_organization]
 
   def update_organization
@@ -43,6 +43,12 @@ class SettingsController < AuthenticatedController
     })
 
     redirect_to settings_path, notice: "Availability saved."
+  end
+
+  def update_calendar
+    cal_id = params[:interview_calendar_id].to_s.strip.presence
+    current_user.update!(interview_calendar_id: cal_id)
+    redirect_to settings_path, notice: "Interview calendar saved."
   end
 
   private

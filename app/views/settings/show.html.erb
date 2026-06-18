@@ -216,6 +216,27 @@
 <% end %>
 
 <div class="card">
+  <h2>Interview Calendar</h2>
+  <p style="font-size: 0.85rem; color: #666; margin-bottom: 1.25rem;">
+    Choose which Google Calendar receives interview bookings. Paste the <strong>Calendar ID</strong> from
+    Google Calendar → Settings → [calendar name] → Calendar ID. Leave blank to use your primary calendar.
+  </p>
+  <%= form_with url: update_calendar_settings_path, method: :patch do |f| %>
+    <div class="form-group" style="display: flex; gap: 0.75rem; align-items: flex-end; flex-wrap: wrap;">
+      <div style="flex: 1; min-width: 260px;">
+        <label style="font-size: 0.82rem; font-weight: 600; color: #555; display: block; margin-bottom: 0.35rem;">Calendar ID</label>
+        <input type="text"
+               name="interview_calendar_id"
+               value="<%= current_user.interview_calendar_id.to_s %>"
+               placeholder="e.g. abc123@group.calendar.google.com  (blank = primary)"
+               style="width: 100%; padding: 0.45rem 0.6rem; border: 1px solid #ddd; border-radius: 6px; font-size: 0.85rem; box-sizing: border-box;">
+      </div>
+      <button type="submit" class="btn" style="padding: 0.45rem 1rem; white-space: nowrap;">Save</button>
+    </div>
+  <% end %>
+</div>
+
+<div class="card">
   <h2>Interview Availability</h2>
   <p style="font-size: 0.85rem; color: #666; margin-bottom: 1.5rem;">
     Set the days and hours candidates can book interview slots. All times are in the selected timezone.

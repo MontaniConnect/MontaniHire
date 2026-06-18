@@ -25,6 +25,7 @@ Rails.application.routes.draw do
   get   "settings",                    to: "settings#show",                  as: :settings
   patch "settings/availability",       to: "settings#update_availability",   as: :update_availability_settings
   patch "settings/organization",       to: "settings#update_organization",   as: :update_organization_settings
+  patch "settings/calendar",           to: "settings#update_calendar",       as: :update_calendar_settings
 
   root "video_analyses#index"
   get "dashboard", to: "dashboard#index", as: :dashboard

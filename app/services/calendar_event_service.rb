@@ -29,7 +29,8 @@ class CalendarEventService
       attendees:   attendees
     }
 
-    uri = URI("https://www.googleapis.com/calendar/v3/calendars/primary/events?sendUpdates=all")
+    calendar_id = @user.interview_calendar_id.presence || "primary"
+    uri = URI("https://www.googleapis.com/calendar/v3/calendars/#{ERB::Util.url_encode(calendar_id)}/events?sendUpdates=all")
     req = Net::HTTP::Post.new(uri)
     req["Authorization"] = "Bearer #{@user.fresh_google_access_token}"
     req["Content-Type"]  = "application/json"
