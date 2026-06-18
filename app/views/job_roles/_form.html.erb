@@ -1,4 +1,15 @@
 <%= form_with model: job_role do |f| %>
+  <% if job_role.errors.any? %>
+    <div style="background: #fef2f2; border: 1px solid #fca5a5; border-radius: 8px; padding: 0.75rem 1rem; margin-bottom: 1.25rem; color: #991b1b; font-size: 0.88rem;">
+      <strong><%= job_role.errors.count %> error<%= job_role.errors.count == 1 ? "" : "s" %> prevented this role from being saved:</strong>
+      <ul style="margin: 0.4rem 0 0 1.2rem; padding: 0;">
+        <% job_role.errors.full_messages.each do |msg| %>
+          <li><%= msg %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
   <div class="form-group">
     <%= f.label :title, "Job Title" %>
     <%= f.text_field :title, placeholder: "e.g. Senior Software Engineer" %>
