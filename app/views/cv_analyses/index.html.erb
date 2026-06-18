@@ -1,6 +1,6 @@
 <h1>CV Analysis</h1>
 
-<% if current_user.job_roles.none? %>
+<% if current_organization.job_roles.none? %>
   <div class="card">
     <div class="error-box">
       No job roles yet. <%= link_to "Create a role first →", new_job_role_path, style: "color: #dc2626; font-weight: 600;" %>
@@ -56,7 +56,7 @@
         <div class="form-group">
           <label>Job Role</label>
           <%= select_tag "cv_analysis[job_role_id]",
-                options_from_collection_for_select(current_user.job_roles.order(:title), :id, :title),
+                options_from_collection_for_select(current_organization.job_roles.order(:title), :id, :title),
                 prompt: "Select a role…",
                 required: true %>
         </div>
@@ -98,7 +98,7 @@
         <div class="form-group">
           <label>Job Role</label>
           <%= select_tag "job_role_id",
-                options_from_collection_for_select(current_user.job_roles.order(:title), :id, :title),
+                options_from_collection_for_select(current_organization.job_roles.order(:title), :id, :title),
                 prompt: "Select a role…",
                 required: true %>
         </div>
@@ -137,7 +137,7 @@
         <div class="form-group">
           <label>Job Role</label>
           <%= select_tag "cv_analysis[job_role_id]",
-                options_from_collection_for_select(current_user.job_roles.order(:title), :id, :title),
+                options_from_collection_for_select(current_organization.job_roles.order(:title), :id, :title),
                 prompt: "Select a role…",
                 required: true %>
         </div>
