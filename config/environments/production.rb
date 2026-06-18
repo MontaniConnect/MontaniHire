@@ -74,5 +74,9 @@ Rails.application.configure do
   # Allow requests from the Railway-assigned domain (and any custom domain you add).
   config.hosts << ENV["RAILWAY_PUBLIC_DOMAIN"] if ENV["RAILWAY_PUBLIC_DOMAIN"].present?
 
+  # Exclude the healthcheck path from host authorization — Railway's internal
+  # healthcheck system sends requests from a different host than the public domain.
+  config.host_authorization = { exclude: ->(request) { request.path == "/up" } }
+
   config.x.invites_enabled = true
 end
