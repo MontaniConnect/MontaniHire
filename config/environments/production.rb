@@ -46,8 +46,12 @@ Rails.application.configure do
   # config.active_job.queue_adapter = :solid_queue
   # # config.solid_queue.connects_to = { database: { writing: :queue } }
 
-  # Set host to be used by links generated in mailer templates and background jobs.
+  # Set host for mailer templates and for _url helpers called outside request context (e.g. Shortlist#share_url).
   config.action_mailer.default_url_options = {
+    host:     ENV.fetch("RAILWAY_PUBLIC_DOMAIN", "localhost"),
+    protocol: "https"
+  }
+  Rails.application.routes.default_url_options = {
     host:     ENV.fetch("RAILWAY_PUBLIC_DOMAIN", "localhost"),
     protocol: "https"
   }
