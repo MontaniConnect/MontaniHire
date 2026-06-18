@@ -48,8 +48,16 @@ class InvitesController < AuthenticatedController
     end
 
     if current_user.organization.present? && current_user.organization != @invite.organization
-      redirect_to join_path(@invite.token),
-                  alert: "You already belong to another organisation. Please contact your admin."
+      if current_user.organization.users.count == 1
+        # Auto-created placeholder org from first-time Google login — safe to replace.
+        old_org = current_user.organization
+        @invite.accept!(current_user)
+        old_org.reload.destroy
+        redirect_to root_path, notice: "Welcome to #{@invite.organization.name}!"
+      else
+        redirect_to join_path(@invite.token),
+                    alert: "You already belong to another organisation. Please contact your admin."
+      end
       return
     end
 
