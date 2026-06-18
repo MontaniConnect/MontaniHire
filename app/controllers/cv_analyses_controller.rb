@@ -73,6 +73,14 @@ class CvAnalysesController < AuthenticatedController
   end
 
   def destroy
+    candidate = @cv_analysis.candidate
+
+    if candidate&.video_analysis.present?
+      return redirect_to cv_analyses_path,
+        alert: "#{candidate.name} has a video interview. Remove the video interview first before deleting this CV."
+    end
+
+    candidate.destroy if candidate
     @cv_analysis.destroy
     redirect_to cv_analyses_path, notice: "\"#{@cv_analysis.display_name}\" removed."
   end
