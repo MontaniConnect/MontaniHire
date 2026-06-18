@@ -24,7 +24,7 @@ class InvitesController < AuthenticatedController
   def show
     @invite = Invite.find_by(token: params[:token])
     if @invite.nil? || @invite.accepted? || @invite.expired?
-      redirect_to login_path, alert: "This invite link is invalid or has expired."
+      redirect_to login_path, alert: "This invite link is invalid or has expired." and return
     end
   end
 
