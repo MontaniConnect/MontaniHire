@@ -13,12 +13,20 @@ class CalendarEventService
     candidate = @booking.candidate
     role      = candidate.job_role&.title || "Interview"
 
+    description_lines = ["Job Role: #{role}"]
+    description_lines << "Candidate Email: #{candidate.email}" if candidate.email.present?
+    description_lines << "Asking Salary: #{candidate.asking_salary}" if candidate.asking_salary.present?
+
+    attendees = [{ email: @user.email }]
+    attendees << { email: candidate.email } if candidate.email.present?
+
     ph_tz = ActiveSupport::TimeZone["Asia/Manila"]
     body = {
-      summary:   "Preliminary Interview — #{candidate.name} (#{role})",
-      start:     { dateTime: @booking.starts_at.in_time_zone(ph_tz).iso8601, timeZone: "Asia/Manila" },
-      end:       { dateTime: @booking.ends_at.in_time_zone(ph_tz).iso8601,   timeZone: "Asia/Manila" },
-      attendees: candidate.email.present? ? [{ email: candidate.email }] : []
+      summary:     "Preliminary Interview — #{candidate.name} (#{role})",
+      description: description_lines.join("\n"),
+      start:       { dateTime: @booking.starts_at.in_time_zone(ph_tz).iso8601, timeZone: "Asia/Manila" },
+      end:         { dateTime: @booking.ends_at.in_time_zone(ph_tz).iso8601,   timeZone: "Asia/Manila" },
+      attendees:   attendees
     }
 
     uri = URI("https://www.googleapis.com/calendar/v3/calendars/primary/events?sendUpdates=all")
