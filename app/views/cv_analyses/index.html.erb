@@ -237,6 +237,7 @@
               <th>CV Fit Score</th>
               <th>Status</th>
               <th>Uploaded</th>
+              <th></th>
             </tr>
           </thead>
           <tbody>
@@ -260,6 +261,14 @@
                 </td>
                 <td><span class="badge badge-<%= ca.status %>"><%= ca.status %></span></td>
                 <td style="color: #999; font-size: 0.85rem;"><%= time_ago_in_words(ca.created_at) %> ago</td>
+                <td onclick="event.stopPropagation();" style="text-align: right;">
+                  <%= button_to cv_analysis_path(ca), method: :delete,
+                        form: { data: { turbo_confirm: "Remove #{ca.display_name.titleize}? This cannot be undone." } },
+                        style: "background: none; border: none; cursor: pointer; color: #ccc; font-size: 1rem; padding: 0.25rem 0.5rem; line-height: 1;",
+                        title: "Remove" do %>
+                    ✕
+                  <% end %>
+                </td>
               </tr>
             <% end %>
           </tbody>
