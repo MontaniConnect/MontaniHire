@@ -122,3 +122,10 @@ This app uses **Propshaft** (`Gemfile:36: gem "propshaft"`, not Sprockets). Key 
 - The Dockerfile does `COPY vendor/* ./vendor/` so vendored JS is included in the built image
 - `assets:precompile` must run during the **Docker image build** (Dockerfile build stage), NOT in Railway's `preDeployCommands`. preDeployCommands run in a temporary container that exits before the service container starts — any files written there (like `public/assets/`) are discarded. The Dockerfile build stage runs `SECRET_KEY_BASE=dummy bundle exec rails assets:precompile` to bake digested assets into the image
 - Propshaft in production generates digested URLs (e.g. `/assets/actiontext-3720ab2a.css`). If those files aren't in `public/assets/` (because precompile didn't run at build time), every asset request returns 404 and Trix/ActionText will not load
+
+## 8. Testing Expectations
+
+- Every new service, job, or significant model change ships with tests covering its public interface — not just the happy path, but error/failure isolation. Reference pattern: `SegmentHighlightService` rescues its own errors and logs a warning rather than crashing `VideoProcessingJob`. Tests should verify this boundary holds.
+- Run the full suite (`bin/rails test`) before considering any change complete. "Tests pass locally" is part of the definition of done, not a separate optional step.
+- For destructive or risky changes (migrations, prompt versioning, scoring logic changes), write characterization tests capturing current behavior before refactoring. The diff between old and new test output should be explainable as either behavior-preserving or intentionally changed — not a surprise.
+- **Current suite size as of 2026-06-18: 291 runs, 627 assertions.** If a future session shows materially fewer runs (e.g. 250), investigate before assuming tests pass — files may have been moved, renamed, or silently excluded from discovery.
