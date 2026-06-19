@@ -108,6 +108,7 @@ class Candidate < ApplicationRecord
 
   def episode_score = video_analysis&.episode_score
   def episode_tier  = video_analysis&.episode_tier
+  def cv_fit_score  = cv_analysis&.cv_fit_score
   def cv_ready?     = cv_analysis&.completed?
 
   def jd_fit_tier

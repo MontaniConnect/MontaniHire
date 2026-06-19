@@ -97,7 +97,7 @@
 
             <%# Scores %>
             <div style="display: flex; gap: 0.6rem; flex-wrap: wrap; margin-bottom: 0.75rem;">
-              <% cv_fit = c.cv_analysis&.cv_fit_score %>
+              <% cv_fit = c.cv_fit_score %>
               <% if cv_fit.present? %>
                 <% cv_tc, cv_bg = cv_fit >= 7.5 ? ["#166534", "#dcfce7"] : cv_fit >= 5.0 ? ["#854d0e", "#fef9c3"] : ["#991b1b", "#fee2e2"] %>
                 <%= link_to cv_analysis_path(c.cv_analysis),
@@ -171,7 +171,7 @@
           <% end %>
           <div style="display: flex; gap: 0.4rem; align-items: center; flex-wrap: wrap;">
             <span style="font-size: 0.72rem; color: <%= color %>; font-weight: 600;"><%= label %></span>
-            <% t_cv_fit = c.cv_analysis&.cv_fit_score %>
+            <% t_cv_fit = c.cv_fit_score %>
             <% if t_cv_fit.present? %>
               <% t_cv_tc, t_cv_bg = t_cv_fit >= 7.5 ? ["#166534", "#dcfce7"] : t_cv_fit >= 5.0 ? ["#854d0e", "#fef9c3"] : ["#991b1b", "#fee2e2"] %>
               <%= link_to cv_analysis_path(c.cv_analysis),
