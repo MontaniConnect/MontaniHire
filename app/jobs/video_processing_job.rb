@@ -33,6 +33,7 @@ class VideoProcessingJob < ApplicationJob
     end
 
     analysis_service.new(analysis: analysis).call
+    candidate.advance_to_interview! if candidate&.pipeline_stage == "cv_review"
     begin
       highlight_service.new(analysis: analysis).call
     rescue => e
