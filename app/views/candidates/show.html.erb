@@ -230,7 +230,7 @@
   </div>
 <% end %>
 
-<% _ep_badge = ->(score) {
+<% _score_badge = ->(score) {
      s = score&.to_f
      if s.nil?       then [nil, nil]
      elsif s >= 7.5  then ["Comprehensive", "color:#166534;background:#dcfce7"]
@@ -238,8 +238,6 @@
      else                 ["Superficial",   "color:#991b1b;background:#fee2e2"]
      end
 } %>
-<% _cv_rec_map   = { "high_match" => "High Match", "moderate_match" => "Moderate Match", "low_match" => "Low Match" } %>
-<% _cv_rec_style = { "high_match" => "color:#166534;background:#dcfce7", "moderate_match" => "color:#854d0e;background:#fef9c3", "low_match" => "color:#991b1b;background:#fee2e2" } %>
 
 <% if %w[client_interview final_interview].include?(@candidate.pipeline_stage) %>
   <%# ══════════════════════════════════════════════
@@ -264,9 +262,9 @@
             <% end %>
             <div>
               <h2 style="margin: 0;">CV Analysis</h2>
-              <% _cv_rec_key = cv.structured_feedback&.dig("recommendation"); _cv_rec_label = _cv_rec_map[_cv_rec_key] %>
+              <% _cv_rec_label, _cv_rec_st = _score_badge.call(cv.cv_fit_score) %>
               <% if _cv_rec_label %>
-                <span style="font-size: 0.7rem; font-weight: 700; border-radius: 99px; padding: 0.1rem 0.45rem; margin-top: 0.2rem; display: inline-block; <%= _cv_rec_style[_cv_rec_key] %>"><%= _cv_rec_label %></span>
+                <span style="font-size: 0.7rem; font-weight: 700; border-radius: 99px; padding: 0.1rem 0.45rem; margin-top: 0.2rem; display: inline-block; <%= _cv_rec_st %>"><%= _cv_rec_label %></span>
               <% end %>
             </div>
           </div>
@@ -295,7 +293,7 @@
             <% end %>
             <div>
               <h2 style="margin: 0;">Preliminary Interview</h2>
-              <% _ep_rec_label, _ep_rec_st = _ep_badge.call(va.score) %>
+              <% _ep_rec_label, _ep_rec_st = _score_badge.call(va.episode_score) %>
               <% if _ep_rec_label %>
                 <span style="font-size: 0.7rem; font-weight: 700; border-radius: 99px; padding: 0.1rem 0.45rem; margin-top: 0.2rem; display: inline-block; <%= _ep_rec_st %>"><%= _ep_rec_label %></span>
               <% end %>
@@ -446,9 +444,9 @@
             <% end %>
             <div>
               <h2 style="margin: 0;">CV Analysis</h2>
-              <% _cv_rec_key = cv.structured_feedback&.dig("recommendation"); _cv_rec_label = _cv_rec_map[_cv_rec_key] %>
+              <% _cv_rec_label, _cv_rec_st = _score_badge.call(cv.cv_fit_score) %>
               <% if _cv_rec_label %>
-                <span style="font-size: 0.7rem; font-weight: 700; border-radius: 99px; padding: 0.1rem 0.45rem; margin-top: 0.2rem; display: inline-block; <%= _cv_rec_style[_cv_rec_key] %>"><%= _cv_rec_label %></span>
+                <span style="font-size: 0.7rem; font-weight: 700; border-radius: 99px; padding: 0.1rem 0.45rem; margin-top: 0.2rem; display: inline-block; <%= _cv_rec_st %>"><%= _cv_rec_label %></span>
               <% end %>
             </div>
           </div>
@@ -478,7 +476,7 @@
             <% end %>
             <div>
               <h2 style="margin: 0;">Preliminary Interview</h2>
-              <% _ep_rec_label, _ep_rec_st = _ep_badge.call(va.score) %>
+              <% _ep_rec_label, _ep_rec_st = _score_badge.call(va.episode_score) %>
               <% if _ep_rec_label %>
                 <span style="font-size: 0.7rem; font-weight: 700; border-radius: 99px; padding: 0.1rem 0.45rem; margin-top: 0.2rem; display: inline-block; <%= _ep_rec_st %>"><%= _ep_rec_label %></span>
               <% end %>

@@ -80,7 +80,7 @@
                 <td>
                   <% ep = va.episode_score %>
                   <% if ep.present? %>
-                    <% _s = va.score&.to_f
+                    <% _s = va.episode_score
                        ep_rec_label, ep_rec_tc, ep_rec_bg =
                          if _s.nil?           then [nil, nil, nil]
                          elsif _s >= 7.5      then ["Comprehensive", "#166534", "#dcfce7"]
