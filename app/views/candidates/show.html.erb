@@ -238,6 +238,14 @@
      else                 ["Superficial",   "color:#991b1b;background:#fee2e2"]
      end
 } %>
+<% _cv_badge = ->(score) {
+     s = score&.to_f
+     if s.nil?       then [nil, nil]
+     elsif s >= 7.5  then ["High Match",     "color:#166534;background:#dcfce7"]
+     elsif s >= 5.0  then ["Moderate Match", "color:#854d0e;background:#fef9c3"]
+     else                 ["Low Match",      "color:#991b1b;background:#fee2e2"]
+     end
+} %>
 
 <% if %w[client_interview final_interview].include?(@candidate.pipeline_stage) %>
   <%# ══════════════════════════════════════════════
@@ -262,7 +270,7 @@
             <% end %>
             <div>
               <h2 style="margin: 0;">CV Analysis</h2>
-              <% _cv_rec_label, _cv_rec_st = _score_badge.call(cv.cv_fit_score) %>
+              <% _cv_rec_label, _cv_rec_st = _cv_badge.call(cv.cv_fit_score) %>
               <% if _cv_rec_label %>
                 <span style="font-size: 0.7rem; font-weight: 700; border-radius: 99px; padding: 0.1rem 0.45rem; margin-top: 0.2rem; display: inline-block; <%= _cv_rec_st %>"><%= _cv_rec_label %></span>
               <% end %>
@@ -444,7 +452,7 @@
             <% end %>
             <div>
               <h2 style="margin: 0;">CV Analysis</h2>
-              <% _cv_rec_label, _cv_rec_st = _score_badge.call(cv.cv_fit_score) %>
+              <% _cv_rec_label, _cv_rec_st = _cv_badge.call(cv.cv_fit_score) %>
               <% if _cv_rec_label %>
                 <span style="font-size: 0.7rem; font-weight: 700; border-radius: 99px; padding: 0.1rem 0.45rem; margin-top: 0.2rem; display: inline-block; <%= _cv_rec_st %>"><%= _cv_rec_label %></span>
               <% end %>

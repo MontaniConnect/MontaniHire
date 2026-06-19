@@ -99,9 +99,7 @@
             <div style="display: flex; gap: 0.6rem; flex-wrap: wrap; margin-bottom: 0.75rem;">
               <% cv_fit = c.cv_analysis&.cv_fit_score %>
               <% if cv_fit.present? %>
-                <% cv_rec = c.cv_analysis.structured_feedback&.dig("recommendation") %>
-                <% cv_tc  = _rec_tc[cv_rec] || "#555" %>
-                <% cv_bg  = _rec_bg[cv_rec] || "#f5f5f5" %>
+                <% cv_tc, cv_bg = cv_fit >= 7.5 ? ["#166534", "#dcfce7"] : cv_fit >= 5.0 ? ["#854d0e", "#fef9c3"] : ["#991b1b", "#fee2e2"] %>
                 <%= link_to cv_analysis_path(c.cv_analysis),
                       style: "font-size: 0.78rem; background: #{cv_bg}; border-radius: 4px;
                              padding: 0.2rem 0.5rem; color: #{cv_tc}; text-decoration: none; font-weight: 600;" do %>
@@ -109,9 +107,7 @@
                 <% end %>
               <% end %>
               <% if c.episode_score %>
-                <% ep_rec = c.video_analysis&.structured_feedback&.dig("recommendation") %>
-                <% ep_tc  = _rec_tc[ep_rec] || "#555" %>
-                <% ep_bg  = _rec_bg[ep_rec] || "#f5f5f5" %>
+                <% ep_tc, ep_bg = c.episode_score >= 7.5 ? ["#166534", "#dcfce7"] : c.episode_score >= 5.0 ? ["#854d0e", "#fef9c3"] : ["#991b1b", "#fee2e2"] %>
                 <%= link_to video_analysis_path(c.video_analysis),
                       style: "font-size: 0.78rem; background: #{ep_bg}; border-radius: 4px;
                              padding: 0.2rem 0.5rem; color: #{ep_tc}; text-decoration: none; font-weight: 600;" do %>
@@ -177,9 +173,7 @@
             <span style="font-size: 0.72rem; color: <%= color %>; font-weight: 600;"><%= label %></span>
             <% t_cv_fit = c.cv_analysis&.cv_fit_score %>
             <% if t_cv_fit.present? %>
-              <% t_cv_rec = c.cv_analysis.structured_feedback&.dig("recommendation") %>
-              <% t_cv_tc  = _rec_tc[t_cv_rec] || "#555" %>
-              <% t_cv_bg  = _rec_bg[t_cv_rec] || "#f5f5f5" %>
+              <% t_cv_tc, t_cv_bg = t_cv_fit >= 7.5 ? ["#166534", "#dcfce7"] : t_cv_fit >= 5.0 ? ["#854d0e", "#fef9c3"] : ["#991b1b", "#fee2e2"] %>
               <%= link_to cv_analysis_path(c.cv_analysis),
                     style: "font-size: 0.72rem; background: #{t_cv_bg}; border-radius: 4px;
                            padding: 0.15rem 0.45rem; color: #{t_cv_tc}; text-decoration: none; font-weight: 600;" do %>
@@ -187,9 +181,7 @@
               <% end %>
             <% end %>
             <% if c.episode_score %>
-              <% t_ep_rec = c.video_analysis&.structured_feedback&.dig("recommendation") %>
-              <% t_ep_tc  = _rec_tc[t_ep_rec] || "#555" %>
-              <% t_ep_bg  = _rec_bg[t_ep_rec] || "#f5f5f5" %>
+              <% t_ep_tc, t_ep_bg = c.episode_score >= 7.5 ? ["#166534", "#dcfce7"] : c.episode_score >= 5.0 ? ["#854d0e", "#fef9c3"] : ["#991b1b", "#fee2e2"] %>
               <%= link_to video_analysis_path(c.video_analysis),
                     style: "font-size: 0.72rem; background: #{t_ep_bg}; border-radius: 4px;
                            padding: 0.15rem 0.45rem; color: #{t_ep_tc}; text-decoration: none; font-weight: 600;" do %>
