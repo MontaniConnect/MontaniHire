@@ -184,9 +184,11 @@
           <div class="score-ring" style="--pct: <%= ep_pct %>%; --ring-color: <%= _ep_ring_color %>;">
             <span class="score-value"><%= ep_score %></span>
           </div>
-          <% ep_rec = fb["recommendation"] %>
-          <% ep_rec_label = { "comprehensive" => "Comprehensive", "substantive" => "Substantive", "superficial" => "Superficial" }[ep_rec] %>
-          <% ep_rec_style = { "comprehensive" => "color:#166534;background:#dcfce7", "substantive" => "color:#854d0e;background:#fef9c3", "superficial" => "color:#991b1b;background:#fee2e2" }[ep_rec] %>
+          <% ep_rec_label, ep_rec_style =
+               if ep_score >= 7.5 then ["Comprehensive", "color:#166534;background:#dcfce7"]
+               elsif ep_score >= 5.0 then ["Substantive",   "color:#854d0e;background:#fef9c3"]
+               else                       ["Superficial",   "color:#991b1b;background:#fee2e2"]
+               end %>
           <% if ep_rec_label %>
             <span style="font-size: 0.7rem; font-weight: 700; border-radius: 99px; padding: 0.15rem 0.55rem; <%= ep_rec_style %>"><%= ep_rec_label %></span>
           <% end %>

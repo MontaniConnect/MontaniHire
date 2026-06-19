@@ -80,10 +80,13 @@
                 <td>
                   <% ep = va.episode_score %>
                   <% if ep.present? %>
-                    <% ep_rec = va.structured_feedback&.dig("recommendation") %>
-                    <% ep_rec_label = { "comprehensive" => "Comprehensive", "substantive" => "Substantive", "superficial" => "Superficial" }[ep_rec] %>
-                    <% ep_rec_tc = { "comprehensive" => "#166534", "substantive" => "#854d0e", "superficial" => "#991b1b" }[ep_rec] %>
-                    <% ep_rec_bg = { "comprehensive" => "#dcfce7", "substantive" => "#fef9c3", "superficial" => "#fee2e2" }[ep_rec] %>
+                    <% _s = va.score&.to_f
+                       ep_rec_label, ep_rec_tc, ep_rec_bg =
+                         if _s.nil?           then [nil, nil, nil]
+                         elsif _s >= 7.5      then ["Comprehensive", "#166534", "#dcfce7"]
+                         elsif _s >= 5.0      then ["Substantive",   "#854d0e", "#fef9c3"]
+                         else                      ["Superficial",   "#991b1b", "#fee2e2"]
+                         end %>
                     <span style="font-weight: 700;"><%= ep %>/10</span>
                     <% if ep_rec_label %>
                       <span style="font-size: 0.72rem; font-weight: 600; color: <%= ep_rec_tc %>; background: <%= ep_rec_bg %>; border-radius: 4px; padding: 0.1rem 0.4rem; margin-left: 0.35rem;"><%= ep_rec_label %></span>
