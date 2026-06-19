@@ -19,7 +19,7 @@
             <th>Client</th>
             <th>Candidates</th>
             <th>Created</th>
-            <th></th>
+            <th style="min-width: 140px;"></th>
           </tr>
         </thead>
         <tbody>
@@ -48,6 +48,7 @@
                 <%= button_to "Delete", shortlist_path(shortlist),
                       method: :delete,
                       data: { turbo_confirm: "Delete \"#{shortlist.title}\"? This cannot be undone." },
+                      form: { style: "display: inline;" },
                       style: "background: none; border: none; padding: 0; cursor: pointer; font-size: 0.85rem; color: #dc2626;" %>
               </td>
             </tr>
