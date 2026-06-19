@@ -123,7 +123,11 @@ This app uses **Propshaft** (`Gemfile:36: gem "propshaft"`, not Sprockets). Key 
 - `assets:precompile` must run during the **Docker image build** (Dockerfile build stage), NOT in Railway's `preDeployCommands`. preDeployCommands run in a temporary container that exits before the service container starts — any files written there (like `public/assets/`) are discarded. The Dockerfile build stage runs `SECRET_KEY_BASE=dummy bundle exec rails assets:precompile` to bake digested assets into the image
 - Propshaft in production generates digested URLs (e.g. `/assets/actiontext-3720ab2a.css`). If those files aren't in `public/assets/` (because precompile didn't run at build time), every asset request returns 404 and Trix/ActionText will not load
 
-## 8. Testing Expectations
+## 8. Score Badge Threshold Rule
+
+Score badge threshold (7.5/5.0) and colors (green/amber/red) are duplicated across 6 view files: `candidates/show`, `candidates/index`, `cv_analyses/show`, `cv_analyses/index`, `video_analyses/show`, `video_analyses/index`. If either ever needs changing, extract to `ScoreBadgeHelper` first, then make the change once. Don't refactor preemptively — do it when the threshold or colors actually need to change.
+
+## 9. Testing Expectations
 
 - Every new service, job, or significant model change ships with tests covering its public interface — not just the happy path, but error/failure isolation. Reference pattern: `SegmentHighlightService` rescues its own errors and logs a warning rather than crashing `VideoProcessingJob`. Tests should verify this boundary holds.
 - Run the full suite (`bin/rails test`) before considering any change complete. "Tests pass locally" is part of the definition of done, not a separate optional step.
