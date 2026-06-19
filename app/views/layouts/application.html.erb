@@ -92,7 +92,7 @@
 
       .score-ring {
         width: 72px; height: 72px; border-radius: 50%;
-        background: conic-gradient(#1a1a1a var(--pct), #e5e5e5 0);
+        background: conic-gradient(var(--ring-color, #1a1a1a) var(--pct), #e5e5e5 0);
         display: flex; align-items: center; justify-content: center;
         position: relative;
       }
@@ -195,7 +195,7 @@
   </head>
   <body>
     <nav class="nav">
-      <%= link_to "HireAI", root_path, class: "brand" %>
+      <%= link_to "MontaniHire", root_path, class: "brand" %>
       <%= link_to "Dashboard", dashboard_path %>
       <% _unread = current_user.candidates.where.not(intake_submitted_at: nil).where(intake_viewed_at: nil).count %>
       <%= link_to candidates_path do %>

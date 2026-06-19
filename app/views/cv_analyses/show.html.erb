@@ -1,6 +1,6 @@
 <%# Print-only report header %>
 <div class="print-only" style="margin-bottom: 1.25rem; padding-bottom: 0.75rem; border-bottom: 2px solid #1a1a1a;">
-  <div style="font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: #888; margin-bottom: 0.3rem;">HireAI — CV Screening Report</div>
+  <div style="font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: #888; margin-bottom: 0.3rem;">MontaniHire — CV Screening Report</div>
   <div style="font-size: 1.3rem; font-weight: 700; margin-bottom: 0.2rem;"><%= @cv_analysis.display_name %></div>
   <div style="font-size: 0.85rem; color: #555;">
     <% if @cv_analysis.job_role %><%= @cv_analysis.job_role.title %> · <% end %>
@@ -131,7 +131,8 @@
       <div style="flex: 0 0 auto; width: 160px; padding: 1.25rem 1.2rem; background: #fafafa; border-right: 1px solid #f0f0f0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;">
         <div style="font-size: 0.63rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #bbb; margin-bottom: 0.2rem; width: 100%;">CV Fit Score</div>
         <div style="font-size: 0.7rem; color: #bbb; margin-bottom: 0.85rem; line-height: 1.3;">Formula-derived fit against must-have requirements</div>
-        <div class="score-ring" style="--pct: <%= cv_fit_pct %>%">
+        <% _cv_ring_color = final_score >= 7.5 ? "#16a34a" : final_score >= 5.0 ? "#d97706" : "#dc2626" %>
+        <div class="score-ring" style="--pct: <%= cv_fit_pct %>%; --ring-color: <%= _cv_ring_color %>;">
           <span class="score-value"><%= final_score %></span>
         </div>
         <div style="margin-top: 0.65rem; display: flex; flex-direction: column; align-items: center; gap: 0.35rem;">

@@ -1,6 +1,6 @@
 <%# Print-only report header %>
 <div class="print-only" style="margin-bottom: 1.25rem; padding-bottom: 0.75rem; border-bottom: 2px solid #1a1a1a;">
-  <div style="font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: #888; margin-bottom: 0.3rem;">HireAI — Interview Analysis Report</div>
+  <div style="font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: #888; margin-bottom: 0.3rem;">MontaniHire — Interview Analysis Report</div>
   <div style="font-size: 1.3rem; font-weight: 700; margin-bottom: 0.2rem;"><%= @video_analysis.display_name %></div>
   <div style="font-size: 0.85rem; color: #555;">
     <% if @video_analysis.job_role %><%= @video_analysis.job_role.title %> · <% end %>
@@ -180,7 +180,8 @@
         <% tier_bg    = { "Shortlist" => "#dcfce7", "Borderline" => "#fef9c3", "Archive" => "#fee2e2" }[ep_tier] %>
         <div style="display: flex; flex-direction: column; align-items: center; gap: 0.45rem;">
           <div style="font-size: 0.63rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #bbb;">Episode Score</div>
-          <div class="score-ring" style="--pct: <%= ep_pct %>%">
+          <% _ep_ring_color = ep_score >= 7.5 ? "#16a34a" : ep_score >= 5.0 ? "#d97706" : "#dc2626" %>
+          <div class="score-ring" style="--pct: <%= ep_pct %>%; --ring-color: <%= _ep_ring_color %>;">
             <span class="score-value"><%= ep_score %></span>
           </div>
           <% ep_rec = fb["recommendation"] %>
@@ -202,7 +203,8 @@
         <div style="display: flex; flex-direction: column; align-items: center; gap: 0.45rem;">
           <div style="font-size: 0.63rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #bbb;">CV Fit Score</div>
           <%= link_to cv_analysis_path(_cv), style: "text-decoration: none;" do %>
-            <div class="score-ring" style="--pct: <%= _cv_pct %>%; cursor: pointer;">
+            <% _cv_ring_color = _cv_fit >= 7.5 ? "#16a34a" : _cv_fit >= 5.0 ? "#d97706" : "#dc2626" %>
+            <div class="score-ring" style="--pct: <%= _cv_pct %>%; --ring-color: <%= _cv_ring_color %>; cursor: pointer;">
               <span class="score-value"><%= _cv_fit %></span>
             </div>
           <% end %>
