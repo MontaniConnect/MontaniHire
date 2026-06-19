@@ -24,7 +24,18 @@
 <%# ── Header ── %>
 <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; flex-wrap: wrap; margin-bottom: 1.25rem;">
   <div>
-    <h1 style="margin: 0 0 0.3rem;"><%= @candidate.name %></h1>
+    <div style="display: flex; align-items: baseline; gap: 0.5rem; margin-bottom: 0.3rem;">
+      <h1 style="margin: 0;"><%= @candidate.name %></h1>
+      <details style="position: relative; display: inline-block;">
+        <summary style="list-style: none; cursor: pointer; font-size: 0.75rem; color: #888; text-decoration: underline;">Edit</summary>
+        <div style="position: absolute; left: 0; top: calc(100% + 4px); background: #fff; border: 1px solid #e5e5e5; border-radius: 8px; padding: 0.75rem; min-width: 260px; z-index: 50; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+          <%= form_with url: update_name_candidate_path(@candidate), method: :patch, style: "display: flex; gap: 0.4rem;" do |f| %>
+            <%= f.text_field :name, value: @candidate.name, style: "flex: 1; padding: 0.4rem 0.6rem; border: 1px solid #ddd; border-radius: 6px; font-size: 0.85rem;" %>
+            <%= f.submit "Save", class: "btn", style: "padding: 0.4rem 0.75rem; font-size: 0.82rem;" %>
+          <% end %>
+        </div>
+      </details>
+    </div>
     <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
       <span class="badge <%= stage_badge[@candidate.pipeline_stage] %>">
         <%= stage_label[@candidate.pipeline_stage] %>
@@ -77,6 +88,12 @@
               method: :post,
               data: { turbo_confirm: "Revert #{@candidate.name} back to CV Review?" },
               class: "btn", style: "background: #555; padding: 0.45rem 1rem; font-size: 0.85rem;" %>
+        <% if @candidate.cv_analysis&.completed? && @candidate.video_analysis&.completed? %>
+          <%= button_to "✕ Decline", not_selected_candidate_path(@candidate),
+                method: :post,
+                data: { turbo_confirm: "Decline #{@candidate.name}? They will be marked as not selected." },
+                class: "btn", style: "background: #dc2626; padding: 0.45rem 1rem; font-size: 0.85rem;" %>
+        <% end %>
       <% end %>
 
       <% if !@candidate.intake_submitted? && @candidate.cv_analysis&.completed? && @candidate.video_analysis&.completed? %>
@@ -327,30 +344,38 @@
   <%# Intake invitation card — only shown in preliminary_interview, hidden once score exists %>
   <% if @candidate.pipeline_stage == "preliminary_interview" && !@candidate.video_analysis&.episode_score.present? %>
   <div class="card" style="padding: 1rem 1.25rem;">
+      <%# Card header %>
       <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.75rem;">
         <div style="font-size: 0.72rem; color: #888; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">
           Interview Invitation
         </div>
-        <% if @candidate.intake_submitted? %>
-          <span style="font-size: 0.75rem; font-weight: 600; color: #166534; background: #dcfce7; border-radius: 99px; padding: 0.15rem 0.6rem;">Responded</span>
-        <% elsif @candidate.intake_token.present? %>
-          <div style="display: flex; align-items: center; gap: 0.5rem;">
-            <span style="font-size: 0.75rem; font-weight: 600; color: #854d0e; background: #fef9c3; border-radius: 99px; padding: 0.15rem 0.6rem;">Awaiting response</span>
-            <% if @candidate.invite_sent_at.present? %>
-              <span style="font-size: 0.72rem; color: #aaa;">Sent <%= time_ago_in_words(@candidate.invite_sent_at) %> ago</span>
-            <% end %>
-          </div>
-        <% end %>
+        <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
+          <% if @candidate.email.present? && !@candidate.intake_submitted? %>
+            <div style="font-size: 0.72rem; color: #bbb;">
+              Will open Gmail as <strong style="color: #888;"><%= current_user.email %></strong>
+            </div>
+          <% end %>
+          <% if @candidate.intake_submitted? %>
+            <span style="font-size: 0.75rem; font-weight: 600; color: #166534; background: #dcfce7; border-radius: 99px; padding: 0.15rem 0.6rem;">Responded</span>
+          <% elsif @candidate.intake_token.present? %>
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+              <span style="font-size: 0.75rem; font-weight: 600; color: #854d0e; background: #fef9c3; border-radius: 99px; padding: 0.15rem 0.6rem;">Awaiting response</span>
+              <% if @candidate.invite_sent_at.present? %>
+                <span style="font-size: 0.72rem; color: #aaa;">Sent <%= time_ago_in_words(@candidate.invite_sent_at) %> ago</span>
+              <% end %>
+            </div>
+          <% end %>
+        </div>
       </div>
 
-      <%# Email row %>
-      <div style="display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; margin-bottom: 0.75rem; flex-wrap: wrap;">
+      <%# Email + action row %>
+      <div style="display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; margin-bottom: 0.75rem; flex-wrap: wrap;">
         <div style="display: flex; align-items: center; gap: 0.5rem;">
-          <span style="font-size: 0.82rem; color: #aaa;">
+          <span style="font-size: 0.82rem; color: #555;">
             <% if @candidate.email.present? %>
               <%= @candidate.email %>
             <% else %>
-              <em>No email found</em>
+              <em style="color: #bbb;">No email — add one before sending</em>
             <% end %>
           </span>
           <details style="position: relative; display: inline-block;">
@@ -365,20 +390,18 @@
             </div>
           </details>
         </div>
-        <div style="display: flex; gap: 0.4rem;">
+        <div style="display: flex; gap: 0.5rem; flex-shrink: 0;">
           <% if @candidate.email.present? && @candidate.intake_token.blank? && !@candidate.intake_submitted? %>
             <%= link_to "✉️ Send Invite", send_invite_email_candidate_path(@candidate),
                   target: "_blank", rel: "noopener",
-                  style: "display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.78rem;
-                          padding: 0.3rem 0.65rem; border: 1px solid #ddd; border-radius: 6px;
-                          color: #555; text-decoration: none; background: #fff; white-space: nowrap;" %>
+                  class: "btn",
+                  style: "padding: 0.4rem 0.85rem; font-size: 0.82rem;" %>
           <% end %>
           <% if @candidate.intake_token.present? && !@candidate.intake_submitted? %>
             <%= link_to "↩ Follow Up", send_followup_email_candidate_path(@candidate),
                   target: "_blank", rel: "noopener",
-                  style: "display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.78rem;
-                          padding: 0.3rem 0.65rem; border: 1px solid #ddd; border-radius: 6px;
-                          color: #555; text-decoration: none; background: #fff; white-space: nowrap;" %>
+                  class: "btn",
+                  style: "background: #6b7280; padding: 0.4rem 0.85rem; font-size: 0.82rem;" %>
           <% end %>
         </div>
       </div>
@@ -571,6 +594,33 @@
     </div>
     <%= f.submit "Save Timeline", class: "btn",
           style: "font-size: 0.82rem; padding: 0.4rem 0.9rem;" %>
+  <% end %>
+</div>
+
+<%# Recruiter Notes — internal only, never shown to clients %>
+<div class="card" style="margin-top: 1.25rem;">
+  <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem;">
+    <h2 style="margin: 0; font-size: 1rem;">Recruiter Notes</h2>
+    <details style="position: relative; display: inline-block;">
+      <summary style="list-style: none; cursor: pointer; font-size: 0.75rem; color: #888; text-decoration: underline;">Edit</summary>
+      <div style="position: absolute; right: 0; top: calc(100% + 4px); background: #fff; border: 1px solid #e5e5e5; border-radius: 8px; padding: 0.75rem; min-width: 360px; z-index: 50; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+        <%= form_with url: update_recruiter_notes_candidate_path(@candidate), method: :patch do |f| %>
+          <%= f.text_area :recruiter_notes,
+                value: @candidate.recruiter_notes,
+                rows: 5,
+                placeholder: "Add internal notes about this candidate's CV, interview, or overall impression…",
+                style: "width: 100%; padding: 0.5rem 0.65rem; border: 1px solid #ddd; border-radius: 6px; font-size: 0.85rem; resize: vertical; box-sizing: border-box;" %>
+          <div style="display: flex; justify-content: flex-end; margin-top: 0.5rem;">
+            <%= f.submit "Save", class: "btn", style: "padding: 0.4rem 0.9rem; font-size: 0.82rem;" %>
+          </div>
+        <% end %>
+      </div>
+    </details>
+  </div>
+  <% if @candidate.recruiter_notes.present? %>
+    <div style="font-size: 0.88rem; color: #444; line-height: 1.65; white-space: pre-wrap;"><%= @candidate.recruiter_notes %></div>
+  <% else %>
+    <p style="font-size: 0.85rem; color: #bbb; margin: 0;">No notes yet. Click Edit to add internal remarks about this candidate.</p>
   <% end %>
 </div>
 

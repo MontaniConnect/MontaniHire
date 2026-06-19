@@ -3,6 +3,8 @@ require "json"
 
 class CalendarEventService
   class InsufficientScopeError < StandardError; end
+  class PermissionDeniedError  < StandardError; end
+  class CalendarNotFoundError  < StandardError; end
 
   def initialize(user:, slot_booking:)
     @user    = user
@@ -42,6 +44,8 @@ class CalendarEventService
       data   = JSON.parse(res.body) rescue {}
       reason = data.dig("error", "details", 0, "reason")
       raise InsufficientScopeError if reason == "ACCESS_TOKEN_SCOPE_INSUFFICIENT"
+      raise CalendarNotFoundError  if res.code == "404"
+      raise PermissionDeniedError  if res.code == "403"
       raise "Calendar API error (#{res.code}): #{data.dig('error', 'message') || res.body}"
     end
 

@@ -28,6 +28,21 @@ module Candidates
       redirect_to gmail_service.followup_url(intake_url), allow_other_host: true
     end
 
+    def update_name
+      name = params[:name].to_s.strip
+      if name.present?
+        @candidate.update!(name: name)
+        redirect_to candidate_path(@candidate), notice: "Name updated."
+      else
+        redirect_to candidate_path(@candidate), alert: "Name can't be blank."
+      end
+    end
+
+    def update_recruiter_notes
+      @candidate.update!(recruiter_notes: params[:recruiter_notes].to_s.strip.presence)
+      redirect_to candidate_path(@candidate), notice: "Notes saved."
+    end
+
     def update_email
       email = params[:email].to_s.strip
       if email.match?(URI::MailTo::EMAIL_REGEXP)
@@ -66,6 +81,12 @@ module Candidates
     rescue CalendarEventService::InsufficientScopeError
       redirect_to candidate_path(@candidate),
                   alert: "Calendar permission missing. Disconnect and reconnect your Google account in Settings, then try again."
+    rescue CalendarEventService::PermissionDeniedError
+      redirect_to settings_path,
+                  alert: "You don't have write access to the calendar saved in Settings. Check that you've been granted edit access, or clear the Calendar ID to use your primary calendar."
+    rescue CalendarEventService::CalendarNotFoundError
+      redirect_to settings_path,
+                  alert: "Calendar ID not found. Verify the ID in Settings or leave it blank to use your primary calendar."
     rescue => e
       Rails.logger.error "[CalendarEventService] #{e.class}: #{e.message}"
       redirect_to candidate_path(@candidate), alert: "Could not sync calendar: #{e.message}"

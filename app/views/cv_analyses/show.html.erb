@@ -123,7 +123,7 @@
     par_pct     = n_tot > 0 ? (n_par.to_f / n_tot * 100).round(1) : 0
     mis_pct     = [100 - ev_pct - par_pct, 0].max
   %>
-  <div class="card" style="padding: 0; overflow: hidden;">
+  <div class="card" style="padding: 0; overflow: visible;">
     <div style="display: flex; flex-wrap: wrap;">
 
       <%# Panel 1: CV Fit Score (narrow, left) %>
@@ -218,30 +218,23 @@
         <% end %>
       </div>
 
-      <%# Panel 4: Nice-to-Have summary %>
+      <%# Panel 4: Nice-to-Have — per-item rows (mirrors Base Score layout) %>
       <div style="flex: 1; min-width: 200px; padding: 1.25rem 1.4rem;">
         <div style="font-size: 0.63rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #bbb; margin-bottom: 0.5rem;">Nice-to-Have</div>
+        <div style="display: flex; gap: 0.5rem; margin-bottom: 0.7rem; flex-wrap: wrap;">
+          <span style="font-size: 0.68rem; color: #166534; background: #dcfce7; border-radius: 3px; padding: 0.1rem 0.4rem; font-weight: 600;">evidenced = +0.50</span>
+          <span style="font-size: 0.68rem; color: #854d0e; background: #fef9c3; border-radius: 3px; padding: 0.1rem 0.4rem; font-weight: 600;">partial = +0.25</span>
+          <span style="font-size: 0.68rem; color: #aaa; background: #f3f4f6; border-radius: 3px; padding: 0.1rem 0.4rem; font-weight: 600;">missing = 0.00</span>
+        </div>
         <% if nh_reqs.any? %>
-          <% _nh_ev  = nh_reqs.count { |r| r["coverage"] == "evidenced" } %>
-          <% _nh_par = nh_reqs.count { |r| r["coverage"] == "partial" } %>
-          <% nh_no   = nh_reqs.count { |r| r["coverage"] == "not evidenced" } %>
-          <div style="display: flex; flex-direction: column; gap: 0; margin-bottom: 0.6rem;">
-            <% if _nh_ev > 0 %>
-              <div style="display: flex; align-items: center; justify-content: space-between; font-size: 0.78rem; padding: 0.26rem 0; border-bottom: 1px solid #f5f5f5;">
-                <span style="color: #666;">Evidenced</span>
-                <span style="font-weight: 600; color: #166534; font-variant-numeric: tabular-nums;">× <%= _nh_ev %></span>
-              </div>
-            <% end %>
-            <% if _nh_par > 0 %>
-              <div style="display: flex; align-items: center; justify-content: space-between; font-size: 0.78rem; padding: 0.26rem 0; border-bottom: 1px solid #f5f5f5;">
-                <span style="color: #666;">Partial</span>
-                <span style="font-weight: 600; color: #854d0e; font-variant-numeric: tabular-nums;">× <%= _nh_par %></span>
-              </div>
-            <% end %>
-            <% if nh_no > 0 %>
-              <div style="display: flex; align-items: center; justify-content: space-between; font-size: 0.78rem; padding: 0.26rem 0; border-bottom: 1px solid #f5f5f5;">
-                <span style="color: #666;">Not evidenced</span>
-                <span style="font-weight: 600; color: #aaa; font-variant-numeric: tabular-nums;">× <%= nh_no %></span>
+          <div style="display: flex; flex-direction: column; gap: 0; margin-bottom: 0.6rem; max-height: 260px; overflow-y: auto;">
+            <% nh_reqs.each do |req| %>
+              <% nh_cov_val  = req["coverage"] %>
+              <% nh_row_val  = { "evidenced" => "+0.50", "partial" => "+0.25", "not evidenced" => "0.00" }[nh_cov_val] || "0.00" %>
+              <% nh_row_col  = { "evidenced" => "#166534", "partial" => "#854d0e", "not evidenced" => "#aaa" }[nh_cov_val] || "#aaa" %>
+              <div style="display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; font-size: 0.78rem; padding: 0.26rem 0; border-bottom: 1px solid #f5f5f5;">
+                <span style="color: #666; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="<%= req["requirement"] %>"><%= truncate(req["requirement"], length: 44) %></span>
+                <span style="font-weight: 600; color: <%= nh_row_col %>; font-variant-numeric: tabular-nums; min-width: 36px; text-align: right; flex-shrink: 0;"><%= nh_row_val %></span>
               </div>
             <% end %>
           </div>

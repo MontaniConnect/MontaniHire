@@ -69,7 +69,9 @@ Rails.application.routes.draw do
       scope :communications do
         get   :send_invite_email,   to: "candidates/communications#send_invite_email"
         get   :send_followup_email, to: "candidates/communications#send_followup_email"
-        patch :update_email,        to: "candidates/communications#update_email"
+        patch :update_name,             to: "candidates/communications#update_name"
+        patch :update_recruiter_notes,  to: "candidates/communications#update_recruiter_notes"
+        patch :update_email,            to: "candidates/communications#update_email"
         patch :update_timeline,     to: "candidates/communications#update_timeline"
         post  :sync_calendar,       to: "candidates/communications#sync_calendar"
       end

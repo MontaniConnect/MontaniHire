@@ -5,8 +5,7 @@ class Shortlist < ApplicationRecord
   has_many :shortlist_items, dependent: :destroy
 
   validates :title, presence: true
-  validates :client_email, presence: true,
-            format: { with: URI::MailTo::EMAIL_REGEXP }
+  validates :client_email, format: { with: URI::MailTo::EMAIL_REGEXP }, allow_blank: true
   validates :token, presence: true, uniqueness: true
   # client_logo_url validator removed — field is legacy (Migration B will drop it).
   # Logo URL validation now lives on Client.
@@ -14,7 +13,7 @@ class Shortlist < ApplicationRecord
   before_validation :generate_token, on: :create
 
   def verified_by?(email)
-    client_email.downcase.strip == email.to_s.downcase.strip
+    client_email.present? && client_email.downcase.strip == email.to_s.downcase.strip
   end
 
 

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_06_18_202924) do
+ActiveRecord::Schema[8.1].define(version: 2026_06_19_075405) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -77,6 +77,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_18_202924) do
     t.boolean "ph_residency_confirmed"
     t.string "pipeline_stage", default: "cv_review", null: false
     t.string "preferred_interview_time"
+    t.text "recruiter_notes"
     t.datetime "screened_at"
     t.datetime "shortlisted_at"
     t.datetime "updated_at", null: false
@@ -196,7 +197,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_18_202924) do
   end
 
   create_table "shortlists", force: :cascade do |t|
-    t.string "client_email", null: false
+    t.string "client_email"
     t.bigint "client_id"
     t.datetime "created_at", null: false
     t.text "message"

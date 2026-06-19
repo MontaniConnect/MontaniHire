@@ -76,12 +76,14 @@
 <% end %>
 
 <%# ── Key Moments ── %>
+<% _drive_video_id = va&.drive_video_file_id.presence %>
+<% _has_video = _inline_video || _drive_video_id.present? %>
 <% if _va_hi.any? && _va_segs.any? %>
   <div class="card">
     <h2 style="margin: 0 0 0.15rem;">Key Moments</h2>
     <p style="font-size: 0.78rem; color: #aaa; margin: 0 0 0.85rem;">
       Excerpts from the interview worth reviewing.
-      <% if _inline_video %>Click a moment to jump to that point in the recording.<% end %>
+      <% if _has_video %>Click a moment to jump to that point in the recording.<% end %>
     </p>
     <div style="display: flex; flex-direction: column; gap: 0.5rem;">
       <% _va_hi.each do |idx| %>
@@ -91,7 +93,7 @@
         <% ts_label = format("%d:%02d", (start_s / 60).to_i, (start_s % 60).to_i) %>
         <div style="display: flex; gap: 0.75rem; align-items: flex-start;
                     padding: 0.5rem 0.6rem; border-radius: 6px; border: 1px solid #f0f0f0;
-                    cursor: <%= _inline_video ? "pointer" : "default" %>; transition: background 0.15s;"
+                    cursor: <%= _has_video ? "pointer" : "default" %>; transition: background 0.15s;"
              onclick="jumpTo(<%= start_s.round(1) %>, <%= idx %>)"
              onmouseover="this.style.background='#fafafa'"
              onmouseout="this.style.background=''">
@@ -188,12 +190,20 @@
 <% end %>
 
 <script>
+  var DRIVE_VIDEO_ID = "<%= _drive_video_id %>";
+
   function jumpTo(seconds, segIdx) {
     var video = document.getElementById('interview-video');
     if (video) {
       video.currentTime = seconds;
       video.play();
       video.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } else if (DRIVE_VIDEO_ID) {
+      var iframe = document.querySelector('iframe[src*="drive.google.com"]');
+      if (iframe) {
+        iframe.src = 'https://drive.google.com/file/d/' + DRIVE_VIDEO_ID + '/preview?start=' + Math.round(seconds);
+        iframe.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
     }
     var seg = document.getElementById('seg-' + segIdx);
     if (!seg) return;

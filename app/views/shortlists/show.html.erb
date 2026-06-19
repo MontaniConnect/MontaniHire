@@ -2,7 +2,11 @@
 <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; margin-bottom: 1.25rem; flex-wrap: wrap;">
   <div>
     <h1 style="margin: 0 0 0.25rem;"><%= @shortlist.title %></h1>
-    <div style="font-size: 0.88rem; color: #777;">Shared with <%= @shortlist.client_email %></div>
+    <% if @shortlist.client_email.present? %>
+      <div style="font-size: 0.88rem; color: #777;">Shared with <%= @shortlist.client_email %></div>
+    <% else %>
+      <div style="font-size: 0.85rem; color: #d97706; font-weight: 500;">No client email — add one via Edit before sending</div>
+    <% end %>
   </div>
   <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
     <%= link_to "Edit", edit_shortlist_path(@shortlist),
@@ -34,6 +38,10 @@
             target: "_blank", rel: "noopener",
             class: "btn",
             style: "padding: 0.45rem 0.9rem; font-size: 0.85rem; white-space: nowrap; background: #1a73e8;" %>
+    <% else %>
+      <%= link_to "Add client email →", edit_shortlist_path(@shortlist),
+            class: "btn",
+            style: "padding: 0.45rem 0.9rem; font-size: 0.85rem; white-space: nowrap; background: #d97706;" %>
     <% end %>
   </div>
   <% if @shortlist.client_email.present? %>
