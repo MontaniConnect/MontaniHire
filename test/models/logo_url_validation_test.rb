@@ -82,5 +82,4 @@ class LogoUrlValidationTest < ActiveSupport::TestCase
     cl.valid?
     assert cl.errors[:logo_url].any?
   end
-
 end

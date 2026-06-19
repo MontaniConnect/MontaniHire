@@ -2,7 +2,7 @@ require "active_support/core_ext/integer/time"
 
 
 Rails.application.configure do
-  config.secret_key_base = ENV.fetch('SECRET_KEY_BASE') { SecureRandom.hex(64) }
+  config.secret_key_base = ENV.fetch("SECRET_KEY_BASE") { SecureRandom.hex(64) }
 
   # Settings specified here will take precedence over those in config/application.rb.
 

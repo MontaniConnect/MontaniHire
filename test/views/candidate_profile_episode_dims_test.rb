@@ -77,7 +77,7 @@ class CandidateProfileEpisodeDimsTest < ActionDispatch::IntegrationTest
   test "renders multiple CoT object dimensions without error" do
     dims = {
       "outcome_orientation"   => { "rating" => "meets",           "literal_quote" => "grew ARR 40%",  "tier_check" => "meets" },
-      "adaptability_signal"   => { "rating" => "partially_meets", "literal_quote" => "pivoted approach","tier_check" => "partially meets" },
+      "adaptability_signal"   => { "rating" => "partially_meets", "literal_quote" => "pivoted approach", "tier_check" => "partially meets" },
       "communication_clarity" => { "rating" => "vague",           "literal_quote" => "communicated",  "tier_check" => "vague" }
     }
     va = make_va(dims)

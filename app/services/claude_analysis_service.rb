@@ -184,11 +184,11 @@ class ClaudeAnalysisService
       lines << "\nMust-have requirements from CV screening (use interview to probe partials and gaps):"
       cov.each do |r|
         tag = case r["coverage"]
-              when "evidenced"     then "evidenced"
-              when "partial"       then "partial  "
-              when "not evidenced" then "missing  "
-              else                      "unknown  "
-              end
+        when "evidenced"     then "evidenced"
+        when "partial"       then "partial  "
+        when "not evidenced" then "missing  "
+        else                      "unknown  "
+        end
         line = "  #{tag} | #{r['requirement']}"
         line += " — #{r['evidence']}" if r["evidence"].present?
         lines << line

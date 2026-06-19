@@ -5,7 +5,7 @@ class TranscriptCleanerService
     "you know",
     "I mean",
     "kind of",
-    "sort of",
+    "sort of"
   ].freeze
 
   # Single-word fillers that are almost never meaningful

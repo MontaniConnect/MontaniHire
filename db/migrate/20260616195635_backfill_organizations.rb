@@ -19,7 +19,7 @@ class BackfillOrganizations < ActiveRecord::Migration[8.1]
       JobRole       => :user_id,
       VideoAnalysis => :user_id,
       CvAnalysis    => :user_id,
-      Shortlist     => :user_id,
+      Shortlist     => :user_id
     }.each do |model, fk|
       model.where(organization_id: nil).find_each do |record|
         org_id = User.find_by(id: record.public_send(fk))&.organization_id

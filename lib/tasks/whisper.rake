@@ -9,7 +9,7 @@ namespace :whisper do
   MODEL_DIR = Rails.root.join("vendor", "whisper_models")
 
   desc "Download a Whisper model (default: small.en). Use MODEL=large-v3-turbo for best accuracy."
-  task :download_model => :environment do
+  task download_model: :environment do
     model = ENV.fetch("MODEL", "small.en")
     info  = MODELS[model] or abort "Unknown model '#{model}'. Available: #{MODELS.keys.join(', ')}"
 
@@ -26,7 +26,7 @@ namespace :whisper do
   end
 
   desc "List available Whisper models and download status"
-  task :models => :environment do
+  task models: :environment do
     puts "\nWhisper models (stored in vendor/whisper_models/):\n\n"
     MODELS.each do |name, info|
       path      = MODEL_DIR.join("ggml-#{name}.bin")

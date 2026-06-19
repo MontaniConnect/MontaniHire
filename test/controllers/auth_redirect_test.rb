@@ -11,7 +11,7 @@ class AuthRedirectTest < ActionDispatch::IntegrationTest
     [ :get,    "/cv_analyses"     ],
     [ :get,    "/shortlists"      ],
     [ :get,    "/dashboard"       ],
-    [ :get,    "/settings"        ],
+    [ :get,    "/settings"        ]
   ].freeze
 
   AUTHENTICATED_ENDPOINTS.each do |verb, path|
