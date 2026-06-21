@@ -201,8 +201,22 @@
     } else if (DRIVE_VIDEO_ID) {
       var iframe = document.querySelector('iframe[src*="drive.google.com"]');
       if (iframe) {
-        iframe.src = 'https://drive.google.com/file/d/' + DRIVE_VIDEO_ID + '/preview?start=' + Math.round(seconds);
         iframe.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        var mins = Math.floor(seconds / 60);
+        var secs = Math.floor(seconds % 60);
+        var label = mins + ':' + (secs < 10 ? '0' : '') + secs;
+        var tip = document.getElementById('drive-seek-tip');
+        if (!tip) {
+          tip = document.createElement('div');
+          tip.id = 'drive-seek-tip';
+          tip.style.cssText = 'position:absolute;top:8px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.75);color:#fff;font-size:0.82rem;font-weight:600;padding:0.3rem 0.75rem;border-radius:99px;pointer-events:none;z-index:10;white-space:nowrap;';
+          iframe.parentElement.style.position = 'relative';
+          iframe.parentElement.appendChild(tip);
+        }
+        tip.textContent = 'Seek to ' + label;
+        tip.style.opacity = '1';
+        clearTimeout(tip._hide);
+        tip._hide = setTimeout(function() { tip.style.opacity = '0'; }, 3000);
       }
     }
     var seg = document.getElementById('seg-' + segIdx);
