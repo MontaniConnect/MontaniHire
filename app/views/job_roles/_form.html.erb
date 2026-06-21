@@ -248,6 +248,71 @@
     updateReqWarning();
   </script>
 
-  <%= f.submit "Save Role", class: "btn" %>
+  <%# Score Weights — edit only %>
+  <% if job_role.persisted? %>
+    <%
+      sw_labels = {
+        "relevance_discipline"  => "Relevance & Discipline",
+        "ownership_language"    => "Ownership Language",
+        "outcome_orientation"   => "Outcome Orientation",
+        "adaptability_signal"   => "Adaptability Signal",
+        "communication_clarity" => "Communication Clarity"
+      }
+      sw_current = job_role.score_weights_with_defaults
+    %>
+    <div class="form-group" style="border-top: 1px solid #e5e5e5; padding-top: 1.25rem; margin-top: 0.5rem;">
+      <div style="display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 0.3rem;">
+        <label style="font-weight: 600;">Interview Score Weights</label>
+        <span id="sw-total" style="font-size: 0.82rem; font-weight: 700;">
+          <span id="sw-total-num">100</span> / 100
+        </span>
+      </div>
+      <small style="display: block; color: #999; font-size: 0.8rem; margin-bottom: 0.85rem;">
+        Controls how much each dimension counts toward the interview score. Must sum to exactly 100.
+      </small>
+      <div style="display: flex; flex-direction: column; gap: 0.55rem;">
+        <% sw_labels.each do |key, label| %>
+          <div style="display: flex; align-items: center; gap: 0.75rem;">
+            <label style="flex: 1; font-size: 0.88rem; color: #444; margin: 0;"><%= label %></label>
+            <div style="display: flex; align-items: center; gap: 0.35rem; flex-shrink: 0;">
+              <input type="number" name="job_role[score_weights][<%= key %>]"
+                     id="sw_<%= key %>"
+                     value="<%= sw_current[key] %>"
+                     min="0" max="100" step="1"
+                     oninput="updateSwTotal()"
+                     style="width: 64px; padding: 0.35rem 0.5rem; border: 1px solid #ddd; border-radius: 6px;
+                            font-size: 0.88rem; text-align: right; font-variant-numeric: tabular-nums;">
+              <span style="font-size: 0.82rem; color: #aaa;">%</span>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    </div>
+
+    <script>
+      var SW_KEYS = <%= sw_labels.keys.to_json %>;
+
+      function updateSwTotal() {
+        var total = SW_KEYS.reduce(function(sum, key) {
+          return sum + (parseInt(document.getElementById('sw_' + key).value) || 0);
+        }, 0);
+        var numEl  = document.getElementById('sw-total-num');
+        var tipEl  = document.getElementById('sw-total');
+        var saveBtn = document.getElementById('sw-save-btn');
+        numEl.textContent = total;
+        if (total === 100) {
+          tipEl.style.color = '#166534';
+          if (saveBtn) saveBtn.disabled = false;
+        } else {
+          tipEl.style.color = '#dc2626';
+          if (saveBtn) saveBtn.disabled = true;
+        }
+      }
+
+      document.addEventListener('DOMContentLoaded', function() { updateSwTotal(); });
+    </script>
+  <% end %>
+
+  <%= f.submit "Save Role", class: "btn", id: "sw-save-btn" %>
   <%= link_to "Cancel", job_roles_path, style: "margin-left: 1rem; color: #555; font-size: 0.9rem;" %>
 <% end %>

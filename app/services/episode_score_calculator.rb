@@ -2,15 +2,16 @@ class EpisodeScoreCalculator
   WEIGHTS = VideoAnalysis::EPISODE_WEIGHTS
   LEVEL_VALUES = VideoAnalysis::EPISODE_LEVEL_VALUES
 
-  def initialize(dimensions:)
-    @dims = dimensions || {}
+  def initialize(dimensions:, weights: nil)
+    @dims    = dimensions || {}
+    @weights = weights || WEIGHTS
   end
 
   def total_score
     total_weight = 0.0
     total_raw    = 0.0
 
-    WEIGHTS.each do |dim, weight|
+    @weights.each do |dim, weight|
       raw   = @dims[dim]
       next unless raw.present?
       level = raw.is_a?(Hash) ? (raw["rating"] || raw.values.first) : raw

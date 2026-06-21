@@ -111,4 +111,37 @@ class EpisodeScoreCalculatorTest < ActiveSupport::TestCase
   test "returns nil when hash dimensions have no rating key" do
     assert_nil calc("outcome_orientation" => { "note" => "no rating present" }).total_score
   end
+
+  # ── custom weights ─────────────────────────────────────────────────────────
+
+  test "falls back to default weights when weights argument is nil" do
+    assert_equal 10.0, EpisodeScoreCalculator.new(dimensions: ALL_DIMS.index_with { "meets" }, weights: nil).total_score
+  end
+
+  test "accepts custom weights and produces correct weighted score" do
+    # Equal weights 0.20 each; outcome_orientation does_not_meet (0.0), rest meets (1.0)
+    # raw = 4*0.20*1.0 = 0.80, total_weight = 1.00 → 8.0
+    equal = ALL_DIMS.index_with { 0.20 }
+    dims  = ALL_DIMS.index_with("meets").merge("outcome_orientation" => "does_not_meet")
+    assert_equal 8.0, EpisodeScoreCalculator.new(dimensions: dims, weights: equal).total_score
+  end
+
+  test "custom weights produce different score than defaults for same dimensions" do
+    # Default: outcome_orientation weight=0.30 → score 7.0 (see existing test)
+    # Equal:   outcome_orientation weight=0.20 → score 8.0
+    dims          = ALL_DIMS.index_with("meets").merge("outcome_orientation" => "does_not_meet")
+    default_score = EpisodeScoreCalculator.new(dimensions: dims).total_score
+    equal         = ALL_DIMS.index_with { 0.20 }
+    custom_score  = EpisodeScoreCalculator.new(dimensions: dims, weights: equal).total_score
+    assert_equal 7.0, default_score
+    assert_equal 8.0, custom_score
+  end
+
+  test "custom weights are normalized by total_weight so partial sets still scale to 10" do
+    # Only outcome_orientation meets with custom weight 0.50 — same normalization behavior
+    assert_equal 10.0, EpisodeScoreCalculator.new(
+      dimensions: { "outcome_orientation" => "meets" },
+      weights:    { "outcome_orientation" => 0.50 }
+    ).total_score
+  end
 end

@@ -38,7 +38,8 @@ class VideoAnalysis < ApplicationRecord
   def episode_score
     dims = structured_feedback&.dig("episode_dimensions")
     return nil unless dims.present?
-    EpisodeScoreCalculator.new(dimensions: dims).total_score
+    weights = job_role&.score_weights_with_defaults&.transform_values { |v| v / 100.0 }
+    EpisodeScoreCalculator.new(dimensions: dims, weights: weights).total_score
   end
 
   def episode_tier

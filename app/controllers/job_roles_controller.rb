@@ -72,10 +72,14 @@ class JobRolesController < AuthenticatedController
   def job_role_params
     permitted = params.require(:job_role).permit(
       :title, :experience_level, :required_skills, :responsibilities, :description, :client_id,
-      must_have_requirements: [], nice_to_have_requirements: []
+      must_have_requirements: [], nice_to_have_requirements: [],
+      score_weights: {}
     )
     permitted[:must_have_requirements]    = Array(permitted[:must_have_requirements]).map(&:strip).reject(&:blank?)
     permitted[:nice_to_have_requirements] = Array(permitted[:nice_to_have_requirements]).map(&:strip).reject(&:blank?)
+    if permitted[:score_weights].present?
+      permitted[:score_weights] = permitted[:score_weights].transform_values(&:to_i)
+    end
     permitted
   end
 
