@@ -96,7 +96,7 @@
         <% end %>
       <% end %>
 
-      <% if !@candidate.intake_submitted? && @candidate.cv_analysis&.completed? && @candidate.video_analysis&.completed? %>
+      <% if @candidate.cv_analysis&.completed? && @candidate.video_analysis&.completed? %>
         <% if @shortlist_item %>
           <%= link_to shortlist_path(@shortlist_item.shortlist),
                 style: "display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.82rem; font-weight: 600;
