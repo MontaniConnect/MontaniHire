@@ -14,9 +14,15 @@ FROM docker.io/library/ruby:$RUBY_VERSION-slim AS base
 # Rails app lives here
 WORKDIR /rails
 
-# Install base packages
+# Install base packages (postgresql-client-18 requires the PGDG apt repository)
 RUN apt-get update -qq && \
-    apt-get install --no-install-recommends -y curl ffmpeg libgcc-s1 libgomp1 libstdc++6 libjemalloc2 libvips postgresql-client && \
+    apt-get install --no-install-recommends -y curl gnupg2 && \
+    curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc \
+         | gpg --dearmor -o /usr/share/keyrings/postgresql.gpg && \
+    echo "deb [signed-by=/usr/share/keyrings/postgresql.gpg] https://apt.postgresql.org/pub/repos/apt bookworm-pgdg main" \
+         > /etc/apt/sources.list.d/pgdg.list && \
+    apt-get update -qq && \
+    apt-get install --no-install-recommends -y ffmpeg libgcc-s1 libgomp1 libstdc++6 libjemalloc2 libvips postgresql-client-18 && \
     ln -s /usr/lib/$(uname -m)-linux-gnu/libjemalloc.so.2 /usr/local/lib/libjemalloc.so && \
     rm -rf /var/lib/apt/lists /var/cache/apt/archives
 
