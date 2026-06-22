@@ -260,19 +260,27 @@ class ClaudeAnalysisService
   end
 
   def build_user_message(transcript, job_context)
-    parts = []
-    parts << calibration_note if calibration_note
-    parts << "## Job Requirements\n#{job_context}"
+    # Role-level constants (cached): calibration note + job requirements + scoring constraint
+    job_block = []
+    job_block << calibration_note if calibration_note
+    job_block << "## Job Requirements\n#{job_context}"
     if @analysis.job_role&.requirements_locked?
-      parts << "## Scoring Constraint\nThe Must-Have Requirements list above is canonical and locked. " \
-               "Your jd_requirements_coverage array MUST contain exactly one entry per requirement, " \
-               "in the same order, using the exact wording provided. Do not add, merge, split, or omit any requirement."
+      job_block << "## Scoring Constraint\nThe Must-Have Requirements list above is canonical and locked. " \
+                   "Your jd_requirements_coverage array MUST contain exactly one entry per requirement, " \
+                   "in the same order, using the exact wording provided. Do not add, merge, split, or omit any requirement."
     end
-    parts << "## Historical Outcomes for This Role\n#{outcome_examples_context}" if outcome_examples_context
-    parts << "## Prior CV Screening\n#{cv_screening_context}" if cv_screening_context
-    parts << "## Candidate Pool Context\n#{pool_context}" if pool_context
-    parts << "## Interview Transcript\n#{transcript}"
-    parts.join("\n\n")
+
+    parts = [ { type: "text", text: job_block.join("\n\n"), cache_control: { type: "ephemeral" } } ]
+
+    # Historical outcomes are role-level (cached); candidate context and transcript are not
+    if outcome_examples_context
+      parts << { type: "text", text: "## Historical Outcomes for This Role\n#{outcome_examples_context}",
+                 cache_control: { type: "ephemeral" } }
+    end
+    parts << { type: "text", text: "## Prior CV Screening\n#{cv_screening_context}" } if cv_screening_context
+    parts << { type: "text", text: "## Candidate Pool Context\n#{pool_context}" }     if pool_context
+    parts << { type: "text", text: "## Interview Transcript\n#{transcript}" }
+    parts
   end
 
   def outcome_examples_context
