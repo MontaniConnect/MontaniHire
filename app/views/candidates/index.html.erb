@@ -3,6 +3,41 @@
   <%= link_to "+ Upload CV", cv_analyses_path, class: "btn" %>
 </div>
 
+<%# ── Interview schedule panel ── %>
+<% if @today_bookings.any? || @upcoming_bookings.any? %>
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
+
+    <%# Today column %>
+    <div class="card" style="padding: 1rem 1.25rem;">
+      <div style="font-size: 0.7rem; font-weight: 700; color: #aaa; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.75rem;">Today</div>
+      <% if @today_bookings.any? %>
+        <% @today_bookings.each_with_index do |booking, i| %>
+          <div style="<%= i > 0 ? 'border-top: 1px solid #f0f0f0; padding-top: 0.65rem; margin-top: 0.65rem;' : '' %>">
+            <%= render "candidates/interview_card", booking: booking %>
+          </div>
+        <% end %>
+      <% else %>
+        <p style="font-size: 0.85rem; color: #bbb; margin: 0;">No interviews today.</p>
+      <% end %>
+    </div>
+
+    <%# Next 7 days column %>
+    <div class="card" style="padding: 1rem 1.25rem;">
+      <div style="font-size: 0.7rem; font-weight: 700; color: #aaa; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.75rem;">Next 7 Days</div>
+      <% if @upcoming_bookings.any? %>
+        <% @upcoming_bookings.each_with_index do |booking, i| %>
+          <div style="<%= i > 0 ? 'border-top: 1px solid #f0f0f0; padding-top: 0.65rem; margin-top: 0.65rem;' : '' %>">
+            <%= render "candidates/interview_card", booking: booking %>
+          </div>
+        <% end %>
+      <% else %>
+        <p style="font-size: 0.85rem; color: #bbb; margin: 0;">No upcoming interviews.</p>
+      <% end %>
+    </div>
+
+  </div>
+<% end %>
+
 <%# Search + filter bar %>
 <%= form_with url: candidates_path, method: :get do |f| %>
   <div style="display: flex; gap: 0.5rem; margin-bottom: 1.5rem; align-items: center; flex-wrap: nowrap;">

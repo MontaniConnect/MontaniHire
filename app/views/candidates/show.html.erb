@@ -443,6 +443,11 @@
               </div>
               <% if booking.google_event_id.present? %>
                 <div style="font-size: 0.7rem; color: #166534; margin-bottom: 0.3rem;">✓ Calendar synced</div>
+                <% if booking.meet_link.present? %>
+                  <%= link_to "Join Google Meet", booking.meet_link,
+                        target: "_blank", rel: "noopener noreferrer",
+                        style: "font-size: 0.7rem; color: #1e40af; text-decoration: underline; display: block; margin-bottom: 0.3rem;" %>
+                <% end %>
               <% elsif current_user.google_connected? %>
                 <%= button_to "Sync to Calendar", sync_calendar_candidate_path(@candidate),
                       method: :post,

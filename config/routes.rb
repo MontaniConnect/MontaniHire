@@ -79,6 +79,12 @@ Rails.application.routes.draw do
     end
   end
 
+  resources :slot_bookings, only: [] do
+    member do
+      patch :update_meet_link
+    end
+  end
+
   # Client engagement management
   resources :clients
 

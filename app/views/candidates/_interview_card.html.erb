@@ -1,0 +1,43 @@
+<%# locals: (booking:) %>
+<div style="font-weight: 600; font-size: 0.88rem; margin-bottom: 0.15rem;">
+  <%= link_to booking.candidate.name, candidate_path(booking.candidate),
+        style: "color: #1a1a1a; text-decoration: none;" %>
+</div>
+
+<div style="font-size: 0.75rem; color: #888; margin-bottom: 0.45rem;">
+  <%= booking.starts_at.in_time_zone("Asia/Manila").strftime("%-I:%M %p PHT") %>
+  <% if booking.candidate.job_role %>
+    &middot; <%= booking.candidate.job_role.title %>
+  <% end %>
+</div>
+
+<div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+  <% if booking.meet_link.present? %>
+    <%= link_to "Join Google Meet →", booking.meet_link,
+          target: "_blank", rel: "noopener noreferrer",
+          style: "font-size: 0.75rem; font-weight: 600; padding: 0.25rem 0.65rem;
+                  background: #1a73e8; color: #fff; border-radius: 5px;
+                  text-decoration: none; white-space: nowrap;" %>
+  <% end %>
+
+  <details style="position: relative; display: inline-block;">
+    <summary style="list-style: none; cursor: pointer; font-size: 0.72rem; color: #888; text-decoration: underline;">
+      <%= booking.meet_link.present? ? "Edit link" : "+ Add Meet link" %>
+    </summary>
+    <div style="position: absolute; left: 0; top: calc(100% + 4px); background: #fff;
+                border: 1px solid #e5e5e5; border-radius: 8px; padding: 0.75rem;
+                min-width: 300px; z-index: 50; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+      <%= form_with url: update_meet_link_slot_booking_path(booking), method: :patch,
+                    style: "display: flex; flex-direction: column; gap: 0.4rem;" do |f| %>
+        <%= f.text_field :meet_link, value: booking.meet_link,
+              placeholder: "https://meet.google.com/xxx-yyyy-zzz",
+              style: "width: 100%; padding: 0.4rem 0.6rem; border: 1px solid #ddd;
+                      border-radius: 6px; font-size: 0.85rem; box-sizing: border-box;" %>
+        <div style="display: flex; justify-content: flex-end;">
+          <%= f.submit "Save", class: "btn",
+                style: "padding: 0.35rem 0.75rem; font-size: 0.82rem;" %>
+        </div>
+      <% end %>
+    </div>
+  </details>
+</div>

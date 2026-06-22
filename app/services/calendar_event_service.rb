@@ -31,8 +31,15 @@ class CalendarEventService
       attendees:   attendees
     }
 
+    body[:conferenceData] = {
+      createRequest: {
+        requestId:            "#{@booking.id}-#{Time.current.to_i}",
+        conferenceSolutionKey: { type: "hangoutsMeet" }
+      }
+    }
+
     calendar_id = @user.interview_calendar_id.presence || "primary"
-    uri = URI("https://www.googleapis.com/calendar/v3/calendars/#{ERB::Util.url_encode(calendar_id)}/events?sendUpdates=all")
+    uri = URI("https://www.googleapis.com/calendar/v3/calendars/#{ERB::Util.url_encode(calendar_id)}/events?sendUpdates=all&conferenceDataVersion=1")
     req = Net::HTTP::Post.new(uri)
     req["Authorization"] = "Bearer #{@user.fresh_google_access_token}"
     req["Content-Type"]  = "application/json"
@@ -49,7 +56,10 @@ class CalendarEventService
       raise "Calendar API error (#{res.code}): #{data.dig('error', 'message') || res.body}"
     end
 
-    data = JSON.parse(res.body)
-    @booking.update_columns(google_event_id: data["id"]) if data["id"]
+    data      = JSON.parse(res.body)
+    meet_link = data.dig("conferenceData", "entryPoints")
+                    &.find { |ep| ep["entryPointType"] == "video" }
+                    &.dig("uri")
+    @booking.update_columns(google_event_id: data["id"], meet_link: meet_link)
   end
 end

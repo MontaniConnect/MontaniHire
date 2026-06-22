@@ -31,6 +31,20 @@ class CandidatesController < AuthenticatedController
     end
 
     @candidates = scope
+
+    ph_tz          = ActiveSupport::TimeZone["Asia/Manila"]
+    now_ph         = Time.current.in_time_zone(ph_tz)
+    today_start    = now_ph.beginning_of_day.utc
+    today_end      = now_ph.end_of_day.utc
+    upcoming_end   = (now_ph + 7.days).end_of_day.utc
+
+    org_bookings = SlotBooking.joins(:candidate)
+                              .where(candidates: { organization_id: current_organization.id })
+                              .includes(candidate: :job_role)
+                              .order(:starts_at)
+
+    @today_bookings    = org_bookings.where(starts_at: today_start..today_end)
+    @upcoming_bookings = org_bookings.where(starts_at: (today_end + 1.second)..upcoming_end)
   end
 
   def show
