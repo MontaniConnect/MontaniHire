@@ -13,6 +13,7 @@ class AnthropicClient
       system:     system,
       messages:   messages
     )
+    Rails.logger.info "[AnthropicClient] usage: input=#{response.usage.input_tokens} output=#{response.usage.output_tokens} cache_read=#{response.usage.cache_read_input_tokens.to_i} cache_write=#{response.usage.cache_creation_input_tokens.to_i}"
     raw = response.content.first.text
               .gsub(/\A```(?:json)?\n?/, "")
               .gsub(/\n?```\z/, "")
