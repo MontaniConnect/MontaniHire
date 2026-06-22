@@ -161,6 +161,12 @@ class CvClaudeAnalysisService
 
     sf = result["structured_feedback"] || {}
 
+    # Strip CoT scratchpad field — improves rating accuracy during generation but
+    # has no downstream use and costs ~500 output tokens of DB storage per analysis.
+    %w[cv_requirements_coverage nice_to_have_requirements_coverage].each do |key|
+      Array(sf[key]).each { |r| r.delete("uncertainty_check") }
+    end
+
     # Server always owns cv_fit_score — recompute from Claude's qualitative outputs,
     # never trusting Claude's arithmetic.
     calc = CvScoreCalculator.new(structured_feedback: sf)
