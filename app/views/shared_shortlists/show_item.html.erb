@@ -31,6 +31,14 @@
   </span>
 </div>
 
+<%# ── Compensation Package ── %>
+<% if @item.candidate&.compensation_package.present? %>
+  <div class="card" style="padding: 0.75rem 1.25rem; margin-bottom: 1rem;">
+    <div style="font-size: 0.7rem; font-weight: 700; color: #aaa; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.2rem;">Compensation Package</div>
+    <div style="font-size: 0.95rem; font-weight: 600; color: #1a1a1a;"><%= @item.candidate.compensation_package %></div>
+  </div>
+<% end %>
+
 <%# ── Summary (with CV download) ── %>
 <% cv = @item.cv_analysis %>
 <% if @item.summary.present? || cv&.cv&.attached? %>

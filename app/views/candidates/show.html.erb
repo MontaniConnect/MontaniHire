@@ -63,6 +63,27 @@
         </details>
       <% end %>
     </div>
+    <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; margin-top: 0.3rem;">
+      <span style="font-size: 0.72rem; font-weight: 600; color: #aaa; text-transform: uppercase; letter-spacing: 0.05em;">Compensation</span>
+      <span style="font-size: 0.82rem; color: #555;">
+        <%= @candidate.compensation_package.presence || "<em style='color:#bbb;'>Not set</em>".html_safe %>
+      </span>
+      <details style="position: relative; display: inline-block;">
+        <summary style="list-style: none; cursor: pointer; font-size: 0.75rem; color: #888; text-decoration: underline;">Edit</summary>
+        <div style="position: absolute; left: 0; top: calc(100% + 4px); background: #fff; border: 1px solid #e5e5e5; border-radius: 8px; padding: 0.75rem; min-width: 280px; z-index: 50; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+          <%= form_with url: update_compensation_package_candidate_path(@candidate), method: :patch, style: "display: flex; flex-direction: column; gap: 0.4rem;" do |f| %>
+            <%= f.text_area :compensation_package,
+                  value: @candidate.compensation_package,
+                  rows: 3,
+                  placeholder: "e.g. USD 5,200.00/mo · HMO · 13th month",
+                  style: "width: 100%; padding: 0.4rem 0.6rem; border: 1px solid #ddd; border-radius: 6px; font-size: 0.85rem; resize: vertical; box-sizing: border-box;" %>
+            <div style="display: flex; justify-content: flex-end;">
+              <%= f.submit "Save", class: "btn", style: "padding: 0.35rem 0.75rem; font-size: 0.82rem;" %>
+            </div>
+          <% end %>
+        </div>
+      </details>
+    </div>
   </div>
 
   <%# Stage actions %>

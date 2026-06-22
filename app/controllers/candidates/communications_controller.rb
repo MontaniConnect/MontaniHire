@@ -43,6 +43,11 @@ module Candidates
       redirect_to candidate_path(@candidate), notice: "Notes saved."
     end
 
+    def update_compensation_package
+      @candidate.update!(compensation_package: params[:compensation_package].to_s.strip.presence)
+      redirect_to candidate_path(@candidate), notice: "Compensation package saved."
+    end
+
     def update_email
       email = params[:email].to_s.strip
       if email.match?(URI::MailTo::EMAIL_REGEXP)
