@@ -122,11 +122,11 @@
                       class: "btn",
                       style: "padding: 0.3rem 0.75rem; font-size: 0.78rem; background: #dc2626;" %>
               <% end %>
-              <% if item.cv_analysis&.cv&.attached? %>
-                <%= link_to "↓ CV", url_for(item.cv_analysis.cv),
+              <% if item.resolved_cv_analysis&.cv&.attached? %>
+                <%= link_to "↓ CV", url_for(item.resolved_cv_analysis.cv),
                       class: "btn",
                       style: "padding: 0.3rem 0.65rem; font-size: 0.8rem; background: #0369a1;",
-                      download: item.cv_analysis.cv.filename.to_s %>
+                      download: item.resolved_cv_analysis.cv.filename.to_s %>
               <% end %>
               <%= link_to "View →", candidate_path(item.candidate),
                     class: "btn", style: "padding: 0.3rem 0.65rem; font-size: 0.8rem; background: #555;" %>
