@@ -3,58 +3,116 @@
   <%= link_to "+ New shortlist", new_shortlist_path, class: "btn" %>
 </div>
 
-<% if @shortlists.none? %>
+<% if @active_shortlists.none? && @concluded_shortlists.none? %>
   <div class="card">
     <p class="empty" style="padding: 1.5rem 0;">
       No shortlists yet. Create one to start sharing candidates with clients.
     </p>
   </div>
 <% else %>
-  <div class="card" style="padding: 0;">
-    <div class="table-wrapper">
-      <table class="data-table">
-        <thead>
-          <tr>
-            <th>Title</th>
-            <th>Client</th>
-            <th>Candidates</th>
-            <th>Created</th>
-            <th style="min-width: 140px;"></th>
-          </tr>
-        </thead>
-        <tbody>
-          <% @shortlists.each do |shortlist| %>
+  <% if @active_shortlists.any? %>
+    <div class="card" style="padding: 0;">
+      <div class="table-wrapper">
+        <table class="data-table">
+          <thead>
             <tr>
-              <td>
-                <%= link_to shortlist.title, shortlist_path(shortlist),
-                      style: "font-weight: 500; color: #1a1a1a; text-decoration: none;" %>
-              </td>
-              <td style="color: #555; font-size: 0.88rem;">
-                <% if shortlist.client&.name.present? %>
-                  <span style="font-weight: 500; color: #333;"><%= shortlist.client.name %></span>
-                  <span style="color: #bbb; margin: 0 0.2rem;">·</span>
-                <% end %>
-                <%= shortlist.client_email %>
-              </td>
-              <td><%= shortlist.shortlist_items.count %></td>
-              <td style="color: #888; font-size: 0.85rem;">
-                <%= shortlist.created_at.strftime("%b %-d, %Y") %>
-              </td>
-              <td style="text-align: right; white-space: nowrap;">
-                <%= link_to "View", shortlist_path(shortlist),
-                      style: "font-size: 0.85rem; color: #555; text-decoration: none; margin-right: 0.75rem;" %>
-                <%= link_to "Edit", edit_shortlist_path(shortlist),
-                      style: "font-size: 0.85rem; color: #555; text-decoration: none; margin-right: 0.75rem;" %>
-                <%= button_to "Delete", shortlist_path(shortlist),
-                      method: :delete,
-                      data: { turbo_confirm: "Delete \"#{shortlist.title}\"? This cannot be undone." },
-                      form: { style: "display: inline;" },
-                      style: "background: none; border: none; padding: 0; cursor: pointer; font-size: 0.85rem; color: #dc2626;" %>
-              </td>
+              <th>Title</th>
+              <th>Client</th>
+              <th>Candidates</th>
+              <th>Created by</th>
+              <th>Created</th>
+              <th style="min-width: 140px;"></th>
             </tr>
-          <% end %>
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            <% @active_shortlists.each do |shortlist| %>
+              <tr>
+                <td>
+                  <%= link_to shortlist.title, shortlist_path(shortlist),
+                        style: "font-weight: 500; color: #1a1a1a; text-decoration: none;" %>
+                </td>
+                <td style="color: #555; font-size: 0.88rem;">
+                  <% if shortlist.client&.name.present? %>
+                    <span style="font-weight: 500; color: #333;"><%= shortlist.client.name %></span>
+                    <span style="color: #bbb; margin: 0 0.2rem;">·</span>
+                  <% end %>
+                  <%= shortlist.client_email %>
+                </td>
+                <td><%= shortlist.shortlist_items.count %></td>
+                <td style="color: #666; font-size: 0.85rem;">
+                  <%= shortlist.user&.name.presence || shortlist.user&.email %>
+                </td>
+                <td style="color: #888; font-size: 0.85rem;">
+                  <%= shortlist.created_at.strftime("%b %-d, %Y") %>
+                </td>
+                <td style="text-align: right; white-space: nowrap;">
+                  <%= link_to "View", shortlist_path(shortlist),
+                        style: "font-size: 0.85rem; color: #555; text-decoration: none; margin-right: 0.75rem;" %>
+                  <%= link_to "Edit", edit_shortlist_path(shortlist),
+                        style: "font-size: 0.85rem; color: #555; text-decoration: none; margin-right: 0.75rem;" %>
+                  <%= button_to "Delete", shortlist_path(shortlist),
+                        method: :delete,
+                        data: { turbo_confirm: "Delete \"#{shortlist.title}\"? This cannot be undone." },
+                        form: { style: "display: inline;" },
+                        style: "background: none; border: none; padding: 0; cursor: pointer; font-size: 0.85rem; color: #dc2626;" %>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
     </div>
-  </div>
+  <% end %>
+
+  <%# ── Concluded shortlists (all candidates in terminal stage) ── %>
+  <% if @concluded_shortlists.any? %>
+    <details style="margin-top: 1.75rem;">
+      <summary style="list-style: none; cursor: pointer; display: inline-flex; align-items: center; gap: 0.4rem;
+                      font-size: 0.72rem; font-weight: 700; color: #bbb; text-transform: uppercase; letter-spacing: 0.06em;
+                      user-select: none;">
+        Concluded (<%= @concluded_shortlists.count %>)
+      </summary>
+      <div style="margin-top: 0.75rem;">
+        <div class="card" style="padding: 0;">
+          <div class="table-wrapper">
+            <table class="data-table">
+              <tbody>
+                <% @concluded_shortlists.each do |shortlist| %>
+                  <tr style="opacity: 0.55;">
+                    <td>
+                      <%= link_to shortlist.title, shortlist_path(shortlist),
+                            style: "font-weight: 500; color: #777; text-decoration: none;" %>
+                    </td>
+                    <td style="color: #999; font-size: 0.88rem;">
+                      <% if shortlist.client&.name.present? %>
+                        <span><%= shortlist.client.name %></span>
+                        <span style="color: #ccc; margin: 0 0.2rem;">·</span>
+                      <% end %>
+                      <%= shortlist.client_email %>
+                    </td>
+                    <td style="color: #aaa;"><%= shortlist.shortlist_items.count %></td>
+                    <td style="color: #bbb; font-size: 0.85rem;">
+                      <%= shortlist.user&.name.presence || shortlist.user&.email %>
+                    </td>
+                    <td style="color: #bbb; font-size: 0.85rem;">
+                      <%= shortlist.created_at.strftime("%b %-d, %Y") %>
+                    </td>
+                    <td style="text-align: right; white-space: nowrap;">
+                      <%= link_to "View", shortlist_path(shortlist),
+                            style: "font-size: 0.85rem; color: #aaa; text-decoration: none; margin-right: 0.75rem;" %>
+                      <%= button_to "Delete", shortlist_path(shortlist),
+                            method: :delete,
+                            data: { turbo_confirm: "Delete \"#{shortlist.title}\"? This cannot be undone." },
+                            form: { style: "display: inline;" },
+                            style: "background: none; border: none; padding: 0; cursor: pointer; font-size: 0.85rem; color: #dc2626;" %>
+                    </td>
+                  </tr>
+                <% end %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </details>
+  <% end %>
 <% end %>

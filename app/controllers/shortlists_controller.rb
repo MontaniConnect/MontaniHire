@@ -3,7 +3,14 @@ class ShortlistsController < AuthenticatedController
   before_action :require_write_access!, only: %i[create update destroy]
 
   def index
-    @shortlists = current_organization.shortlists.order(created_at: :desc)
+    concluded_stages = %w[hired offer_declined not_selected rejected not_invited]
+    all_shortlists = current_organization.shortlists
+                                         .includes(:user, shortlist_items: :candidate)
+                                         .order(created_at: :desc)
+    @active_shortlists, @concluded_shortlists = all_shortlists.partition do |sl|
+      items = sl.shortlist_items
+      items.empty? || items.any? { |i| !concluded_stages.include?(i.candidate&.pipeline_stage) }
+    end
   end
 
   def show

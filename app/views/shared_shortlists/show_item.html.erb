@@ -40,7 +40,7 @@
 <% end %>
 
 <%# ── Summary (with CV download) ── %>
-<% cv = @item.cv_analysis %>
+<% cv = @item.resolved_cv_analysis %>
 <% if @item.summary.present? || cv&.cv&.attached? %>
   <div class="card">
     <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; flex-wrap: wrap; margin-bottom: <%= @item.summary.present? ? "0.75rem" : "0" %>;">

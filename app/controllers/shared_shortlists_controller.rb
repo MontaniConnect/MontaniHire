@@ -28,7 +28,14 @@ class SharedShortlistsController < ActionController::Base
 
   def show_item
     @item = @shortlist.shortlist_items
-                      .includes(:shareable, candidate: { video_analysis: { video_attachment: :blob } })
+                      .includes(
+                        :shareable,
+                        cv_analysis: { cv_attachment: :blob },
+                        candidate: [
+                          :cv_analysis,
+                          { video_analysis: { video_attachment: :blob } }
+                        ]
+                      )
                       .find(params[:id])
   end
 
