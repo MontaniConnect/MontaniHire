@@ -2,3 +2,9 @@
 :queues:
   - [transcription, 1]
   - [default, 1]
+
+:schedule:
+  db_backup:
+    cron: "0 2 * * *"   # 02:00 UTC = 10:00 AM Philippine Time (UTC+8)
+    class: DbBackupJob
+    description: "Daily database backup to S3 with 30-day retention"

@@ -43,6 +43,7 @@ gem "rack-cors"
 
 # Async job processing
 gem "sidekiq", ">= 7.3.9"
+gem "sidekiq-cron"
 
 # Google Drive integration
 gem "google-apis-drive_v3"

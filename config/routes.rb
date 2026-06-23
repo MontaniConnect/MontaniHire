@@ -1,4 +1,15 @@
+require "sidekiq/web"
+require "sidekiq-cron"
+
 Rails.application.routes.draw do
+  # Sidekiq Web UI — owner-only; non-owners and unauthenticated users receive 404
+  sidekiq_constraint = ->(req) {
+    uid = req.session[:user_id]
+    uid && User.find_by(id: uid)&.owner?
+  }
+  constraints sidekiq_constraint do
+    mount Sidekiq::Web => "/sidekiq"
+  end
   # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html
 
   # Reveal health status on /up that returns 200 if the app boots with no exceptions, otherwise 500.
