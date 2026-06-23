@@ -39,21 +39,12 @@
   </div>
 <% end %>
 
-<%# ── Summary (with CV download) ── %>
+<%# ── Summary ── %>
 <% cv = @item.resolved_cv_analysis %>
-<% if @item.summary.present? || cv&.cv&.attached? %>
+<% if @item.summary.present? %>
   <div class="card">
-    <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; flex-wrap: wrap; margin-bottom: <%= @item.summary.present? ? "0.75rem" : "0" %>;">
-      <h2 style="margin: 0;">Summary</h2>
-      <% if cv&.cv&.attached? %>
-        <%= link_to "Download CV", url_for(cv.cv),
-              class: "btn", style: "padding: 0.35rem 0.85rem; font-size: 0.82rem; flex-shrink: 0; background: #555;",
-              download: cv.cv.filename.to_s %>
-      <% end %>
-    </div>
-    <% if @item.summary.present? %>
-      <p style="font-size: 0.93rem; color: #333; line-height: 1.75; margin: 0;"><%= @item.summary %></p>
-    <% end %>
+    <h2 style="margin: 0 0 0.75rem;">Summary</h2>
+    <p style="font-size: 0.93rem; color: #333; line-height: 1.75; margin: 0;"><%= @item.summary %></p>
   </div>
 <% end %>
 
@@ -122,7 +113,14 @@
 
 <%# ── Feedback form ── %>
 <div class="card">
-  <h2 style="margin-bottom: 0.85rem;">Your decision</h2>
+  <div style="display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; margin-bottom: 0.85rem;">
+    <h2 style="margin: 0;">Your decision</h2>
+    <% if cv&.cv&.attached? %>
+      <%= link_to "↓ Download CV", url_for(cv.cv),
+            class: "btn", style: "padding: 0.35rem 0.85rem; font-size: 0.82rem; flex-shrink: 0; background: #0369a1;",
+            download: cv.cv.filename.to_s %>
+    <% end %>
+  </div>
   <%= form_with url: shared_shortlist_feedback_path(@shortlist.token, @item),
                 method: :patch, style: "display: flex; flex-direction: column; gap: 0.75rem;" do |f| %>
     <%
