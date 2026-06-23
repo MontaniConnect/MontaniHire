@@ -40,7 +40,8 @@ class GmailComposeUrlService
 
   def invite_url(intake_url)
     role    = @candidate.job_role&.title || "this position"
-    subject = "#{role} — Preliminary Interview Invitation"
+    org     = @candidate.user.organization&.name.presence
+    subject = [ org, role, "Preliminary Interview Invitation" ].compact.join(" — ")
     compose_url(to: @candidate.email, subject: subject, body: invite_body(role, intake_url))
   end
 

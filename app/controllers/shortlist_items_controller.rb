@@ -10,6 +10,7 @@ class ShortlistItemsController < AuthenticatedController
       item = shortlist.shortlist_items.find_or_initialize_by(candidate: candidate)
       item.cv_analysis    = candidate.cv_analysis
       item.video_analysis = candidate.video_analysis
+      item.added_by       = current_user if item.new_record?
       item.save!
       candidate.shortlist_for_client!
       redirect_back fallback_location: shortlist_path(shortlist),
@@ -21,6 +22,7 @@ class ShortlistItemsController < AuthenticatedController
         return
       end
       item = shortlist.shortlist_items.find_or_initialize_by(shareable: primary)
+      item.added_by = current_user if item.new_record?
       case primary
       when CvAnalysis    then item.cv_analysis    = primary
       when VideoAnalysis then item.video_analysis = primary

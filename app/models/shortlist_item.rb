@@ -4,6 +4,7 @@ class ShortlistItem < ApplicationRecord
   belongs_to :candidate,      optional: true
   belongs_to :cv_analysis,    optional: true, class_name: "CvAnalysis"
   belongs_to :video_analysis, optional: true, class_name: "VideoAnalysis"
+  belongs_to :added_by,       optional: true, class_name: "User"
 
   STATUSES = %w[pending approved rejected].freeze
   validates :client_status, inclusion: { in: STATUSES }

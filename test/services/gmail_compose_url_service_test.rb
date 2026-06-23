@@ -2,11 +2,15 @@ require "test_helper"
 
 class GmailComposeUrlServiceTest < ActiveSupport::TestCase
   FakeRole      = Struct.new(:title, keyword_init: true)
-  FakeCandidate = Struct.new(:email, :first_name, :job_role, keyword_init: true)
+  FakeOrg       = Struct.new(:name, keyword_init: true)
+  FakeUser      = Struct.new(:organization, keyword_init: true)
+  FakeCandidate = Struct.new(:email, :first_name, :job_role, :user, keyword_init: true)
 
-  def service(email: "ana@example.com", first_name: "Ana", role_title: "Operations Manager")
+  def service(email: "ana@example.com", first_name: "Ana", role_title: "Operations Manager", org_name: "TestCo")
     role      = role_title ? FakeRole.new(title: role_title) : nil
-    candidate = FakeCandidate.new(email: email, first_name: first_name, job_role: role)
+    org       = org_name ? FakeOrg.new(name: org_name) : nil
+    user      = FakeUser.new(organization: org)
+    candidate = FakeCandidate.new(email: email, first_name: first_name, job_role: role, user: user)
     GmailComposeUrlService.new(candidate: candidate)
   end
 

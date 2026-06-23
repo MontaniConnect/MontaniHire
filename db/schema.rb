@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_06_23_090000) do
+ActiveRecord::Schema[8.1].define(version: 2026_06_24_080000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -179,6 +179,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_23_090000) do
   end
 
   create_table "shortlist_items", force: :cascade do |t|
+    t.bigint "added_by_id"
     t.bigint "candidate_id"
     t.text "client_comment"
     t.integer "client_rating"
@@ -190,6 +191,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_23_090000) do
     t.bigint "shortlist_id", null: false
     t.datetime "updated_at", null: false
     t.bigint "video_analysis_id"
+    t.index ["added_by_id"], name: "index_shortlist_items_on_added_by_id"
     t.index ["candidate_id"], name: "index_shortlist_items_on_candidate_id"
     t.index ["cv_analysis_id"], name: "index_shortlist_items_on_cv_analysis_id"
     t.index ["shareable_type", "shareable_id"], name: "index_shortlist_items_on_shareable"
@@ -289,6 +291,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_23_090000) do
   add_foreign_key "job_roles", "users"
   add_foreign_key "shortlist_items", "candidates"
   add_foreign_key "shortlist_items", "shortlists"
+  add_foreign_key "shortlist_items", "users", column: "added_by_id"
   add_foreign_key "shortlists", "clients"
   add_foreign_key "shortlists", "organizations"
   add_foreign_key "shortlists", "users"
