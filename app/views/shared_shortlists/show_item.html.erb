@@ -119,6 +119,11 @@
       <%= link_to "↓ Download CV", url_for(cv.cv),
             class: "btn", style: "padding: 0.35rem 0.85rem; font-size: 0.82rem; flex-shrink: 0; background: #0369a1;",
             download: cv.cv.filename.to_s %>
+    <% elsif cv&.drive_file_id.present? %>
+      <%= link_to "↓ Download CV",
+            "https://drive.google.com/uc?export=download&id=#{cv.drive_file_id}",
+            class: "btn", style: "padding: 0.35rem 0.85rem; font-size: 0.82rem; flex-shrink: 0; background: #0369a1;",
+            target: "_blank", rel: "noopener" %>
     <% end %>
   </div>
   <%= form_with url: shared_shortlist_feedback_path(@shortlist.token, @item),

@@ -122,11 +122,18 @@
                       class: "btn",
                       style: "padding: 0.3rem 0.75rem; font-size: 0.78rem; background: #dc2626;" %>
               <% end %>
-              <% if item.resolved_cv_analysis&.cv&.attached? %>
-                <%= link_to "↓ CV", url_for(item.resolved_cv_analysis.cv),
+              <% _rcv = item.resolved_cv_analysis %>
+              <% if _rcv&.cv&.attached? %>
+                <%= link_to "↓ CV", url_for(_rcv.cv),
                       class: "btn",
                       style: "padding: 0.3rem 0.65rem; font-size: 0.8rem; background: #0369a1;",
-                      download: item.resolved_cv_analysis.cv.filename.to_s %>
+                      download: _rcv.cv.filename.to_s %>
+              <% elsif _rcv&.drive_file_id.present? %>
+                <%= link_to "↓ CV",
+                      "https://drive.google.com/uc?export=download&id=#{_rcv.drive_file_id}",
+                      class: "btn",
+                      style: "padding: 0.3rem 0.65rem; font-size: 0.8rem; background: #0369a1;",
+                      target: "_blank", rel: "noopener" %>
               <% end %>
               <%= link_to "View →", candidate_path(item.candidate),
                     class: "btn", style: "padding: 0.3rem 0.65rem; font-size: 0.8rem; background: #555;" %>
