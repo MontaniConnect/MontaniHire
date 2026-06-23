@@ -54,6 +54,7 @@ Rails.application.routes.draw do
     member do
       post :reanalyse
       get  :extracted_text
+      get  :download_cv
     end
   end
   resources :job_roles do
@@ -123,5 +124,6 @@ Rails.application.routes.draw do
     get   "/:token/items/:id",            to: "shared_shortlists#show_item", as: :shared_shortlist_item
     patch "/:token/items/:id/feedback",   to: "shared_shortlists#feedback",  as: :shared_shortlist_feedback
     patch "/:token/items/:id/no_show",    to: "shared_shortlists#no_show",   as: :shared_shortlist_no_show
+    get   "/:token/items/:id/cv",         to: "shared_shortlists#download_cv", as: :shared_shortlist_cv
   end
 end

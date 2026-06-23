@@ -1,8 +1,10 @@
 class SharedShortlistsController < ActionController::Base
+  include DriveCvDownload
+
   layout "shared"
 
   before_action :set_shortlist
-  before_action :require_verification, only: %i[feedback show_item no_show]
+  before_action :require_verification, only: %i[feedback show_item no_show download_cv]
   helper_method :verified?
 
   def show
@@ -58,6 +60,25 @@ class SharedShortlistsController < ActionController::Base
     item.toggle_final_interview_no_show!
     notice = item.final_interview_no_show? ? "Marked as no show." : "No show cleared."
     redirect_to shared_shortlist_item_path(@shortlist.token, item), notice: notice
+  end
+
+  def download_cv
+    item = @shortlist.shortlist_items
+                     .includes(cv_analysis: { cv_attachment: :blob }, candidate: :cv_analysis)
+                     .find(params[:id])
+    cv = item.resolved_cv_analysis
+
+    if cv&.cv&.attached?
+      redirect_to url_for(cv.cv), allow_other_host: true
+      return
+    end
+
+    unless cv&.drive_file_id.present?
+      redirect_to shared_shortlist_item_path(@shortlist.token, item), alert: "No CV file available."
+      return
+    end
+
+    stream_drive_cv(cv)
   end
 
   private

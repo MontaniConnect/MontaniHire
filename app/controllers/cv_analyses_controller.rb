@@ -1,5 +1,7 @@
 class CvAnalysesController < AuthenticatedController
-  before_action :set_cv_analysis, only: %i[show destroy reanalyse extracted_text]
+  include DriveCvDownload
+
+  before_action :set_cv_analysis, only: %i[show destroy reanalyse extracted_text download_cv]
   before_action :require_write_access!, only: %i[create bulk_create destroy reanalyse]
 
   def index
@@ -106,6 +108,20 @@ class CvAnalysesController < AuthenticatedController
     end
     filename = "#{@cv_analysis.display_name.parameterize}-cv.txt"
     send_data @cv_analysis.extracted_text, filename: filename, type: "text/plain"
+  end
+
+  def download_cv
+    if @cv_analysis.cv.attached?
+      redirect_to url_for(@cv_analysis.cv), allow_other_host: true
+      return
+    end
+
+    unless @cv_analysis.drive_file_id.present?
+      redirect_to cv_analysis_path(@cv_analysis), alert: "No CV file available."
+      return
+    end
+
+    stream_drive_cv(@cv_analysis)
   end
 
   private
