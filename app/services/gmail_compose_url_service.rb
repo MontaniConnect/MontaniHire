@@ -1,5 +1,15 @@
 class GmailComposeUrlService
   class << self
+    def decision_url(shortlist:, selected_names:, declined_names:)
+      subject = "Final Interview Decision — #{shortlist.title}"
+      to      = [ shortlist.user.email, ENV["OPS_EMAIL"].presence ].compact.join(",")
+      body    = decision_body(shortlist, selected_names, declined_names)
+      "https://mail.google.com/mail/?view=cm&fs=1" \
+        "&to=#{ERB::Util.url_encode(to)}" \
+        "&su=#{ERB::Util.url_encode(subject)}" \
+        "&body=#{ERB::Util.url_encode(body)}"
+    end
+
     def shortlist_url(shortlist:, share_url:)
       subject = "Shortlist: #{shortlist.title}"
       body = shortlist_body(shortlist, share_url)
@@ -13,6 +23,31 @@ class GmailComposeUrlService
     end
 
     private
+
+    def decision_body(shortlist, selected_names, declined_names)
+      lines = [ "Hi," , "" ]
+
+      if selected_names.any?
+        lines << "Selected for final interview:"
+        selected_names.each { |n| lines << "  - #{n}" }
+        lines << ""
+      end
+
+      if declined_names.any?
+        lines << "Declined:"
+        declined_names.each { |n| lines << "  - #{n}" }
+        lines << ""
+      end
+
+      if shortlist.client_availability.present?
+        lines << "My availability (US timezone):"
+        lines << shortlist.client_availability
+        lines << ""
+      end
+
+      lines << "Best regards,"
+      lines.join("\n")
+    end
 
     def shortlist_body(shortlist, share_url)
       client_name = shortlist.client&.name.presence || "there"

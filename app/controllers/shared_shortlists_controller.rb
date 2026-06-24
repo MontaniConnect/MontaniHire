@@ -4,7 +4,7 @@ class SharedShortlistsController < ActionController::Base
   layout "shared"
 
   before_action :set_shortlist
-  before_action :require_verification, only: %i[feedback show_item no_show download_cv]
+  before_action :require_verification, only: %i[feedback show_item no_show download_cv submit_decision]
   helper_method :verified?
 
   def show
@@ -68,6 +68,21 @@ class SharedShortlistsController < ActionController::Base
     item.toggle_final_interview_no_show!
     notice = item.final_interview_no_show? ? "Marked as no show." : "No show cleared."
     redirect_to shared_shortlist_item_path(@shortlist.token, item), notice: notice
+  end
+
+  def submit_decision
+    if @shortlist.client_decision_submitted_at.present?
+      redirect_to shared_shortlist_path(@shortlist.token),
+                  alert: "Decision already sent on #{@shortlist.client_decision_submitted_at.strftime('%b %-d')}."
+      return
+    end
+
+    @shortlist.update!(
+      client_availability:          params[:client_availability].to_s.strip,
+      client_decision_submitted_at: Time.current
+    )
+
+    redirect_to shared_shortlist_path(@shortlist.token), notice: "Decision sent. Use the button below to open Gmail."
   end
 
   def download_cv

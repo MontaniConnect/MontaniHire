@@ -85,5 +85,70 @@
         <% end %>
       <% end %>
     </div>
+
+    <%# ── Decision summary (read-only) ── %>
+    <%
+      selected_items = @items.select { |i| %w[final_interview hired offer_declined].include?(i.candidate&.pipeline_stage) }
+      declined_items = @items.select { |i| i.candidate&.pipeline_stage == "not_selected" }
+      selected_names = selected_items.map(&:candidate_name)
+      declined_names = declined_items.map(&:candidate_name)
+    %>
+    <% if selected_items.any? || declined_items.any? %>
+      <div class="card" style="margin-top: 1.5rem; background: #f9fafb;">
+        <div style="font-size: 0.7rem; font-weight: 700; color: #aaa; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 0.75rem;">Your decisions so far</div>
+        <% if selected_items.any? %>
+          <div style="margin-bottom: 0.5rem;">
+            <span style="font-size: 0.82rem; font-weight: 600; color: #166534;">Selected for final interview:</span>
+            <span style="font-size: 0.82rem; color: #333;"> <%= selected_names.join(", ") %></span>
+          </div>
+        <% end %>
+        <% if declined_items.any? %>
+          <div>
+            <span style="font-size: 0.82rem; font-weight: 600; color: #6b7280;">Declined:</span>
+            <span style="font-size: 0.82rem; color: #333;"> <%= declined_names.join(", ") %></span>
+          </div>
+        <% end %>
+      </div>
+    <% end %>
+
+    <%# ── Send decision / confirmation ── %>
+    <% if @shortlist.client_decision_submitted_at.present? %>
+      <div class="card" style="margin-top: 1rem; background: #f0fdf4; border: 1px solid #bbf7d0;">
+        <div style="font-weight: 600; color: #166534; margin-bottom: 0.35rem;">
+          ✓ Decision sent on <%= @shortlist.client_decision_submitted_at.strftime("%B %-d, %Y") %>
+        </div>
+        <div style="font-size: 0.85rem; color: #555; margin-bottom: 0.85rem;">
+          Your availability and selections have been received by the Montani team.
+        </div>
+        <%= link_to "Open Gmail again →",
+              GmailComposeUrlService.decision_url(
+                shortlist:       @shortlist,
+                selected_names:  selected_names,
+                declined_names:  declined_names
+              ),
+              target: "_blank", rel: "noopener",
+              class: "btn",
+              style: "background: #1a73e8; padding: 0.45rem 1rem; font-size: 0.85rem;" %>
+      </div>
+    <% elsif selected_items.any? || declined_items.any? %>
+      <div class="card" style="margin-top: 1rem;">
+        <div style="font-size: 0.95rem; font-weight: 600; margin-bottom: 0.75rem;">Send your decision to Montani</div>
+        <%= form_with url: shared_shortlist_decision_path(@shortlist.token), method: :post,
+                      style: "display: flex; flex-direction: column; gap: 0.75rem;" do |f| %>
+          <div>
+            <label style="font-size: 0.82rem; font-weight: 500; color: #555; display: block; margin-bottom: 0.35rem;">
+              Your availability (US timezone)
+            </label>
+            <textarea name="client_availability" rows="4"
+                      placeholder="e.g. Monday–Wednesday, 9 AM–12 PM EST; anytime Thursday"
+                      style="width: 100%; padding: 0.6rem 0.75rem; border: 1px solid #ddd; border-radius: 6px;
+                             font-size: 0.9rem; font-family: inherit; resize: vertical; box-sizing: border-box;"></textarea>
+          </div>
+          <%= f.submit "Send to Montani →",
+                class: "btn",
+                style: "align-self: flex-start; padding: 0.5rem 1.25rem; background: #1a73e8;" %>
+        <% end %>
+      </div>
+    <% end %>
   <% end %>
 <% end %>
