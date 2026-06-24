@@ -83,7 +83,7 @@
   </div>
 <% end %>
 
-<% grouped    = @candidates.group_by(&:pipeline_stage) %>
+<% grouped    = @candidates.reject(&:final_interview_no_show?).group_by(&:pipeline_stage) %>
 <%
   _cv_rec_labels = { "high_match" => "High Match", "moderate_match" => "Moderate Match", "low_match" => "Low Match" }
   _ep_rec_labels = { "comprehensive" => "Comprehensive", "substantive" => "Substantive", "superficial" => "Superficial" }
@@ -168,13 +168,16 @@
   <% end %>
 </div>
 
-<%# Hired + Offer Declined + Not Invited + Rejected — collapsed by default %>
-<% hired          = Array(grouped["hired"]) %>
-<% offer_declined = Array(grouped["offer_declined"]) %>
-<% not_selected   = Array(grouped["not_selected"]) %>
-<% not_invited    = Array(grouped["not_invited"]) %>
-<% rejected       = Array(grouped["rejected"]) %>
-<% terminal = hired + offer_declined + not_selected + not_invited + rejected %>
+<%# Hired + Offer Declined + Not Invited + Rejected + No Shows — collapsed by default %>
+<% hired              = Array(grouped["hired"]) %>
+<% offer_declined     = Array(grouped["offer_declined"]) %>
+<% not_selected_all   = Array(grouped["not_selected"]) %>
+<% no_show_prelim     = not_selected_all.select(&:preliminary_interview_no_show?) %>
+<% not_selected       = not_selected_all.reject(&:preliminary_interview_no_show?) %>
+<% no_show_final      = @candidates.select(&:final_interview_no_show?) %>
+<% not_invited        = Array(grouped["not_invited"]) %>
+<% rejected           = Array(grouped["rejected"]) %>
+<% terminal = hired + offer_declined + no_show_prelim + no_show_final + not_selected + not_invited + rejected %>
 <% if terminal.any? %>
   <details style="margin-top: 1.75rem;">
     <summary style="font-size: 0.85rem; color: #999; cursor: pointer; user-select: none;
@@ -184,6 +187,8 @@
         <% parts = [] %>
         <% parts << "Hired (#{hired.size})" if hired.any? %>
         <% parts << "Offer Declined (#{offer_declined.size})" if offer_declined.any? %>
+        <% parts << "No Show - Prelim (#{no_show_prelim.size})" if no_show_prelim.any? %>
+        <% parts << "No Show - Final (#{no_show_final.size})" if no_show_final.any? %>
         <% parts << "Not Selected (#{not_selected.size})" if not_selected.any? %>
         <% parts << "Not Invited (#{not_invited.size})" if not_invited.any? %>
         <% parts << "Rejected (#{rejected.size})" if rejected.any? %>
@@ -193,9 +198,15 @@
     <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
                 gap: 0.75rem; margin-top: 0.75rem;">
       <% terminal.each do |c| %>
-        <% border = { "hired" => "#16a34a", "offer_declined" => "#f59e0b", "not_selected" => "#6b7280", "not_invited" => "#f59e0b", "rejected" => "#dc2626" }[c.pipeline_stage] %>
-        <% label  = { "hired" => "Hired", "offer_declined" => "Offer Declined", "not_selected" => "Not Selected", "not_invited" => "Not Invited", "rejected" => "Rejected" }[c.pipeline_stage] %>
-        <% color  = { "hired" => "#166534", "offer_declined" => "#92400e", "not_selected" => "#374151", "not_invited" => "#92400e", "rejected" => "#991b1b" }[c.pipeline_stage] %>
+        <% if c.preliminary_interview_no_show? %>
+          <% border = "#f59e0b"; label = "No Show (Prelim)"; color = "#92400e" %>
+        <% elsif c.final_interview_no_show? %>
+          <% border = "#f59e0b"; label = "No Show (Final)"; color = "#92400e" %>
+        <% else %>
+          <% border = { "hired" => "#16a34a", "offer_declined" => "#f59e0b", "not_selected" => "#6b7280", "not_invited" => "#f59e0b", "rejected" => "#dc2626" }[c.pipeline_stage] %>
+          <% label  = { "hired" => "Hired", "offer_declined" => "Offer Declined", "not_selected" => "Not Selected", "not_invited" => "Not Invited", "rejected" => "Rejected" }[c.pipeline_stage] %>
+          <% color  = { "hired" => "#166534", "offer_declined" => "#92400e", "not_selected" => "#374151", "not_invited" => "#92400e", "rejected" => "#991b1b" }[c.pipeline_stage] %>
+        <% end %>
         <div style="background: #fff; border: 1px solid #e5e5e5; border-radius: 8px;
                     padding: 1rem; border-left: 3px solid <%= border %>; opacity: 0.7;">
           <div style="font-weight: 600; font-size: 0.9rem; margin-bottom: 0.2rem;">
