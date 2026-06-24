@@ -28,6 +28,21 @@ module Candidates
       redirect_to gmail_service.followup_url(intake_url), allow_other_host: true
     end
 
+    def send_rejection_email
+      if @candidate.email.blank?
+        redirect_to candidates_path,
+                    alert: "No email address on file for #{@candidate.name}."
+        return
+      end
+
+      redirect_to gmail_service.rejection_url, allow_other_host: true
+    end
+
+    def mark_rejection_sent
+      @candidate.update_columns(rejection_email_sent_at: Time.current)
+      redirect_to candidates_path, notice: "Rejection email marked as sent for #{@candidate.name}."
+    end
+
     def update_name
       name = params[:name].to_s.strip
       if name.present?

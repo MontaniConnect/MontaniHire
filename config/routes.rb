@@ -79,8 +79,10 @@ Rails.application.routes.draw do
         post :toggle_no_show,  to: "candidates/pipeline#toggle_no_show"
       end
       scope :communications do
-        get   :send_invite_email,   to: "candidates/communications#send_invite_email"
-        get   :send_followup_email, to: "candidates/communications#send_followup_email"
+        get   :send_invite_email,      to: "candidates/communications#send_invite_email"
+        get   :send_followup_email,    to: "candidates/communications#send_followup_email"
+        get   :send_rejection_email,   to: "candidates/communications#send_rejection_email"
+        post  :mark_rejection_sent,    to: "candidates/communications#mark_rejection_sent"
         patch :update_name,             to: "candidates/communications#update_name"
         patch :update_recruiter_notes,         to: "candidates/communications#update_recruiter_notes"
         patch :update_compensation_package,    to: "candidates/communications#update_compensation_package"

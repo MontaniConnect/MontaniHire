@@ -224,6 +224,27 @@
               <% end %>
             <% end %>
           </div>
+          <%# ── Rejection feedback email (not_invited / not_selected only) ── %>
+          <% if %w[not_invited not_selected].include?(c.pipeline_stage) && c.email.present? %>
+            <div style="margin-top: 0.65rem; padding-top: 0.55rem; border-top: 1px solid #f0f0f0;">
+              <% if c.rejection_email_sent_at %>
+                <span style="font-size: 0.7rem; color: #16a34a; font-weight: 600;">
+                  ✓ Feedback sent <%= c.rejection_email_sent_at.strftime("%b %-d") %>
+                </span>
+              <% else %>
+                <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+                  <%= link_to "✉ Send feedback",
+                        send_rejection_email_candidate_path(c),
+                        style: "font-size: 0.7rem; color: #0369a1; text-decoration: none; font-weight: 500;" %>
+                  <%= button_to "Mark sent",
+                        mark_rejection_sent_candidate_path(c),
+                        method: :post,
+                        style: "font-size: 0.7rem; background: none; border: none; padding: 0;
+                                cursor: pointer; color: #aaa; text-decoration: underline;" %>
+                </div>
+              <% end %>
+            </div>
+          <% end %>
         </div>
       <% end %>
     </div>

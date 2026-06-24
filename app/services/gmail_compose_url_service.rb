@@ -45,6 +45,13 @@ class GmailComposeUrlService
     compose_url(to: @candidate.email, subject: subject, body: invite_body(role, intake_url))
   end
 
+  def rejection_url
+    role    = @candidate.job_role&.title || "this position"
+    org     = @candidate.user.organization&.name.presence
+    subject = [ org, role, "Application Update" ].compact.join(" — ")
+    compose_url(to: @candidate.email, subject: subject, body: rejection_body(role))
+  end
+
   def followup_url(intake_url)
     role    = @candidate.job_role&.title || "this position"
     subject = "Following up — #{role} Preliminary Interview Invitation"
@@ -80,6 +87,34 @@ class GmailComposeUrlService
 
       Best regards,
     TEXT
+  end
+
+  def rejection_body(role)
+    summary = @candidate.cv_analysis&.summary || @candidate.video_analysis&.summary
+    lines = [
+      "Hi #{@candidate.first_name},",
+      "",
+      "Thank you for taking the time to go through our process for the #{role} role. We genuinely appreciated the effort you put in.",
+      "",
+      "After careful review, we have decided to move forward with other candidates at this time. We know this is not the news you were hoping for, and we want to be as helpful as possible as you continue your search.",
+      ""
+    ]
+    if summary.present?
+      lines += [
+        "Here is some honest feedback that we hope will be useful for your future interviews:",
+        "",
+        summary,
+        ""
+      ]
+    end
+    lines += [
+      "We encourage you to keep applying and building on your experience. The right opportunity is out there, and this feedback is meant to help you get there faster.",
+      "",
+      "Thank you again for your time, and we wish you all the best.",
+      "",
+      "Best regards,"
+    ]
+    lines.join("\n")
   end
 
   def followup_body(role, intake_url)
