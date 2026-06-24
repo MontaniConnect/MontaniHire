@@ -34,7 +34,7 @@
     </button>
     <% if @shortlist.client_email.present? %>
       <%= link_to "Send to client →",
-            GmailComposeUrlService.shortlist_url(shortlist: @shortlist, share_url: shared_shortlist_url(@shortlist.token)),
+            ShortlistEmailService.shortlist_url(shortlist: @shortlist, share_url: shared_shortlist_url(@shortlist.token)),
             target: "_blank", rel: "noopener",
             class: "btn",
             style: "padding: 0.45rem 0.9rem; font-size: 0.85rem; white-space: nowrap; background: #1a73e8;" %>

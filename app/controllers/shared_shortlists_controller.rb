@@ -18,7 +18,7 @@ class SharedShortlistsController < ActionController::Base
 
       if @selected_items.any?
         role_name = @selected_items.first&.role_title || @shortlist.title
-        @gmail_decision_url = GmailComposeUrlService.decision_url(
+        @gmail_decision_url = ShortlistEmailService.decision_url(
           shortlist:      @shortlist,
           selected_names: @selected_items.map(&:candidate_name),
           role_name:      role_name

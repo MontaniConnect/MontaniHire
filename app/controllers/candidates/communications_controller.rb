@@ -121,7 +121,7 @@ module Candidates
     end
 
     def gmail_service
-      GmailComposeUrlService.new(candidate: @candidate)
+      CandidateOutreachService.new(candidate: @candidate)
     end
 
     def timeline_params
