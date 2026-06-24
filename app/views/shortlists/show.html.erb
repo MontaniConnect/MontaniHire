@@ -137,9 +137,9 @@
     <% end %>
   <% end %>
 
-  <%# ── Concluded candidates (collapsed by default) ── %>
+  <%# ── Concluded candidates (auto-open when nothing active) ── %>
   <% if concluded_items.any? %>
-    <details style="margin-top: 1.75rem;">
+    <details <%= "open" if active_items.none? %> style="margin-top: 1.75rem;">
       <summary style="list-style: none; cursor: pointer; display: inline-flex; align-items: center; gap: 0.4rem;
                       font-size: 0.72rem; font-weight: 700; color: #bbb; text-transform: uppercase; letter-spacing: 0.06em;
                       user-select: none;">
