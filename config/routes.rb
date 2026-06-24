@@ -76,7 +76,8 @@ Rails.application.routes.draw do
         post :offer_declined,  to: "candidates/pipeline#offer_declined"
         post :not_selected,    to: "candidates/pipeline#not_selected"
         post :confirm_outcome, to: "candidates/pipeline#confirm_outcome"
-        post :toggle_no_show,  to: "candidates/pipeline#toggle_no_show"
+        post :toggle_no_show,       to: "candidates/pipeline#toggle_no_show"
+        post :toggle_prelim_no_show, to: "candidates/pipeline#toggle_prelim_no_show"
       end
       scope :communications do
         get   :send_invite_email,      to: "candidates/communications#send_invite_email"

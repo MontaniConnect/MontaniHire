@@ -67,6 +67,16 @@ class Candidate < ApplicationRecord
     update!(no_show: false)
   end
 
+  def mark_prelim_no_show!
+    update!(preliminary_interview_no_show: true, pipeline_stage: "not_selected")
+  end
+
+  def undo_prelim_no_show!
+    attrs = { preliminary_interview_no_show: false }
+    attrs[:pipeline_stage] = "preliminary_interview" if pipeline_stage == "not_selected"
+    update!(attrs)
+  end
+
   def mark_offer_declined!
     update!(pipeline_stage: "offer_declined")
   end

@@ -73,5 +73,15 @@ module Candidates
         redirect_to candidate_path(@candidate), notice: "#{@candidate.name} marked as no-show."
       end
     end
+
+    def toggle_prelim_no_show
+      if @candidate.preliminary_interview_no_show?
+        @candidate.undo_prelim_no_show!
+        redirect_to candidate_path(@candidate), notice: "Preliminary interview no-show cleared for #{@candidate.name}."
+      else
+        @candidate.mark_prelim_no_show!
+        redirect_to candidate_path(@candidate), notice: "#{@candidate.name} marked as no-show (preliminary interview)."
+      end
+    end
   end
 end
