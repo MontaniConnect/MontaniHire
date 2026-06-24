@@ -5,10 +5,14 @@
   <div class="alert alert-notice"><%= flash[:notice] %></div>
 <% end %>
 
-<%# Back link %>
-<div style="margin-bottom: 1.25rem;">
+<%# Navigation %>
+<div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem;">
   <%= link_to "← All candidates", shared_shortlist_path(@shortlist.token),
         style: "font-size: 0.88rem; color: #888; text-decoration: none;" %>
+  <% if @next_item_id %>
+    <%= link_to "Next candidate →", shared_shortlist_item_path(@shortlist.token, @next_item_id),
+          style: "font-size: 0.88rem; color: #888; text-decoration: none;" %>
+  <% end %>
 </div>
 
 <%# Header — name, type badge, role, current decision %>

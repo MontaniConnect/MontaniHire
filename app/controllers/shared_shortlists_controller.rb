@@ -39,6 +39,14 @@ class SharedShortlistsController < ActionController::Base
                         ]
                       )
                       .find(params[:id])
+
+    ordered_ids = @shortlist.shortlist_items
+                             .includes(candidate: :cv_analysis)
+                             .sort_by { |i| -(i.resolved_cv_analysis&.cv_fit_score || -1) }
+                             .map(&:id)
+    current_pos = ordered_ids.index(@item.id)
+    next_id = ordered_ids[current_pos + 1] if current_pos
+    @next_item_id = next_id
   end
 
   def feedback
