@@ -24,6 +24,10 @@ class ShortlistItem < ApplicationRecord
       shareable&.job_role
   end
 
+  def role_title
+    job_role&.title
+  end
+
   def score
     candidate&.score ||
       cv_analysis&.score ||

@@ -131,6 +131,91 @@ class SharedShortlistsControllerTest < ActionDispatch::IntegrationTest
     assert_match "Declined Person", response.body
   end
 
+  # ── download_cv ───────────────────────────────────────────────────────────
+
+  def make_job_role
+    JobRole.create!(
+      organization: @user.organization, user: @user,
+      title: "Test Role", experience_level: "mid",
+      required_skills: "skill", responsibilities: "resp"
+    )
+  end
+
+  test "download_cv redirects to blob URL when ActiveStorage CV is attached" do
+    cv = CvAnalysis.create!(
+      organization: @user.organization, user: @user, job_role: make_job_role,
+      candidate_name: "AS Candidate", drive_file_id: "placeholder"
+    )
+    cv.cv.attach(io: StringIO.new("PDF content"), filename: "cv.pdf", content_type: "application/pdf")
+    item = ShortlistItem.create!(shortlist: @shortlist, cv_analysis: cv, client_status: "pending")
+    verify_session!
+
+    get shared_shortlist_cv_path(@shortlist.token, item)
+
+    assert_response :redirect
+    assert_match "active_storage", response.location
+  end
+
+  test "download_cv routes to drive proxy when drive_file_id is present and no AS attachment" do
+    cv = CvAnalysis.create!(
+      organization: @user.organization, user: @user, job_role: make_job_role,
+      candidate_name: "Drive Candidate", drive_file_id: "fake-drive-id-123"
+    )
+    item = ShortlistItem.create!(shortlist: @shortlist, cv_analysis: cv, client_status: "pending")
+    verify_session!
+
+    get shared_shortlist_cv_path(@shortlist.token, item)
+
+    # stream_drive_cv is reached; fresh_google_access_token returns nil in test
+    # (no google_refresh_token on test users) → redirects with Google auth alert
+    assert_response :redirect
+    assert_match "Google authorization", flash[:alert]
+  end
+
+  test "stream_drive_cv streams Drive response with correct content type on success" do
+    @user.update_columns(
+      google_refresh_token:    "fake-refresh",
+      google_access_token:     "fake-access-token",
+      google_token_expires_at: 1.hour.from_now
+    )
+    cv = CvAnalysis.create!(
+      organization: @user.organization, user: @user, job_role: make_job_role,
+      candidate_name: "Drive Success Candidate", drive_file_id: "drive-id-xyz"
+    )
+    item = ShortlistItem.create!(shortlist: @shortlist, cv_analysis: cv, client_status: "pending")
+    verify_session!
+
+    fake_response = Object.new
+    fake_response.define_singleton_method(:code) { "200" }
+    fake_response.define_singleton_method(:[]) { |key| key == "Content-Type" ? "application/pdf" : nil }
+    fake_response.define_singleton_method(:body) { "PDF byte content" }
+
+    fake_http = Object.new
+    fake_http.define_singleton_method(:use_ssl=) { |_| }
+    fake_http.define_singleton_method(:request) { |_req, &blk| blk.call(fake_response) }
+
+    # Temporarily override Net::HTTP.new so no real socket is opened.
+    # remove_method in ensure restores the inherited Class#new.
+    Net::HTTP.define_singleton_method(:new) { |*_| fake_http }
+    begin
+      get shared_shortlist_cv_path(@shortlist.token, item)
+      assert_response :success
+      assert_equal "application/pdf", response.content_type
+      assert_equal "PDF byte content", response.body
+    ensure
+      Net::HTTP.singleton_class.remove_method(:new)
+    end
+  end
+
+  test "download_cv redirects with alert when no CV is available" do
+    verify_session!
+
+    get shared_shortlist_cv_path(@shortlist.token, @item)
+
+    assert_redirected_to shared_shortlist_item_path(@shortlist.token, @item)
+    assert_equal "No CV file available.", flash[:alert]
+  end
+
   # ── feedback pipeline sync ────────────────────────────────────────────────
 
   test "feedback approved advances candidate to final_interview" do
