@@ -1,6 +1,6 @@
 class ClaudeAnalysisService
   MODEL          = "claude-sonnet-4-6"
-  PROMPT_VERSION = "2026-06-17-v9"
+  PROMPT_VERSION = "2026-06-24-v10"
 
   SYSTEM_PROMPT = <<~PROMPT
     You are an expert HR analyst evaluating a candidate's preliminary interview transcript against a specific job role.
@@ -48,6 +48,7 @@ class ClaudeAnalysisService
         (1) Key Strength: a highly specific, data-driven behavioural spike or culture add grounded in transcript evidence — not generic praise (e.g. "demonstrated strong pattern recognition by working backward from a failed project", not "great communicator")
         (2) Core Weakness / Decisive Factor: a real, unmasked friction point or growth area linked to a specific self-awareness signal, unguarded moment, or red flag in the interview (e.g. "was subtly dismissive during scheduling", "lacks deep Python experience but is proactively taking a course") — no ruinous empathy, no fake weaknesses like "perfectionism"
         Zero filler words. No praise-padding before the weakness.
+    - "client_summary": 2-3 sentences. A professional profile blurb written for the hiring client reviewing this candidate. Written in third person ("The candidate...", "[First name] brings..."). Focus exclusively on the candidate's most relevant strengths, communication quality, and role fit — grounded in specific interview evidence. No weakness language. No hedge words ("somewhat", "might", "could"). Concrete and specific.
     - "structured_feedback": an object with:
         - "strengths": array of strings (3-5 points) — specific, evidence-based positive signals from the transcript that do not appear in jd_requirements_coverage
         - "communication_quality": "poor" | "fair" | "good" | "excellent"
@@ -141,7 +142,8 @@ class ClaudeAnalysisService
         "jd_fit_score"              => jd_fit_score,
         "red_flags"                 => result["red_flags"],
         "recommendation_basis"      => result["recommendation_basis"],
-        "decision_rationale"        => result["decision_rationale"]
+        "decision_rationale"        => result["decision_rationale"],
+        "client_summary"            => result["client_summary"]
       ),
       prompt_version: PROMPT_VERSION,
       status: "completed"

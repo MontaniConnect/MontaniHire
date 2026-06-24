@@ -39,12 +39,12 @@
   </div>
 <% end %>
 
-<%# ── Summary ── %>
+<%# ── Client-facing summary ── %>
 <% cv = @item.resolved_cv_analysis %>
-<% if @item.summary.present? %>
+<% if @item.client_summary.present? %>
   <div class="card">
-    <h2 style="margin: 0 0 0.75rem;">Summary</h2>
-    <p style="font-size: 0.93rem; color: #333; line-height: 1.75; margin: 0;"><%= @item.summary %></p>
+    <h2 style="margin: 0 0 0.75rem;">Profile</h2>
+    <p style="font-size: 0.93rem; color: #333; line-height: 1.75; margin: 0;"><%= @item.client_summary %></p>
   </div>
 <% end %>
 

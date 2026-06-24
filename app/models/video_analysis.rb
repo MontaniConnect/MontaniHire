@@ -19,6 +19,10 @@ class VideoAnalysis < ApplicationRecord
     candidate_name.presence || (video.attached? ? video.filename.to_s : drive_file_name.presence || "Untitled")
   end
 
+  def client_summary
+    structured_feedback&.dig("client_summary").presence
+  end
+
   EPISODE_WEIGHTS = {
     "relevance_discipline"  => 0.20,
     "ownership_language"    => 0.10,

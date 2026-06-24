@@ -17,6 +17,10 @@ class CvAnalysis < ApplicationRecord
     candidate_name.presence || (cv.attached? ? cv.filename.to_s : "Untitled CV")
   end
 
+  def client_summary
+    structured_feedback&.dig("client_summary").presence
+  end
+
   def cv_fit_score
     structured_feedback&.dig("cv_fit_score")&.to_f
   end

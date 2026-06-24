@@ -1,6 +1,6 @@
 class CvClaudeAnalysisService
   MODEL          = "claude-sonnet-4-6"
-  PROMPT_VERSION = "2026-06-17-v14"
+  PROMPT_VERSION = "2026-06-24-v15"
 
   SYSTEM_PROMPT = <<~PROMPT
     You are an expert recruiter evaluating a candidate's CV against a job description.
@@ -38,6 +38,7 @@ class CvClaudeAnalysisService
         (1) Key Strength: a highly specific, data-driven behavioural spike or culture add grounded in CV evidence — not generic praise (e.g. "demonstrated strong pattern recognition by working backward from a failed project", not "great communicator")
         (2) Core Weakness / Decisive Factor: a real, unmasked friction point or growth area linked to a specific gap, self-awareness signal, or unguarded red flag in the CV (e.g. "lacks deep Python experience but is actively upskilling") — no ruinous empathy, no fake weaknesses like "perfectionism"
         Zero filler words. No praise-padding before the weakness.
+    - "client_summary": 2-3 sentences. A professional profile blurb written for the hiring client reviewing this candidate. Written in third person ("The candidate...", "[First name] brings..."). Focus exclusively on the candidate's most relevant strengths, key achievements, and role fit — grounded in specific CV evidence. No weakness language. No hedge words ("somewhat", "might", "could"). Concrete and specific.
     - "structured_feedback": an object with:
         - "cv_requirements_coverage": array of objects, one per must-have JD requirement, each with:
             - "requirement": the must-have requirement as stated or closely paraphrased from the JD
@@ -181,7 +182,8 @@ class CvClaudeAnalysisService
       structured_feedback: result["structured_feedback"].merge(
         "recommendation"     => result["recommendation"],
         "cv_fit_score"       => result["cv_fit_score"],
-        "decision_rationale" => result["decision_rationale"]
+        "decision_rationale" => result["decision_rationale"],
+        "client_summary"     => result["client_summary"]
       ),
       prompt_version: PROMPT_VERSION,
       status: "completed"

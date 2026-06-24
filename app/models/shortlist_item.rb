@@ -38,6 +38,14 @@ class ShortlistItem < ApplicationRecord
       shareable&.summary
   end
 
+  def client_summary
+    candidate&.cv_analysis&.client_summary ||
+      candidate&.video_analysis&.client_summary ||
+      cv_analysis&.client_summary ||
+      video_analysis&.client_summary ||
+      (shareable.respond_to?(:client_summary) ? shareable.client_summary : nil)
+  end
+
   def structured_feedback
     candidate&.structured_feedback ||
       cv_analysis&.structured_feedback ||
