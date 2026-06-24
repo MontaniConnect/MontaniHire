@@ -1,4 +1,5 @@
-:concurrency: 5
+:concurrency: 3
+:timeout: 300
 :queues:
   - [transcription, 1]
   - [default, 1]

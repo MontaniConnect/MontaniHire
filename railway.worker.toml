@@ -1,2 +1,3 @@
 [deploy]
 startCommand = "bundle exec sidekiq -c 3"
+drainSeconds = 300
