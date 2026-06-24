@@ -78,6 +78,10 @@
             <table class="data-table">
               <tbody>
                 <% @concluded_shortlists.each do |shortlist| %>
+                  <%
+                    hired_at       = shortlist.shortlist_items.filter_map { |i| i.candidate&.hired_at }.max
+                    concluded_date = hired_at || shortlist.shortlist_items.map(&:updated_at).max
+                  %>
                   <tr style="opacity: 0.55;">
                     <td>
                       <%= link_to shortlist.title, shortlist_path(shortlist),
@@ -96,6 +100,9 @@
                     </td>
                     <td style="color: #bbb; font-size: 0.85rem;">
                       <%= shortlist.created_at.strftime("%b %-d, %Y") %>
+                    </td>
+                    <td style="color: #bbb; font-size: 0.85rem;">
+                      <%= concluded_date&.strftime("%b %-d, %Y") %>
                     </td>
                     <td style="text-align: right; white-space: nowrap;">
                       <%= link_to "View", shortlist_path(shortlist),

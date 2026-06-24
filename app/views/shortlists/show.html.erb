@@ -60,7 +60,8 @@
 <%
   concluded_stages = %w[hired offer_declined not_selected rejected not_invited]
   active_items, concluded_items = @items.partition { |i|
-    !concluded_stages.include?(i.candidate&.pipeline_stage)
+    !concluded_stages.include?(i.candidate&.pipeline_stage) &&
+    !i.candidate&.final_interview_no_show
   }
 %>
 <div style="margin-top: 1.25rem;">
@@ -156,7 +157,9 @@
               <% end %>
             </div>
             <% stage = item.candidate&.pipeline_stage %>
-            <% if stage == "hired" %>
+            <% if item.candidate&.final_interview_no_show %>
+              <span class="badge badge-failed" style="font-size: 0.72rem; opacity: 0.6;">✕ No Show</span>
+            <% elsif stage == "hired" %>
               <span class="badge badge-completed" style="font-size: 0.72rem; opacity: 0.6;">✓ Hired</span>
             <% elsif stage == "offer_declined" %>
               <span class="badge badge-failed" style="font-size: 0.72rem; opacity: 0.6;">✕ Offer Declined</span>
