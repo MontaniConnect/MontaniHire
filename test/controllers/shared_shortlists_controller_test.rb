@@ -166,6 +166,19 @@ class SharedShortlistsControllerTest < ActionDispatch::IntegrationTest
     assert_match "Declined Person", response.body
   end
 
+  test "show renders 200 when client_decision_submitted_at is set" do
+    @candidate.update_columns(pipeline_stage: "final_interview")
+    @shortlist.update_columns(
+      client_decision_submitted_at: Time.current,
+      client_availability:          "Mon–Fri 9 AM EST"
+    )
+    verify_session!
+
+    get shared_shortlist_path(@shortlist.token)
+
+    assert_response :success
+  end
+
   test "Decision received badge absent when client_decision_submitted_at is nil" do
     # accessed via recruiter view — just assert the column value is correct
     assert_nil @shortlist.client_decision_submitted_at

@@ -121,11 +121,7 @@
           Your availability and selections have been received by the Montani team.
         </div>
         <%= link_to "Open Gmail again →",
-              GmailComposeUrlService.decision_url(
-                shortlist:       @shortlist,
-                selected_names:  selected_names,
-                declined_names:  declined_names
-              ),
+              @gmail_decision_url,
               target: "_blank", rel: "noopener",
               class: "btn",
               style: "background: #1a73e8; padding: 0.45rem 1rem; font-size: 0.85rem;" %>

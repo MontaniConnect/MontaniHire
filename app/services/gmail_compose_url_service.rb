@@ -2,7 +2,7 @@ class GmailComposeUrlService
   class << self
     def decision_url(shortlist:, selected_names:, declined_names:)
       subject = "Final Interview Decision — #{shortlist.title}"
-      to      = [ shortlist.user.email, ENV["OPS_EMAIL"].presence ].compact.join(",")
+      to      = [ shortlist.user&.email, ENV["OPS_EMAIL"].presence ].compact.join(",")
       body    = decision_body(shortlist, selected_names, declined_names)
       "https://mail.google.com/mail/?view=cm&fs=1" \
         "&to=#{ERB::Util.url_encode(to)}" \

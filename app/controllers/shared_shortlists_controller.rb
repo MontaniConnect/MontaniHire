@@ -12,8 +12,17 @@ class SharedShortlistsController < ActionController::Base
       @items = @shortlist.shortlist_items
                          .includes(:shareable, candidate: :cv_analysis)
                          .sort_by { |i| -(i.resolved_cv_analysis&.cv_fit_score || -1) }
+
+      if @shortlist.client_decision_submitted_at.present?
+        selected = @items.select { |i| %w[final_interview hired offer_declined].include?(i.candidate&.pipeline_stage) }
+        declined = @items.select { |i| i.candidate&.pipeline_stage == "not_selected" }
+        @gmail_decision_url = GmailComposeUrlService.decision_url(
+          shortlist:      @shortlist,
+          selected_names: selected.map(&:candidate_name),
+          declined_names: declined.map(&:candidate_name)
+        )
+      end
     end
-    # renders the email gate or the candidate list depending on verified?
   end
 
   def verify

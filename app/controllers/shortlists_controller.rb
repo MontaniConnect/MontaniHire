@@ -16,8 +16,9 @@ class ShortlistsController < AuthenticatedController
   def show
     @items = @shortlist.shortlist_items.includes(
       :shareable,
+      :added_by,
       cv_analysis: { cv_attachment: :blob },
-      candidate: [ :cv_analysis, :added_by ]
+      candidate: :cv_analysis
     )
   end
 
