@@ -13,11 +13,11 @@ class DbBackupJob < ApplicationJob
     begin
       db_url = ENV.fetch("DATABASE_URL")
 
-      system("pg_dump --format=custom --no-acl --no-owner -f #{dump_path} '#{db_url}'") ||
+      system("pg_dump", "--format=custom", "--no-acl", "--no-owner", "-f", dump_path, db_url) ||
         raise("pg_dump failed (exit #{$?.exitstatus})")
       raise "pg_dump produced empty dump" if File.size(dump_path).zero?
 
-      system("gzip #{dump_path}") || raise("gzip failed (exit #{$?.exitstatus})")
+      system("gzip", dump_path) || raise("gzip failed (exit #{$?.exitstatus})")
       # gzip replaces dump_path with dump_path.gz in place
 
       s3 = Aws::S3::Client.new(

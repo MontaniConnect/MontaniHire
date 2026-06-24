@@ -24,7 +24,7 @@ class ShortlistEmailServiceTest < ActiveSupport::TestCase
   test "decision_url returns a Gmail compose URL" do
     url = ShortlistEmailService.decision_url(
       shortlist:      decision_shortlist,
-      selected_names: ["Ana R."],
+      selected_names: [ "Ana R." ],
       role_name:      "Operations Manager"
     )
     assert_match %r{\Ahttps://mail\.google\.com/mail/\?view=cm}, url
@@ -87,7 +87,7 @@ class ShortlistEmailServiceTest < ActiveSupport::TestCase
   test "decision_url body includes selected candidate names" do
     url = ShortlistEmailService.decision_url(
       shortlist:      decision_shortlist,
-      selected_names: ["Ana R.", "Ben T."],
+      selected_names: [ "Ana R.", "Ben T." ],
       role_name:      "Ops"
     )
     assert_includes url, ERB::Util.url_encode("Ana R.")
