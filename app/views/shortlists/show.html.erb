@@ -122,12 +122,6 @@
                       class: "btn",
                       style: "padding: 0.3rem 0.75rem; font-size: 0.78rem; background: #dc2626;" %>
               <% end %>
-              <% _rcv = item.resolved_cv_analysis %>
-              <% if _rcv&.cv&.attached? || _rcv&.drive_file_id.present? %>
-                <%= link_to "↓ CV", download_cv_cv_analysis_path(_rcv),
-                      class: "btn",
-                      style: "padding: 0.3rem 0.65rem; font-size: 0.8rem; background: #0369a1;" %>
-              <% end %>
               <%= link_to "View →", candidate_path(item.candidate),
                     class: "btn", style: "padding: 0.3rem 0.65rem; font-size: 0.8rem; background: #555;" %>
             <% end %>
