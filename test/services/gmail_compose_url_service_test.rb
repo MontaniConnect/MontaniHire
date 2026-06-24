@@ -114,6 +114,15 @@ class GmailComposeUrlServiceTest < ActiveSupport::TestCase
     FakeShortlist.new(title: title, user: user)
   end
 
+  test "decision_url subject uses 'this position' when role_name is nil" do
+    url = GmailComposeUrlService.decision_url(
+      shortlist:      decision_shortlist,
+      selected_names: [],
+      role_name:      nil
+    )
+    assert_includes url, ERB::Util.url_encode("this position")
+  end
+
   test "decision_url returns a Gmail compose URL" do
     url = GmailComposeUrlService.decision_url(
       shortlist:      decision_shortlist,

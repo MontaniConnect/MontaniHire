@@ -83,6 +83,57 @@ class SharedShortlistsControllerTest < ActionDispatch::IntegrationTest
     assert_response :not_found
   end
 
+  # ── verify ───────────────────────────────────────────────────────────────
+
+  test "verify with wrong email redirects with alert, not notice" do
+    post verify_shared_shortlist_path(@shortlist.token), params: { email: "wrong@example.com" }
+
+    assert_redirected_to shared_shortlist_path(@shortlist.token)
+    assert_match "doesn't match", flash[:alert]
+    assert_nil flash[:notice]
+  end
+
+  # ── show_item ─────────────────────────────────────────────────────────────
+
+  test "show_item renders 200 for a valid item" do
+    verify_session!
+
+    get shared_shortlist_item_path(@shortlist.token, @item)
+
+    assert_response :success
+  end
+
+  test "show_item @next_item_id points to the next-highest-score item" do
+    high_score_cv = CvAnalysis.create!(
+      organization: @user.organization, user: @user, job_role: make_job_role,
+      candidate_name: "High Score", drive_file_id: "hscv-#{SecureRandom.hex(4)}",
+      structured_feedback: { "cv_fit_score" => 7.0 }
+    )
+    high_item = ShortlistItem.create!(shortlist: @shortlist, cv_analysis: high_score_cv, client_status: "pending")
+    verify_session!
+
+    # high_item sorts first (score 7.0); @item sorts second (no score → -1)
+    get shared_shortlist_item_path(@shortlist.token, high_item)
+
+    assert_response :success
+    assert_match shared_shortlist_item_path(@shortlist.token, @item), response.body
+  end
+
+  test "show_item returns 404 for an item on a different shortlist" do
+    other_shortlist = Shortlist.create!(
+      user: @user, organization: @user.organization,
+      title: "Other", client_email: "other@test.com"
+    )
+    other_item = ShortlistItem.create!(
+      shortlist: other_shortlist, candidate: @candidate, client_status: "pending"
+    )
+    verify_session!
+
+    get shared_shortlist_item_path(@shortlist.token, other_item)
+
+    assert_response :not_found
+  end
+
   # ── show — Gmail button ───────────────────────────────────────────────────
 
   test "show renders Gmail button when a candidate is in final_interview" do
