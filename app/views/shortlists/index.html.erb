@@ -30,12 +30,6 @@
                 <td>
                   <%= link_to shortlist.title, shortlist_path(shortlist),
                         style: "font-weight: 500; color: #1a1a1a; text-decoration: none;" %>
-                  <% if shortlist.client_decision_submitted_at.present? %>
-                    <span style="margin-left: 0.4rem; font-size: 0.68rem; font-weight: 600; color: #166534;
-                                 background: #dcfce7; border-radius: 4px; padding: 0.1rem 0.45rem; vertical-align: middle;">
-                      Decision received
-                    </span>
-                  <% end %>
                 </td>
                 <td style="color: #555; font-size: 0.88rem;">
                   <% if shortlist.client&.name.present? %>

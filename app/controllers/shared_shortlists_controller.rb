@@ -4,7 +4,7 @@ class SharedShortlistsController < ActionController::Base
   layout "shared"
 
   before_action :set_shortlist
-  before_action :require_verification, only: %i[feedback show_item no_show download_cv submit_decision]
+  before_action :require_verification, only: %i[feedback show_item no_show download_cv]
   helper_method :verified?
 
   def show
@@ -13,13 +13,15 @@ class SharedShortlistsController < ActionController::Base
                          .includes(:shareable, candidate: :cv_analysis)
                          .sort_by { |i| -(i.resolved_cv_analysis&.cv_fit_score || -1) }
 
-      if @shortlist.client_decision_submitted_at.present?
-        selected = @items.select { |i| %w[final_interview hired offer_declined].include?(i.candidate&.pipeline_stage) }
-        declined = @items.select { |i| i.candidate&.pipeline_stage == "not_selected" }
+      @selected_items = @items.select { |i| %w[final_interview hired offer_declined].include?(i.candidate&.pipeline_stage) }
+      @declined_items = @items.select { |i| i.candidate&.pipeline_stage == "not_selected" }
+
+      if @selected_items.any?
+        role_name = @selected_items.first&.job_role&.title || @shortlist.title
         @gmail_decision_url = GmailComposeUrlService.decision_url(
           shortlist:      @shortlist,
-          selected_names: selected.map(&:candidate_name),
-          declined_names: declined.map(&:candidate_name)
+          selected_names: @selected_items.map(&:candidate_name),
+          role_name:      role_name
         )
       end
     end
@@ -77,21 +79,6 @@ class SharedShortlistsController < ActionController::Base
     item.toggle_final_interview_no_show!
     notice = item.final_interview_no_show? ? "Marked as no show." : "No show cleared."
     redirect_to shared_shortlist_item_path(@shortlist.token, item), notice: notice
-  end
-
-  def submit_decision
-    if @shortlist.client_decision_submitted_at.present?
-      redirect_to shared_shortlist_path(@shortlist.token),
-                  alert: "Decision already sent on #{@shortlist.client_decision_submitted_at.strftime('%b %-d')}."
-      return
-    end
-
-    @shortlist.update!(
-      client_availability:          params[:client_availability].to_s.strip,
-      client_decision_submitted_at: Time.current
-    )
-
-    redirect_to shared_shortlist_path(@shortlist.token), notice: "Decision sent. Use the button below to open Gmail."
   end
 
   def download_cv

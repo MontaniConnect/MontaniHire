@@ -107,50 +107,49 @@ class GmailComposeUrlServiceTest < ActiveSupport::TestCase
 
   # ── decision_url ─────────────────────────────────────────────────────────
 
-  FakeShortlist = Struct.new(:title, :user, :client_availability, keyword_init: true)
+  FakeShortlist = Struct.new(:title, :user, keyword_init: true)
 
-  def decision_shortlist(title: "Ops Role", recruiter_email: "recruiter@example.com", availability: "Mon–Fri 9 AM EST")
-    user = Struct.new(:email).new(recruiter_email)
-    FakeShortlist.new(title: title, user: user, client_availability: availability)
+  def decision_shortlist(title: "Ops Role", recruiter_email: "recruiter@example.com", recruiter_name: "Ana Santos")
+    user = Struct.new(:email, :name).new(recruiter_email, recruiter_name)
+    FakeShortlist.new(title: title, user: user)
   end
 
   test "decision_url returns a Gmail compose URL" do
     url = GmailComposeUrlService.decision_url(
       shortlist:      decision_shortlist,
       selected_names: ["Ana R."],
-      declined_names: []
+      role_name:      "Operations Manager"
     )
     assert_match %r{\Ahttps://mail\.google\.com/mail/\?view=cm}, url
   end
 
-  test "decision_url subject contains shortlist title" do
+  test "decision_url subject contains role name and Interview Availability" do
     url = GmailComposeUrlService.decision_url(
-      shortlist:      decision_shortlist(title: "Sales Associate"),
+      shortlist:      decision_shortlist,
       selected_names: [],
-      declined_names: []
+      role_name:      "Sales Associate"
     )
     assert_includes url, ERB::Util.url_encode("Sales Associate")
-    assert_includes url, ERB::Util.url_encode("Final Interview Decision")
+    assert_includes url, ERB::Util.url_encode("Interview Availability")
   end
 
   test "decision_url TO contains recruiter email" do
     url = GmailComposeUrlService.decision_url(
       shortlist:      decision_shortlist(recruiter_email: "recruiter@montani.ph"),
       selected_names: [],
-      declined_names: []
+      role_name:      "Ops"
     )
     assert_includes url, ERB::Util.url_encode("recruiter@montani.ph")
   end
 
   test "decision_url TO contains OPS_EMAIL when set" do
-    ClimateControl.module_eval {} rescue nil  # no climate_control gem — use ENV directly
     original = ENV["OPS_EMAIL"]
     ENV["OPS_EMAIL"] = "ops@montani.ph"
 
     url = GmailComposeUrlService.decision_url(
       shortlist:      decision_shortlist(recruiter_email: "recruiter@montani.ph"),
       selected_names: [],
-      declined_names: []
+      role_name:      "Ops"
     )
     assert_includes url, ERB::Util.url_encode("recruiter@montani.ph,ops@montani.ph")
   ensure
@@ -164,7 +163,7 @@ class GmailComposeUrlServiceTest < ActiveSupport::TestCase
     url = GmailComposeUrlService.decision_url(
       shortlist:      decision_shortlist(recruiter_email: "recruiter@montani.ph"),
       selected_names: [],
-      declined_names: []
+      role_name:      "Ops"
     )
     assert_includes url, "to=#{ERB::Util.url_encode('recruiter@montani.ph')}"
     refute_includes url, ","
@@ -176,27 +175,27 @@ class GmailComposeUrlServiceTest < ActiveSupport::TestCase
     url = GmailComposeUrlService.decision_url(
       shortlist:      decision_shortlist,
       selected_names: ["Ana R.", "Ben T."],
-      declined_names: []
+      role_name:      "Ops"
     )
     assert_includes url, ERB::Util.url_encode("Ana R.")
     assert_includes url, ERB::Util.url_encode("Ben T.")
   end
 
-  test "decision_url body includes declined candidate names" do
+  test "decision_url body addresses recruiter by name" do
+    url = GmailComposeUrlService.decision_url(
+      shortlist:      decision_shortlist(recruiter_name: "Maria Santos"),
+      selected_names: [],
+      role_name:      "Ops"
+    )
+    assert_includes url, ERB::Util.url_encode("Maria Santos")
+  end
+
+  test "decision_url body includes placeholder availability slots" do
     url = GmailComposeUrlService.decision_url(
       shortlist:      decision_shortlist,
       selected_names: [],
-      declined_names: ["Maria S."]
+      role_name:      "Ops"
     )
-    assert_includes url, ERB::Util.url_encode("Maria S.")
-  end
-
-  test "decision_url body includes availability text" do
-    url = GmailComposeUrlService.decision_url(
-      shortlist:      decision_shortlist(availability: "Mon–Fri 9 AM EST"),
-      selected_names: [],
-      declined_names: []
-    )
-    assert_includes url, ERB::Util.url_encode("Mon–Fri 9 AM EST")
+    assert_includes url, ERB::Util.url_encode("dates and times I have available")
   end
 end

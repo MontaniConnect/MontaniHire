@@ -1,9 +1,10 @@
 class GmailComposeUrlService
   class << self
-    def decision_url(shortlist:, selected_names:, declined_names:)
-      subject = "Final Interview Decision — #{shortlist.title}"
+    def decision_url(shortlist:, selected_names:, role_name: nil)
+      role    = role_name.presence || "this position"
+      subject = "Interview Availability: #{role} Candidates"
       to      = [ shortlist.user&.email, ENV["OPS_EMAIL"].presence ].compact.join(",")
-      body    = decision_body(shortlist, selected_names, declined_names)
+      body    = decision_body(shortlist, selected_names, role)
       "https://mail.google.com/mail/?view=cm&fs=1" \
         "&to=#{ERB::Util.url_encode(to)}" \
         "&su=#{ERB::Util.url_encode(subject)}" \
@@ -24,28 +25,31 @@ class GmailComposeUrlService
 
     private
 
-    def decision_body(shortlist, selected_names, declined_names)
-      lines = [ "Hi," , "" ]
-
-      if selected_names.any?
-        lines << "Selected for final interview:"
-        selected_names.each { |n| lines << "  - #{n}" }
+    def decision_body(shortlist, selected_names, role_name)
+      recipient = shortlist.user&.name.presence || "there"
+      lines = [
+        "Hi #{recipient},",
+        "",
+        "I've reviewed the profiles and would love to move forward with interviews for the #{role_name} position. I would like to schedule time with the following candidates:",
+        ""
+      ]
+      selected_names.each do |name|
+        lines << name
         lines << ""
       end
-
-      if declined_names.any?
-        lines << "Declined:"
-        declined_names.each { |n| lines << "  - #{n}" }
-        lines << ""
-      end
-
-      if shortlist.client_availability.present?
-        lines << "My availability (US timezone):"
-        lines << shortlist.client_availability
-        lines << ""
-      end
-
-      lines << "Best regards,"
+      lines += [
+        "The dates and times I have available are below:",
+        "",
+        "[Date, Month Day] – [Time Range, e.g., 9:00 AM – 11:30 AM EST]",
+        "",
+        "[Date, Month Day] – [Time Range, e.g., 2:00 PM – 4:00 PM EST]",
+        "",
+        "[Date, Month Day] – [Time Range, e.g., 1:00 PM – 3:00 PM EST]",
+        "",
+        "Please let me know which slots work best for each of them so we can get these locked in.",
+        "",
+        "Best regards,"
+      ]
       lines.join("\n")
     end
 

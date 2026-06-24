@@ -127,6 +127,5 @@ Rails.application.routes.draw do
     patch "/:token/items/:id/feedback",   to: "shared_shortlists#feedback",  as: :shared_shortlist_feedback
     patch "/:token/items/:id/no_show",    to: "shared_shortlists#no_show",   as: :shared_shortlist_no_show
     get   "/:token/items/:id/cv",         to: "shared_shortlists#download_cv", as: :shared_shortlist_cv
-    post  "/:token/decision",             to: "shared_shortlists#submit_decision", as: :shared_shortlist_decision
   end
 end
