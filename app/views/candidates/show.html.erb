@@ -211,9 +211,9 @@
             data: { turbo_confirm: "Move #{@candidate.name} back to Final Interview?" },
             class: "btn", style: "background: #555; padding: 0.45rem 1rem; font-size: 0.85rem;" %>
     <% elsif @candidate.pipeline_stage == "not_selected" %>
-      <%= button_to "← Revert to Final Interview", revert_candidate_path(@candidate),
+      <%= button_to "← Revert to CV Review", revert_candidate_path(@candidate),
             method: :post,
-            data: { turbo_confirm: "Move #{@candidate.name} back to Final Interview?" },
+            data: { turbo_confirm: "Move #{@candidate.name} back to CV Review?" },
             class: "btn", style: "background: #555; padding: 0.45rem 1rem; font-size: 0.85rem;" %>
     <% end %>
 

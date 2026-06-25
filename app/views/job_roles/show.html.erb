@@ -52,7 +52,7 @@
 
     <%# Summary stats %>
     <div class="card">
-      <h2 style="margin-bottom: 1rem;">Confirmed Outcomes — <%= @calibration_examples.size %> candidate<%= "s" if @calibration_examples.size != 1 %></h2>
+      <h2 style="margin-bottom: 1rem;">Calibration Summary — <%= @calibration_examples.size %> candidate<%= "s" if @calibration_examples.size != 1 %></h2>
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
 
         <%# Invited group %>
@@ -63,7 +63,7 @@
           <% inv_recs          = @calibration_invited.filter_map { |c| c.structured_feedback["recommendation"] } %>
           <div style="background: #f0fdf4; border: 1px solid #86efac; border-radius: 8px; padding: 1rem;">
             <div style="font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #166534; margin-bottom: 0.65rem;">
-              Invited to Final Interview (<%= @calibration_invited.size %>)
+              Hired / Offer Extended (<%= @calibration_invited.size %>)
             </div>
             <div style="display: flex; gap: 1.5rem; flex-wrap: wrap; margin-bottom: 0.5rem;">
               <% if inv_int_scores.any? %>
@@ -99,8 +99,8 @@
           </div>
         <% else %>
           <div style="background: #fafafa; border: 1px solid #e5e5e5; border-radius: 8px; padding: 1rem;">
-            <div style="font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #999; margin-bottom: 0.4rem;">Invited to Final Interview</div>
-            <p style="font-size: 0.85rem; color: #aaa; margin: 0;">None confirmed yet</p>
+            <div style="font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #999; margin-bottom: 0.4rem;">Hired / Offer Extended</div>
+            <p style="font-size: 0.85rem; color: #aaa; margin: 0;">None yet</p>
           </div>
         <% end %>
 
@@ -184,7 +184,7 @@
               <th style="text-align: left; padding: 0.5rem 0.75rem; font-weight: 600; color: #444; width: 24%;">Category</th>
               <% if inv_signals.any? %>
               <th style="text-align: center; padding: 0.5rem 0.75rem; font-weight: 600; color: #166534; background: #f0fdf4; border-radius: 4px 4px 0 0; width: 29%;">
-                Invited (<%= @calibration_invited.select { |c| c.video_analysis&.structured_feedback&.dig("communication_signals") }.size %>)
+                Hired / Offer Extended (<%= @calibration_invited.select { |c| c.video_analysis&.structured_feedback&.dig("communication_signals") }.size %>)
               </th>
               <% end %>
               <% if ni_signals.any? %>
@@ -247,7 +247,7 @@
 
     <%# Individual examples %>
     <div class="card">
-      <h2 style="margin-bottom: 0.85rem;">Confirmed Outcomes</h2>
+      <h2 style="margin-bottom: 0.85rem;">Closed Outcomes</h2>
       <% @calibration_examples.each do |c| %>
         <% fb           = c.structured_feedback %>
         <% va           = c.video_analysis %>
@@ -258,8 +258,9 @@
         <% rec          = fb["recommendation"] %>
         <% rec_labels   = { "comprehensive" => "Comprehensive", "substantive" => "Substantive", "superficial" => "Superficial" } %>
         <% rec_class    = { "comprehensive" => "completed", "substantive" => "pending", "superficial" => "failed" }[rec] || "pending" %>
-        <% outcome_label = c.pipeline_stage == "final_interview" ? "Invited" : "Not invited" %>
-        <% outcome_style = c.pipeline_stage == "final_interview" ? "color:#166534;background:#dcfce7" : "color:#991b1b;background:#fee2e2" %>
+        <% is_invited    = %w[hired offer_declined].include?(c.pipeline_stage) %>
+        <% outcome_label = is_invited ? "Hired / Offer Extended" : "Not Invited" %>
+        <% outcome_style = is_invited ? "color:#166534;background:#dcfce7" : "color:#991b1b;background:#fee2e2" %>
         <div style="padding: 0.85rem 0; border-bottom: 1px solid #f0f0f0;">
           <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; flex-wrap: wrap;">
             <div style="flex: 1; min-width: 0;">
@@ -308,7 +309,7 @@
               <% end %>
             </div>
             <div style="font-size: 0.75rem; color: #aaa; white-space: nowrap;">
-              <%= c.outcome_confirmed_at.strftime("%b %d, %Y") %>
+              <%= c.updated_at.strftime("%b %d, %Y") %>
             </div>
           </div>
         </div>

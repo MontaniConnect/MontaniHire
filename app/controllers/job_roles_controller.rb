@@ -10,15 +10,23 @@ class JobRolesController < AuthenticatedController
     @tab = params[:tab].presence || "overview"
 
     if @tab == "calibration"
-      confirmed = Candidate
-        .where(job_role: @job_role, pipeline_stage: %w[final_interview not_invited])
-        .where.not(outcome_confirmed_at: nil)
-        .order(outcome_confirmed_at: :desc)
-        .includes(:video_analysis, :cv_analysis)
+      completed_video_ids = VideoAnalysis.where(status: "completed").select(:id)
 
-      @calibration_invited     = confirmed.select { |c| c.pipeline_stage == "final_interview" }
-      @calibration_not_invited = confirmed.select { |c| c.pipeline_stage == "not_invited" }
-      @calibration_examples    = confirmed.to_a
+      @calibration_invited = Candidate
+        .where(job_role: @job_role, pipeline_stage: %w[hired offer_declined], final_interview_no_show: false)
+        .where(video_analysis_id: completed_video_ids)
+        .includes(:video_analysis, :cv_analysis)
+        .order(updated_at: :desc)
+
+      @calibration_not_invited = Candidate
+        .where(job_role: @job_role, final_interview_no_show: false)
+        .where("pipeline_stage = 'not_invited' OR (pipeline_stage = 'not_selected' AND NOT preliminary_interview_no_show)")
+        .where(video_analysis_id: completed_video_ids)
+        .includes(:video_analysis, :cv_analysis)
+        .order(updated_at: :desc)
+
+      @calibration_examples = (@calibration_invited.to_a + @calibration_not_invited.to_a)
+        .sort_by(&:updated_at).reverse
     end
   end
 
