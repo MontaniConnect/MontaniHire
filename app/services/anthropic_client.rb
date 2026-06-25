@@ -20,6 +20,6 @@ class AnthropicClient
               .strip
     JSON.parse(raw)
   rescue JSON::ParserError => e
-    raise "Claude returned invalid JSON: #{e.message}"
+    raise "Claude returned invalid JSON: #{e.message}\nRaw response: #{raw.first(300)}"
   end
 end

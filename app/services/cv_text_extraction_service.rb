@@ -69,6 +69,12 @@ class CvTextExtractionService
 
   def extract_docx(path)
     doc = Docx::Document.open(path)
-    doc.paragraphs.map(&:to_s).join("\n").strip
+    texts = doc.paragraphs.map(&:to_s)
+    doc.tables.each do |table|
+      table.rows.each do |row|
+        row.cells.each { |cell| texts.concat(cell.paragraphs.map(&:to_s)) }
+      end
+    end
+    texts.reject(&:empty?).join("\n").strip
   end
 end
