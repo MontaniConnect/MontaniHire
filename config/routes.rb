@@ -1,5 +1,5 @@
+require "sidekiq-cron"  # must load before sidekiq/web to add the Cron tab
 require "sidekiq/web"
-require "sidekiq-cron"
 
 Rails.application.routes.draw do
   # Sidekiq Web UI — owner-only; non-owners and unauthenticated users receive 404
