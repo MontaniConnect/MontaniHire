@@ -3,7 +3,7 @@ class JobRolesController < AuthenticatedController
   before_action :require_write_access!, only: %i[create update destroy extract_requirements]
 
   def index
-    @job_roles = current_organization.job_roles.order(created_at: :desc)
+    @job_roles = current_organization.job_roles.includes(:video_analyses, :cv_analyses).order(created_at: :desc)
   end
 
   def show

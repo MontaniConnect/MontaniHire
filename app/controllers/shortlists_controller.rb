@@ -5,7 +5,7 @@ class ShortlistsController < AuthenticatedController
   def index
     concluded_stages = %w[hired offer_declined not_selected rejected not_invited]
     all_shortlists = current_organization.shortlists
-                                         .includes(:user, shortlist_items: :candidate)
+                                         .includes(:user, :client, shortlist_items: :candidate)
                                          .order(created_at: :desc)
     @active_shortlists, @concluded_shortlists = all_shortlists.partition do |sl|
       items = sl.shortlist_items

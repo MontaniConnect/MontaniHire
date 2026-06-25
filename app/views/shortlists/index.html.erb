@@ -38,7 +38,7 @@
                   <% end %>
                   <%= shortlist.client_email %>
                 </td>
-                <td><%= shortlist.shortlist_items.count %></td>
+                <td><%= shortlist.shortlist_items.size %></td>
                 <td style="color: #666; font-size: 0.85rem;">
                   <%= shortlist.user&.name.presence || shortlist.user&.email %>
                 </td>
@@ -94,7 +94,7 @@
                       <% end %>
                       <%= shortlist.client_email %>
                     </td>
-                    <td style="color: #aaa;"><%= shortlist.shortlist_items.count %></td>
+                    <td style="color: #aaa;"><%= shortlist.shortlist_items.size %></td>
                     <td style="color: #bbb; font-size: 0.85rem;">
                       <%= shortlist.user&.name.presence || shortlist.user&.email %>
                     </td>
