@@ -17,7 +17,8 @@ class ShortlistsController < AuthenticatedController
     @items = @shortlist.shortlist_items.includes(
       :added_by,
       :candidate,
-      cv_analysis: { cv_attachment: :blob }
+      :video_analysis,
+      :cv_analysis
     )
   end
 
