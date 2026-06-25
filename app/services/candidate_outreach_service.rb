@@ -11,8 +11,7 @@ class CandidateOutreachService
 
   def rejection_url
     role    = @candidate.job_role&.title || "this position"
-    org     = @candidate.user.organization&.name.presence
-    subject = [ org, role, "Application Update" ].compact.join(" — ")
+    subject = "#{role} — Application Update"
     compose_url(to: @candidate.email, subject: subject, body: rejection_body(role))
   end
 

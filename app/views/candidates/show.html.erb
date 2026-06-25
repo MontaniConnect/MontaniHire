@@ -96,12 +96,17 @@
             method: :post,
             data: { turbo_confirm: "Reject #{@candidate.name}? This will mark them as not qualified." },
             class: "btn", style: "background: #dc2626; padding: 0.45rem 1rem; font-size: 0.85rem;" %>
+    <% elsif @candidate.preliminary_interview_no_show? %>
+      <%= button_to "✓ Undo No Show (Prelim)",
+            toggle_prelim_no_show_candidate_path(@candidate),
+            method: :post, class: "btn",
+            style: "background: #6b7280; padding: 0.45rem 1rem; font-size: 0.85rem;" %>
     <% elsif @candidate.pipeline_stage == "preliminary_interview" %>
-      <%= button_to @candidate.preliminary_interview_no_show? ? "✓ Undo No Show (Prelim)" : "⚠ No Show (Prelim)",
+      <%= button_to "⚠ No Show (Prelim)",
             toggle_prelim_no_show_candidate_path(@candidate),
             method: :post,
             class: "btn",
-            style: "background: #{@candidate.preliminary_interview_no_show? ? '#6b7280' : '#f59e0b'}; padding: 0.45rem 1rem; font-size: 0.85rem;" %>
+            style: "background: #f59e0b; padding: 0.45rem 1rem; font-size: 0.85rem;" %>
       <% unless @candidate.intake_submitted? %>
         <%= button_to "← Revert to CV Review", revert_candidate_path(@candidate),
               method: :post,

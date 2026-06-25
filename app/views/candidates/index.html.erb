@@ -246,6 +246,7 @@
                 <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
                   <%= link_to "✉ Send feedback",
                         send_rejection_email_candidate_path(c),
+                        target: "_blank", rel: "noopener",
                         style: "font-size: 0.7rem; color: #0369a1; text-decoration: none; font-weight: 500;" %>
                   <%= button_to "Mark sent",
                         mark_rejection_sent_candidate_path(c),
