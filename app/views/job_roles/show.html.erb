@@ -322,6 +322,6 @@
 <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 0.5rem;">
   <%= link_to "← Back to roles", job_roles_path, style: "color: #555; font-size: 0.9rem;" %>
   <div style="font-size: 0.85rem; color: #999;">
-    <%= @job_role.video_analyses.count + @job_role.cv_analyses.count %> candidate(s) evaluated against this role
+    <%= @job_role.video_analyses.size + @job_role.cv_analyses.size %> candidate(s) evaluated against this role
   </div>
 </div>

@@ -84,7 +84,7 @@ class JobRolesController < AuthenticatedController
   end
 
   def set_job_role
-    @job_role = current_organization.job_roles.find(params[:id])
+    @job_role = current_organization.job_roles.includes(:video_analyses, :cv_analyses).find(params[:id])
   rescue ActiveRecord::RecordNotFound
     redirect_to job_roles_path, alert: "Role not found."
   end
