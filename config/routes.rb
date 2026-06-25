@@ -38,7 +38,7 @@ Rails.application.routes.draw do
   patch "settings/organization",       to: "settings#update_organization",   as: :update_organization_settings
   patch "settings/calendar",           to: "settings#update_calendar",       as: :update_calendar_settings
 
-  root "video_analyses#index"
+  root "candidates#index"
   get "dashboard", to: "dashboard#index", as: :dashboard
   resources :video_analyses, only: %i[new create show index destroy] do
     member do
