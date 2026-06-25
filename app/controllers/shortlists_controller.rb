@@ -16,9 +16,9 @@ class ShortlistsController < AuthenticatedController
   def show
     @items = @shortlist.shortlist_items.includes(
       :added_by,
-      :candidate,
-      :video_analysis,
-      :cv_analysis
+      :cv_analysis,
+      candidate: :job_role,
+      video_analysis: :job_role
     )
   end
 
