@@ -13,7 +13,7 @@ class CandidatesController < AuthenticatedController
                                      .where(id: current_organization.candidates.where.not(job_role_id: nil).select(:job_role_id))
     @job_roles = (@client_id ? base_roles.where(client_id: @client_id) : base_roles).order(:title)
 
-    scope = current_organization.candidates.includes(:job_role, :cv_analysis, :video_analysis)
+    scope = current_organization.candidates.includes(:job_role, :cv_analysis, video_analysis: :job_role)
                                 .order(created_at: :desc)
 
     if @q.present?
@@ -91,7 +91,7 @@ class CandidatesController < AuthenticatedController
   private
 
   def set_candidate
-    @candidate = current_organization.candidates.find(params[:id])
+    @candidate = current_organization.candidates.includes(video_analysis: :job_role).find(params[:id])
   rescue ActiveRecord::RecordNotFound
     redirect_to candidates_path, alert: "Candidate not found."
   end
