@@ -59,34 +59,35 @@
 <%# Candidates %>
 <%
   concluded_stages = %w[hired offer_declined not_selected rejected not_invited]
-  active_items, concluded_items = @items.partition { |i|
-    !concluded_stages.include?(i.candidate&.pipeline_stage) &&
-    !i.candidate&.final_interview_no_show &&
-    !i.candidate&.preliminary_interview_no_show
-  }
+  def concluded?(item, stages)
+    stages.include?(item.candidate&.pipeline_stage) ||
+      item.candidate&.final_interview_no_show ||
+      item.candidate&.preliminary_interview_no_show
+  end
 %>
 <div style="margin-top: 1.25rem;">
   <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem;">
-    <h2 style="margin: 0;">Candidates (<%= active_items.count %>)</h2>
+    <h2 style="margin: 0;">Candidates (<%= @items.count %>)</h2>
     <div style="font-size: 0.82rem; color: #999;">
       Add from <%= link_to "Video Interviews", video_analyses_path, style: "color: #555;" %> or
       <%= link_to "CV Analysis", cv_analyses_path, style: "color: #555;" %>.
     </div>
   </div>
 
-  <% if active_items.none? %>
+  <% if @items.none? %>
     <div class="card">
-      <p class="empty" style="padding: 1rem 0;">No active candidates.</p>
+      <p class="empty" style="padding: 1rem 0;">No candidates yet.</p>
     </div>
   <% else %>
-    <% active_items.each do |item| %>
-      <div class="card" style="padding: 0; margin-bottom: 0.75rem;">
+    <% @items.each do |item| %>
+      <% concluded = concluded?(item, concluded_stages) %>
+      <div class="card" style="padding: 0; margin-bottom: 0.75rem; <%= 'opacity: 0.55;' if concluded %>">
         <div style="padding: 0.85rem 1.25rem; display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
           <div style="flex: 1; min-width: 0;">
             <div style="font-weight: 500; font-size: 0.95rem; margin-bottom: 0.2rem;">
               <% if item.candidate %>
                 <%= link_to item.candidate_name, candidate_path(item.candidate),
-                      style: "color: #1a1a1a; text-decoration: none;" %>
+                      style: "color: #{concluded ? '#777' : '#1a1a1a'}; text-decoration: none;" %>
               <% else %>
                 <%= item.candidate_name %>
               <% end %>
@@ -112,17 +113,35 @@
           <div style="display: flex; align-items: center; gap: 0.5rem; flex-shrink: 0; flex-wrap: wrap;">
             <% if item.candidate %>
               <% stage = item.candidate.pipeline_stage %>
-              <% if stage == "final_interview" %>
-                <span class="badge badge-completed" style="font-size: 0.78rem;">✓ Final Interview</span>
+              <% if concluded %>
+                <% if item.candidate.final_interview_no_show %>
+                  <span class="badge badge-failed" style="font-size: 0.78rem;">✕ No Show</span>
+                <% elsif item.candidate.preliminary_interview_no_show %>
+                  <span class="badge badge-failed" style="font-size: 0.78rem;">✕ No Show (Prelim)</span>
+                <% elsif stage == "hired" %>
+                  <span class="badge badge-completed" style="font-size: 0.78rem;">✓ Hired</span>
+                <% elsif stage == "offer_declined" %>
+                  <span class="badge badge-failed" style="font-size: 0.78rem;">✕ Offer Declined</span>
+                <% elsif stage == "not_selected" %>
+                  <span class="badge badge-failed" style="font-size: 0.78rem;">✕ Not Selected</span>
+                <% elsif stage == "rejected" %>
+                  <span class="badge badge-failed" style="font-size: 0.78rem;">✕ Rejected</span>
+                <% elsif stage == "not_invited" %>
+                  <span class="badge badge-failed" style="font-size: 0.78rem;">✕ Not Invited</span>
+                <% end %>
               <% else %>
-                <%= button_to "✓ Final Interview", final_interview_candidate_path(item.candidate),
-                      method: :post, class: "btn",
-                      style: "padding: 0.3rem 0.75rem; font-size: 0.78rem; background: #16a34a;" %>
-                <%= button_to "✕ Not Invited", not_invited_candidate_path(item.candidate),
-                      method: :post,
-                      data: { turbo_confirm: "Mark #{item.candidate_name} as not invited?" },
-                      class: "btn",
-                      style: "padding: 0.3rem 0.75rem; font-size: 0.78rem; background: #dc2626;" %>
+                <% if stage == "final_interview" %>
+                  <span class="badge badge-completed" style="font-size: 0.78rem;">✓ Final Interview</span>
+                <% else %>
+                  <%= button_to "✓ Final Interview", final_interview_candidate_path(item.candidate),
+                        method: :post, class: "btn",
+                        style: "padding: 0.3rem 0.75rem; font-size: 0.78rem; background: #16a34a;" %>
+                  <%= button_to "✕ Not Invited", not_invited_candidate_path(item.candidate),
+                        method: :post,
+                        data: { turbo_confirm: "Mark #{item.candidate_name} as not invited?" },
+                        class: "btn",
+                        style: "padding: 0.3rem 0.75rem; font-size: 0.78rem; background: #dc2626;" %>
+                <% end %>
               <% end %>
               <%= link_to "View →", candidate_path(item.candidate),
                     class: "btn", style: "padding: 0.3rem 0.65rem; font-size: 0.8rem; background: #555;" %>
@@ -135,52 +154,6 @@
         </div>
       </div>
     <% end %>
-  <% end %>
-
-  <%# ── Concluded candidates (muted styling, auto-open when nothing active) ── %>
-  <% if concluded_items.any? %>
-    <details <%= "open" if active_items.none? %> style="margin-top: 1.75rem;">
-      <summary style="list-style: none; cursor: pointer; display: inline-flex; align-items: center; gap: 0.4rem;
-                      font-size: 0.72rem; font-weight: 700; color: #bbb; text-transform: uppercase; letter-spacing: 0.06em;
-                      user-select: none;">
-        Concluded (<%= concluded_items.count %>)
-      </summary>
-      <div style="margin-top: 0.6rem;">
-        <% concluded_items.each do |item| %>
-          <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;
-                      padding: 0.5rem 0; border-bottom: 1px solid #f5f5f5;">
-            <div style="flex: 1; min-width: 0; font-size: 0.88rem; color: #aaa;">
-              <% if item.candidate %>
-                <%= link_to item.candidate_name, candidate_path(item.candidate),
-                      style: "color: #aaa; text-decoration: none;" %>
-              <% else %>
-                <%= item.candidate_name %>
-              <% end %>
-            </div>
-            <% stage = item.candidate&.pipeline_stage %>
-            <% if item.candidate&.final_interview_no_show %>
-              <span class="badge badge-failed" style="font-size: 0.72rem; opacity: 0.6;">✕ No Show</span>
-            <% elsif item.candidate&.preliminary_interview_no_show %>
-              <span class="badge badge-failed" style="font-size: 0.72rem; opacity: 0.6;">✕ No Show (Prelim)</span>
-            <% elsif stage == "hired" %>
-              <span class="badge badge-completed" style="font-size: 0.72rem; opacity: 0.6;">✓ Hired</span>
-            <% elsif stage == "offer_declined" %>
-              <span class="badge badge-failed" style="font-size: 0.72rem; opacity: 0.6;">✕ Offer Declined</span>
-            <% elsif stage == "not_selected" %>
-              <span class="badge badge-failed" style="font-size: 0.72rem; opacity: 0.6;">✕ Not Selected</span>
-            <% elsif stage == "rejected" %>
-              <span class="badge badge-failed" style="font-size: 0.72rem; opacity: 0.6;">✕ Rejected</span>
-            <% elsif stage == "not_invited" %>
-              <span class="badge badge-failed" style="font-size: 0.72rem; opacity: 0.6;">✕ Not Invited</span>
-            <% end %>
-            <% if item.candidate %>
-              <%= link_to "View →", candidate_path(item.candidate),
-                    style: "font-size: 0.75rem; color: #ccc; text-decoration: none;" %>
-            <% end %>
-          </div>
-        <% end %>
-      </div>
-    </details>
   <% end %>
 </div>
 
