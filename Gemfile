@@ -74,3 +74,7 @@ group :development, :test do
   # Omakase Ruby styling [https://github.com/rails/rubocop-rails-omakase/]
   gem "rubocop-rails-omakase", require: false
 end
+
+gem "rack-attack", "~> 6.8"
+
+gem "redis", "~> 5.4"
