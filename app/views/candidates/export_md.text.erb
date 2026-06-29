@@ -1,0 +1,151 @@
+# <%= @candidate.name %>
+
+Generated: <%= Date.today.strftime("%B %-d, %Y") %>
+
+---
+
+## Personal Information
+
+- **Email:** <%= @candidate.email.presence || "—" %>
+- **Source:** <%= @candidate.job_source.presence&.humanize || "—" %><% if @candidate.job_source == "others" && @candidate.job_source_other.present? %> (<%= @candidate.job_source_other %>)<% end %>
+- **PH Residency Confirmed:** <%= @candidate.ph_residency_confirmed? ? "Yes" : "No" %>
+- **US Hours Agreement:** <%= @candidate.us_hours_agreement? ? "Yes" : "No" %>
+
+---
+
+## Role & Pipeline
+
+- **Job Role:** <%= @candidate.job_role&.title || "—" %>
+- **Client:** <%= @candidate.job_role&.client&.name || "—" %>
+- **Pipeline Stage:** Hired
+- **Hired:** <%= @candidate.hired_at&.strftime("%B %-d, %Y") || "—" %>
+
+---
+
+## Compensation
+
+- **Asking Salary:** <%= @candidate.asking_salary.present? ? "USD #{@candidate.asking_salary}" : "—" %>
+- **Preferred Interview Time:** <%= @candidate.preferred_interview_time.presence || "—" %>
+- **Compensation Package:** <%= @candidate.compensation_package.presence || "—" %>
+
+---
+
+## CV Analysis
+
+<% cv = @candidate.cv_analysis %>
+<% if cv&.completed? %>
+<% fb = cv.structured_feedback %>
+<% reqs = Array(fb["cv_requirements_coverage"]) %>
+<% adj  = fb["cv_fit_adjustments"] || {} %>
+<% nh_bonus = fb["nice_to_have_bonus"]&.to_f || 0.0 %>
+
+- **CV Fit Score:** <%= cv.cv_fit_score&.round(1) || "—" %>/10
+- **Tier:** <%= cv.cv_fit_score.present? ? (cv.cv_fit_score >= 7.5 ? "Shortlist" : cv.cv_fit_score >= 5.0 ? "Borderline" : "Archive") : "—" %>
+
+### Summary
+
+<%= cv.summary.presence || "No summary available." %>
+
+<% if reqs.any? %>
+### Requirements Coverage
+
+<% reqs.each do |r| %>
+- **<%= r["requirement"] %>** — <%= r["coverage"]&.humanize || "—" %><% if r["evidence"].present? %>: _<%= r["evidence"] %>_<% end %>
+<% end %>
+<% end %>
+
+<% if adj.any? %>
+### Adjustments
+
+<% adj.each do |key, val| %>
+- <%= key.humanize %>: <%= val.to_f >= 0 ? "+#{val}" : val %>
+<% end %>
+<% end %>
+
+<% if nh_bonus != 0 %>
+### Nice-to-Have Bonus
+
++<%= nh_bonus %>
+<% end %>
+
+<% else %>
+_CV analysis not completed._
+<% end %>
+
+---
+
+## Video Interview Analysis
+
+<% va = @candidate.video_analysis %>
+<% if va&.completed? %>
+<% vfb = va.structured_feedback || {} %>
+<% ep_dims = vfb["episode_dimensions"] || {} %>
+
+- **Episode Score:** <%= va.episode_score&.round(1) || "—" %>/10
+- **Tier:** <%= va.episode_tier || "—" %>
+- **Recommendation:** <%= vfb["recommendation"].presence || "—" %>
+
+### Summary
+
+<%= va.summary.presence || "No summary available." %>
+
+<% if ep_dims.any? %>
+### Dimension Scores
+
+<% dim_labels = {
+  "relevance_discipline"  => "Relevance & Discipline (20%)",
+  "ownership_language"    => "Ownership Language (10%)",
+  "outcome_orientation"   => "Outcome Orientation (30%)",
+  "adaptability_signal"   => "Adaptability Signal (25%)",
+  "communication_clarity" => "Communication Clarity (15%)"
+} %>
+<% ep_dims.each do |key, val| %>
+<% rating = val.is_a?(Hash) ? (val["rating"] || val.values.first) : val %>
+- **<%= dim_labels[key] || key.humanize %>:** <%= rating&.humanize || "—" %>
+<% end %>
+<% end %>
+
+<% if vfb["decision_rationale"].present? %>
+### Decision Rationale
+
+<%= vfb["decision_rationale"] %>
+<% end %>
+
+<% flags = Array(vfb["red_flags"]) %>
+<% if flags.any? %>
+### Red Flags
+
+<% flags.each do |flag| %>
+<% if flag.is_a?(Hash) %>
+- **<%= flag["flag"] %>**<% if flag["rationale"].present? %>: <%= flag["rationale"] %><% end %><% if flag["literal_quote"].present? %> _"<%= flag["literal_quote"] %>"_<% end %>
+<% else %>
+- <%= flag %>
+<% end %>
+<% end %>
+<% end %>
+
+<% else %>
+_Video interview analysis not completed._
+<% end %>
+
+---
+
+## Recruiter Notes
+
+<%= @candidate.recruiter_notes.presence || "_No notes recorded._" %>
+
+---
+
+## Timeline
+
+<% tl = [
+  ["Applied",         @candidate.applied_at],
+  ["Screened",        @candidate.screened_at],
+  ["Interviewed",     @candidate.interviewed_at],
+  ["Shortlisted",     @candidate.shortlisted_at],
+  ["Final Interview", @candidate.final_interview_at],
+  ["Hired",           @candidate.hired_at]
+] %>
+<% tl.each do |label, date| %>
+- **<%= label %>:** <%= date ? date.strftime("%B %-d, %Y") : "—" %>
+<% end %>

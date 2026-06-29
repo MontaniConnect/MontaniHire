@@ -205,6 +205,10 @@
             method: :post,
             data: { turbo_confirm: "Revert #{@candidate.name} back to Final Interview?" },
             class: "btn", style: "background: #555; padding: 0.45rem 1rem; font-size: 0.85rem;" %>
+      <% if current_user.owner? %>
+        <%= link_to "⬇ Export .md", export_md_candidate_path(@candidate),
+              style: "display: inline-flex; align-items: center; padding: 0.45rem 1rem; font-size: 0.85rem; font-weight: 600; background: #1a7a85; color: #fff; text-decoration: none; border-radius: 6px;" %>
+      <% end %>
     <% elsif @candidate.pipeline_stage == "offer_declined" %>
       <%= button_to "← Revert to Final Interview", revert_candidate_path(@candidate),
             method: :post,

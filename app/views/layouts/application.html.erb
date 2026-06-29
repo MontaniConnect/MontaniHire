@@ -230,6 +230,9 @@
       <%= link_to "Shortlists", shortlists_path %>
       <%= link_to "Settings", settings_path %>
       <span style="flex: 1;"></span>
+      <%= link_to "Billing ↗", "https://console.anthropic.com/settings/billing",
+            target: "_blank", rel: "noopener noreferrer",
+            style: "font-size: 0.8rem;" %>
       <span style="font-size: 0.8rem; color: rgba(255,255,255,.6);"><%= current_user.name.presence || current_user.email %></span>
       <%= button_to "Sign out", logout_path, method: :delete,
             style: "background: none; border: none; color: rgba(255,255,255,.6); font-size: 0.8rem; cursor: pointer; padding: 0; text-decoration: underline;" %>

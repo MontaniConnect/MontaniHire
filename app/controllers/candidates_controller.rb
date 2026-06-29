@@ -1,6 +1,7 @@
 class CandidatesController < AuthenticatedController
-  before_action :set_candidate, only: %i[show update destroy]
+  before_action :set_candidate, only: %i[show update destroy export_md]
   before_action :require_write_access!, only: %i[update destroy]
+  before_action :require_owner!, only: %i[export_md]
 
   def index
     @q           = params[:q].to_s.strip
@@ -78,6 +79,19 @@ class CandidatesController < AuthenticatedController
     else
       redirect_to candidate_path(@candidate), alert: "Invalid job role."
     end
+  end
+
+  def export_md
+    unless @candidate.pipeline_stage == "hired"
+      redirect_to candidate_path(@candidate), alert: "Export is only available for hired candidates."
+      return
+    end
+
+    content = render_to_string(template: "candidates/export_md", formats: [:text], layout: false)
+    send_data content,
+      filename: "#{@candidate.name.parameterize}-#{Date.today}.md",
+      type:     "text/markdown",
+      disposition: "attachment"
   end
 
   def destroy

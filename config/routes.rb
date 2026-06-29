@@ -66,6 +66,7 @@ Rails.application.routes.draw do
   # Candidate pipeline
   resources :candidates, only: %i[index show destroy update] do
     member do
+      get :export_md
       scope :pipeline do
         post :advance,         to: "candidates/pipeline#advance"
         post :reject,          to: "candidates/pipeline#reject"
