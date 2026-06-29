@@ -198,7 +198,7 @@
   </div>
 <% end %>
 
-<script>
+<script nonce="<%= content_security_policy_nonce %>">
   var DRIVE_VIDEO_ID = "<%= _drive_video_id %>";
 
   function jumpTo(seconds, segIdx) {

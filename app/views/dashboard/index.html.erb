@@ -30,7 +30,7 @@
   <% end %>
 </div>
 
-<script>
+<script nonce="<%= content_security_policy_nonce %>">
   function dashFilter() {
     var p = new URLSearchParams();
     var c = document.getElementById('dash-client');

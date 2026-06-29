@@ -25,6 +25,8 @@ Rails.application.configure do
 
   # Railway terminates SSL at the load balancer — trust that it happened.
   config.assume_ssl = true
+  config.force_ssl  = true
+  config.ssl_options = { hsts: { subdomains: false, preload: false, expires: 1.hour } }
 
   # Log to STDOUT with the current request id as a default log tag.
   config.log_tags = [ :request_id ]

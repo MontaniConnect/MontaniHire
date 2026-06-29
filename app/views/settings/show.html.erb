@@ -303,7 +303,7 @@
   <% end %>
 </div>
 
-<script>
+<script nonce="<%= content_security_policy_nonce %>">
   function toggleDay(day, enabled) {
     const times = document.getElementById("day-times-" + day)
     const row   = document.getElementById("day-row-" + day)

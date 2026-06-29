@@ -129,7 +129,7 @@
   </div>
 <% end %>
 
-<script>
+<script nonce="<%= content_security_policy_nonce %>">
   function switchTab(tab) {
     const panels  = ["upload", "drive"]
     const buttons = { upload: document.getElementById("tab-upload"), drive: document.getElementById("tab-drive") }

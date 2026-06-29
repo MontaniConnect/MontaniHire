@@ -189,7 +189,7 @@
   </div>
 <% end %>
 
-<script>
+<script nonce="<%= content_security_policy_nonce %>">
   function cvSwitchToDrive() {
     ["single", "bulk", "drive"].forEach(function(t) {
       const panel = document.getElementById("cv-panel-" + t)
