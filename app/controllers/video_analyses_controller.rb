@@ -124,6 +124,9 @@ class VideoAnalysesController < AuthenticatedController
   end
 
   def serialize(analysis)
+    if analysis.error_message.present?
+      Rails.logger.error "[VideoAnalysesController] VideoAnalysis #{analysis.id} processing failed: #{analysis.error_message}"
+    end
     {
       id: analysis.id,
       candidate_name: analysis.candidate_name,
@@ -134,7 +137,7 @@ class VideoAnalysesController < AuthenticatedController
       summary: analysis.summary,
       structured_feedback: analysis.structured_feedback,
       score: analysis.episode_score,
-      error_message: analysis.error_message,
+      error_message: analysis.error_message.present? ? "Processing failed — contact support if this persists" : nil,
       created_at: analysis.created_at,
       updated_at: analysis.updated_at
     }
