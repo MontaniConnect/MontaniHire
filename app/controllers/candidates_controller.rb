@@ -87,7 +87,7 @@ class CandidatesController < AuthenticatedController
       return
     end
 
-    content = render_to_string(template: "candidates/export_md", formats: [:text], layout: false)
+    content = render_to_string(template: "candidates/export_md", formats: [ :text ], layout: false)
     send_data content,
       filename: "#{@candidate.name.parameterize}-#{Date.today}.md",
       type:     "text/markdown",
