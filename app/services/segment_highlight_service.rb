@@ -22,7 +22,7 @@ class SegmentHighlightService
     @analysis.update_columns(highlight_indices: indices) if indices.any?
     indices
   rescue => e
-    Rails.logger.warn "[SegmentHighlightService] #{e.class}: #{e.message}"
+    Rails.logger.warn "#{self.class}: #{e.class}: #{e.message.truncate(200)}"
     []
   end
 

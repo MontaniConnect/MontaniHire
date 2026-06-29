@@ -25,7 +25,7 @@ class MeetTranscriptService
     @analysis.update_columns(transcript_segments: result[:segments]) if result[:segments].any?
     result[:text]
   rescue => e
-    Rails.logger.warn "[MeetTranscriptService] #{e.class}: #{e.message}"
+    Rails.logger.warn "#{self.class}: #{e.class}: #{e.message.truncate(200)}"
     nil
   end
 

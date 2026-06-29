@@ -37,7 +37,7 @@ class VideoProcessingJob < ApplicationJob
     begin
       highlight_service.new(analysis: analysis).call
     rescue => e
-      Rails.logger.warn "[VideoProcessingJob] SegmentHighlightService failed: #{e.class}: #{e.message}"
+      Rails.logger.warn "#{self.class}: SegmentHighlightService failed: #{e.class}: #{e.message.truncate(200)}"
     end
   rescue User::GoogleTokenRevoked => e
     # Retrying won't help — the refresh token is revoked. Fail fast.

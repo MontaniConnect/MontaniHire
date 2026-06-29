@@ -108,8 +108,8 @@ module Candidates
       redirect_to settings_path,
                   alert: "Calendar ID not found. Verify the ID in Settings or leave it blank to use your primary calendar."
     rescue => e
-      Rails.logger.error "[CalendarEventService] #{e.class}: #{e.message}"
-      redirect_to candidate_path(@candidate), alert: "Could not sync calendar: #{e.message}"
+      Rails.logger.error "#{self.class}: #{e.class}: #{e.message.truncate(200)}"
+      redirect_to candidate_path(@candidate), alert: "Could not sync calendar: #{e.message.truncate(200)}"
     end
 
     private

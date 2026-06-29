@@ -53,7 +53,7 @@ class IntakeController < ApplicationController
       begin
         CalendarEventService.new(user: @candidate.user, slot_booking: booking).call
       rescue => e
-        Rails.logger.error "[CalendarEventService] #{e.class}: #{e.message}"
+        Rails.logger.error "#{self.class}: #{e.class}: #{e.message.truncate(200)}"
       end
     end
   end
