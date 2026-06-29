@@ -10,7 +10,7 @@ class RackAttackTest < ActionDispatch::IntegrationTest
       "rack.session" => { "user_id" => user_id },
       "HTTP_ACCEPT"  => accept
     )
-    status, = Rack::Attack.new(->(e) { [200, {}, []] }).call(env)
+    status, = Rack::Attack.new(->(e) { [ 200, {}, [] ] }).call(env)
     status
   end
 
@@ -118,7 +118,7 @@ class RackAttackTest < ActionDispatch::IntegrationTest
       "rack.session" => { "user_id" => user_id },
       "HTTP_ACCEPT"  => "application/json"
     )
-    status, headers, body = Rack::Attack.new(->(e) { [200, {}, []] }).call(env)
+    status, headers, body = Rack::Attack.new(->(e) { [ 200, {}, [] ] }).call(env)
     assert_equal 429, status
     assert_equal "application/json", headers["Content-Type"]
     assert_includes body.join, "Too many requests"
@@ -133,7 +133,7 @@ class RackAttackTest < ActionDispatch::IntegrationTest
       "rack.session" => { "user_id" => user_id },
       "HTTP_ACCEPT"  => "text/html"
     )
-    status, headers, body = Rack::Attack.new(->(e) { [200, {}, []] }).call(env)
+    status, headers, body = Rack::Attack.new(->(e) { [ 200, {}, [] ] }).call(env)
     assert_equal 429, status
     assert_equal "text/html", headers["Content-Type"]
     assert_includes body.join, "Too many requests"
