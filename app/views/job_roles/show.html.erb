@@ -57,9 +57,8 @@
 
         <%# Invited group %>
         <% if @calibration_invited.any? %>
-          <% inv_int_scores    = @calibration_invited.filter_map { |c| c.video_analysis&.score&.to_f } %>
-          <% inv_cv_scores     = @calibration_invited.filter_map { |c| c.cv_analysis&.score&.to_f } %>
-          <% inv_cv_fit_scores = @calibration_invited.filter_map { |c| c.cv_analysis&.structured_feedback&.dig("cv_fit_score")&.to_f } %>
+          <% inv_int_scores    = @calibration_invited.filter_map { |c| c.video_analysis&.episode_score&.to_f } %>
+          <% inv_cv_fit_scores = @calibration_invited.filter_map { |c| c.cv_analysis&.cv_fit_score&.to_f } %>
           <% inv_recs          = @calibration_invited.filter_map { |c| c.structured_feedback["recommendation"] } %>
           <div style="background: #f0fdf4; border: 1px solid #86efac; border-radius: 8px; padding: 1rem;">
             <div style="font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #166534; margin-bottom: 0.65rem;">
@@ -70,12 +69,6 @@
                 <div>
                   <div style="font-size: 1.4rem; font-weight: 700; color: #1a1a1a; line-height: 1;"><%= (inv_int_scores.sum / inv_int_scores.size).round(1) %></div>
                   <div style="font-size: 0.72rem; color: #666; margin-top: 0.15rem;">Avg. Interview Score</div>
-                </div>
-              <% end %>
-              <% if inv_cv_scores.any? %>
-                <div>
-                  <div style="font-size: 1.4rem; font-weight: 700; color: #1a1a1a; line-height: 1;"><%= (inv_cv_scores.sum / inv_cv_scores.size).round(1) %></div>
-                  <div style="font-size: 0.72rem; color: #666; margin-top: 0.15rem;">Avg. CV Score</div>
                 </div>
               <% end %>
               <% if inv_cv_fit_scores.any? %>
@@ -106,9 +99,8 @@
 
         <%# Not invited group %>
         <% if @calibration_not_invited.any? %>
-          <% ni_int_scores    = @calibration_not_invited.filter_map { |c| c.video_analysis&.score&.to_f } %>
-          <% ni_cv_scores     = @calibration_not_invited.filter_map { |c| c.cv_analysis&.score&.to_f } %>
-          <% ni_cv_fit_scores = @calibration_not_invited.filter_map { |c| c.cv_analysis&.structured_feedback&.dig("cv_fit_score")&.to_f } %>
+          <% ni_int_scores    = @calibration_not_invited.filter_map { |c| c.video_analysis&.episode_score&.to_f } %>
+          <% ni_cv_fit_scores = @calibration_not_invited.filter_map { |c| c.cv_analysis&.cv_fit_score&.to_f } %>
           <% ni_recs          = @calibration_not_invited.filter_map { |c| c.structured_feedback["recommendation"] } %>
           <div style="background: #fff5f5; border: 1px solid #fca5a5; border-radius: 8px; padding: 1rem;">
             <div style="font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #991b1b; margin-bottom: 0.65rem;">
@@ -119,12 +111,6 @@
                 <div>
                   <div style="font-size: 1.4rem; font-weight: 700; color: #1a1a1a; line-height: 1;"><%= (ni_int_scores.sum / ni_int_scores.size).round(1) %></div>
                   <div style="font-size: 0.72rem; color: #666; margin-top: 0.15rem;">Avg. Interview Score</div>
-                </div>
-              <% end %>
-              <% if ni_cv_scores.any? %>
-                <div>
-                  <div style="font-size: 1.4rem; font-weight: 700; color: #1a1a1a; line-height: 1;"><%= (ni_cv_scores.sum / ni_cv_scores.size).round(1) %></div>
-                  <div style="font-size: 0.72rem; color: #666; margin-top: 0.15rem;">Avg. CV Score</div>
                 </div>
               <% end %>
               <% if ni_cv_fit_scores.any? %>
@@ -252,9 +238,8 @@
         <% fb           = c.structured_feedback %>
         <% va           = c.video_analysis %>
         <% cva          = c.cv_analysis %>
-        <% int_score    = va&.score %>
-        <% cv_score     = cva&.score %>
-        <% cv_fit_score = cva&.structured_feedback&.dig("cv_fit_score") %>
+        <% int_score    = va&.episode_score %>
+        <% cv_fit_score = cva&.cv_fit_score %>
         <% rec          = fb["recommendation"] %>
         <% rec_labels   = { "comprehensive" => "Comprehensive", "substantive" => "Substantive", "superficial" => "Superficial" } %>
         <% rec_class    = { "comprehensive" => "completed", "substantive" => "pending", "superficial" => "failed" }[rec] || "pending" %>
@@ -264,7 +249,10 @@
         <div style="padding: 0.85rem 0; border-bottom: 1px solid #f0f0f0;">
           <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; flex-wrap: wrap;">
             <div style="flex: 1; min-width: 0;">
-              <div style="font-weight: 600; font-size: 0.95rem; margin-bottom: 0.3rem;"><%= c.name %></div>
+              <div style="font-weight: 600; font-size: 0.95rem; margin-bottom: 0.3rem;">
+                <%= link_to c.name, candidate_path(c), target: "_blank", rel: "noopener",
+                      style: "color: inherit; text-decoration: none; border-bottom: 1px solid #ddd;" %>
+              </div>
               <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center;">
                 <span class="badge" style="<%= outcome_style %>; font-size: 0.72rem;"><%= outcome_label %></span>
                 <% if rec.present? %>
@@ -272,9 +260,6 @@
                 <% end %>
                 <% if int_score.present? %>
                   <span style="font-size: 0.8rem; color: #555;">Interview: <strong><%= int_score %>/10</strong></span>
-                <% end %>
-                <% if cv_score.present? %>
-                  <span style="font-size: 0.8rem; color: #555;">CV: <strong><%= cv_score %>/10</strong></span>
                 <% end %>
                 <% if cv_fit_score.present? %>
                   <span style="font-size: 0.8rem; color: #555;">CV Fit: <strong><%= cv_fit_score %>/10</strong></span>

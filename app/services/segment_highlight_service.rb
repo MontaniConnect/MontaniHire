@@ -16,7 +16,7 @@ class SegmentHighlightService
   def call
     segments = Array(@analysis.transcript_segments)
     fb       = @analysis.structured_feedback
-    return [] if segments.blank? || fb.blank? || @analysis.score.blank?
+    return [] if segments.blank? || fb.blank? || @analysis.episode_score.blank?
 
     indices = select_indices(segments, fb)
     @analysis.update_columns(highlight_indices: indices) if indices.any?
@@ -53,7 +53,7 @@ class SegmentHighlightService
     end.join("\n")
 
     <<~MSG.strip
-      Score: #{@analysis.score}/10 — #{fb["recommendation"]}
+      Episode Score: #{@analysis.episode_score}/10 — #{fb["recommendation"]}
       Summary: #{@analysis.summary}
 
       Episode Dimensions:

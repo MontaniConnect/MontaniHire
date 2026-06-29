@@ -231,6 +231,50 @@ class CandidateTest < ActiveSupport::TestCase
     assert_not c2.cv_interview_gap?
   end
 
+  # ── score (fallback chain) ─────────────────────────────────────────────────
+
+  test "score returns episode_score when video_analysis is present and has dimensions" do
+    c = build_candidate(va_signals: ALL_TOP_DIMS)
+    assert_equal 10.0, c.score
+  end
+
+  test "score falls back to cv_fit_score when video_analysis has no episode_dimensions" do
+    c = build_candidate(
+      va_signals: {},
+      cv_signals: { "cv_fit_score" => 6.5 }
+    )
+    assert_nil c.episode_score
+    assert_equal 6.5, c.score
+  end
+
+  test "score falls back to cv_fit_score when video_analysis is absent" do
+    result   = UserRegistrationService.new(email: "test_#{SecureRandom.hex(4)}@example.com", name: "Test").call
+    user     = result.user
+    org      = user.organization
+    job_role = JobRole.create!(
+      user: user, organization: org,
+      title: "Test Role", experience_level: "mid",
+      required_skills: "x", responsibilities: "y"
+    )
+    cv = CvAnalysis.new(
+      user: user, organization: org, job_role: job_role,
+      candidate_name: "Test", status: "completed",
+      structured_feedback: { "cv_fit_score" => 7.2 }
+    )
+    cv.cv.attach(io: StringIO.new("test"), filename: "cv.pdf", content_type: "application/pdf")
+    cv.save!
+    c = Candidate.create!(
+      user: user, organization: org, job_role: job_role,
+      name: "Test", pipeline_stage: "cv_review", cv_analysis: cv
+    )
+    assert_equal 7.2, c.score
+  end
+
+  test "score returns nil when both episode_score and cv_fit_score are absent" do
+    c = build_candidate(va_signals: {}, cv_signals: {})
+    assert_nil c.score
+  end
+
   # ── sync_shortlist_client_status (after_save callback) ────────────────────
 
   def build_shortlist_item(candidate, status: "pending")

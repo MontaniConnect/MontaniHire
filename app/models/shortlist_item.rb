@@ -30,8 +30,8 @@ class ShortlistItem < ApplicationRecord
 
   def score
     candidate&.score ||
-      cv_analysis&.score ||
-      video_analysis&.score ||
+      cv_analysis&.cv_fit_score ||
+      video_analysis&.episode_score ||
       shareable&.score
   end
 

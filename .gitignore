@@ -45,3 +45,4 @@
 # Ignore locally precompiled assets (baked into Docker image at build time).
 /public/assets
 
+.DS_Store

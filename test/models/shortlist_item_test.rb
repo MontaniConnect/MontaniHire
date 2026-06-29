@@ -33,6 +33,96 @@ class ShortlistItemTest < ActiveSupport::TestCase
     )
   end
 
+  def build_candidate_with_analyses(user, va_signals: {}, cv_signals: {})
+    org      = user.organization
+    job_role = JobRole.create!(
+      user: user, organization: org,
+      title: "Role #{SecureRandom.hex(3)}", experience_level: "mid",
+      required_skills: "x", responsibilities: "y"
+    )
+    cv = CvAnalysis.new(
+      user: user, organization: org, job_role: job_role,
+      candidate_name: "Test", status: "completed",
+      structured_feedback: cv_signals
+    )
+    cv.cv.attach(io: StringIO.new("test"), filename: "cv.pdf", content_type: "application/pdf")
+    cv.save!
+    va = VideoAnalysis.new(
+      user: user, organization: org, job_role: job_role,
+      candidate_name: "Test", status: "completed",
+      structured_feedback: va_signals
+    )
+    va.video.attach(io: StringIO.new("test"), filename: "video.mp4", content_type: "video/mp4")
+    va.save!
+    Candidate.create!(
+      user: user, organization: org, job_role: job_role,
+      name: "Test #{SecureRandom.hex(3)}", pipeline_stage: "client_interview",
+      cv_analysis: cv, video_analysis: va
+    )
+  end
+
+  ALL_TOP_DIMS = {
+    "episode_dimensions" => {
+      "relevance_discipline"  => "meets",
+      "ownership_language"    => "meets",
+      "outcome_orientation"   => "meets",
+      "adaptability_signal"   => "meets",
+      "communication_clarity" => "meets"
+    }
+  }.freeze
+
+  # ── score (fallback chain) ─────────────────────────────────────────────────
+
+  test "score returns episode_score when video_analysis has episode_dimensions" do
+    user      = build_user
+    candidate = build_candidate_with_analyses(user, va_signals: ALL_TOP_DIMS)
+    item      = build_item(build_shortlist(user), candidate)
+    assert_equal 10.0, item.score
+  end
+
+  test "score falls back to cv_fit_score when episode_score is nil" do
+    user      = build_user
+    candidate = build_candidate_with_analyses(
+      user,
+      va_signals: {},
+      cv_signals: { "cv_fit_score" => 6.5 }
+    )
+    item = build_item(build_shortlist(user), candidate)
+    assert_nil candidate.episode_score
+    assert_equal 6.5, item.score
+  end
+
+  test "score falls back to cv_fit_score when video_analysis is absent" do
+    user     = build_user
+    org      = user.organization
+    job_role = JobRole.create!(
+      user: user, organization: org,
+      title: "Role #{SecureRandom.hex(3)}", experience_level: "mid",
+      required_skills: "x", responsibilities: "y"
+    )
+    cv = CvAnalysis.new(
+      user: user, organization: org, job_role: job_role,
+      candidate_name: "Test", status: "completed",
+      structured_feedback: { "cv_fit_score" => 7.8 }
+    )
+    cv.cv.attach(io: StringIO.new("test"), filename: "cv.pdf", content_type: "application/pdf")
+    cv.save!
+    candidate = Candidate.create!(
+      user: user, organization: org, job_role: job_role,
+      name: "No Video #{SecureRandom.hex(3)}", pipeline_stage: "cv_review",
+      cv_analysis: cv
+    )
+    item = build_item(build_shortlist(user), candidate)
+    assert_equal 7.8, item.score
+  end
+
+  test "score returns nil when both episode_score and cv_fit_score are absent" do
+    user      = build_user
+    candidate = build_candidate_with_analyses(user, va_signals: {}, cv_signals: {})
+    item      = build_item(build_shortlist(user), candidate)
+    assert_nil item.score
+  end
+
   # ── sync_candidate_stage! ─────────────────────────────────────────────────
 
   test "approved status advances candidate to final_interview" do

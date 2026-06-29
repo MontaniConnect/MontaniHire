@@ -160,7 +160,7 @@ class Candidate < ApplicationRecord
   # Delegates so ShortlistItem (and views) can read candidate data uniformly
 
   def score
-    video_analysis&.score || cv_analysis&.score
+    video_analysis&.episode_score || cv_analysis&.cv_fit_score
   end
 
   def summary

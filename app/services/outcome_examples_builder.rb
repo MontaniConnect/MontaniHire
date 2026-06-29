@@ -47,16 +47,15 @@ class OutcomeExamplesBuilder::Interview < OutcomeExamplesBuilder
 
   def format_example(item, index)
     va = item.resolved_video_analysis
-    return nil unless va&.structured_feedback.present? && va.score.present?
+    ep = va&.episode_score
+    return nil unless va&.structured_feedback.present? && ep.present?
 
     fb   = va.structured_feedback
-    ep   = va.episode_score
     jd   = fb["jd_fit_score"]
     dims = fb["episode_dimensions"] || {}
 
     score_line = []
-    score_line << "Episode Score: #{ep}/10" if ep.present?
-    score_line << "holistic: #{va.score}/10"
+    score_line << "Episode Score: #{ep}/10"
     score_line << "JD fit: #{jd}/10" if jd.present?
 
     lines = [ "\nExample #{index} (#{score_line.join(' · ')}):" ]
@@ -84,10 +83,10 @@ class OutcomeExamplesBuilder::CvScreening < OutcomeExamplesBuilder
 
   def format_example(item, index)
     cv = item.resolved_cv_analysis
-    return nil unless cv&.structured_feedback.present? && cv.score.present?
+    return nil unless cv&.structured_feedback.present? && cv.cv_fit_score.present?
 
     fb         = cv.structured_feedback
-    score_line = [ "CV Fit Score: #{fb['cv_fit_score']}/10", "holistic: #{cv.score}/10" ].compact.join(" · ")
+    score_line = "CV Fit Score: #{fb['cv_fit_score']}/10"
     lines      = [ "\nExample #{index} (#{score_line}, recommendation: #{fb['recommendation']}):" ]
 
     cov = Array(fb["cv_requirements_coverage"])

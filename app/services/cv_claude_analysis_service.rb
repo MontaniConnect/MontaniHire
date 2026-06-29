@@ -1,6 +1,6 @@
 class CvClaudeAnalysisService
   MODEL          = "claude-sonnet-4-6"
-  PROMPT_VERSION = "2026-06-24-v15"
+  PROMPT_VERSION = "2026-06-29-v16"
 
   SYSTEM_PROMPT = <<~PROMPT
     You are an expert recruiter evaluating a candidate's CV against a job description.
@@ -33,7 +33,6 @@ class CvClaudeAnalysisService
 
     Return a JSON object with exactly these keys:
     - "recommendation": "high_match" | "moderate_match" | "low_match"
-    - "score": a number from 0 to 10 (one decimal place) reflecting overall CV-to-JD fit — holistic assessment including career progression, credential signals, and experience anchoring
     - "summary": 1-2 sentences maximum. Must contain exactly two elements:
         (1) Key Strength: a highly specific, data-driven behavioural spike or culture add grounded in CV evidence — not generic praise (e.g. "demonstrated strong pattern recognition by working backward from a failed project", not "great communicator")
         (2) Core Weakness / Decisive Factor: a real, unmasked friction point or growth area linked to a specific gap, self-awareness signal, or unguarded red flag in the CV (e.g. "lacks deep Python experience but is actively upskilling") — no ruinous empathy, no fake weaknesses like "perfectionism"
@@ -177,7 +176,6 @@ class CvClaudeAnalysisService
     result["cv_fit_score"]   = calc.total_score
 
     @analysis.update!(
-      score: result["score"],
       summary: result["summary"],
       structured_feedback: result["structured_feedback"].merge(
         "recommendation"     => result["recommendation"],

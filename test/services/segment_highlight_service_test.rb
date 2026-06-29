@@ -21,12 +21,12 @@ class SegmentHighlightServiceTest < ActiveSupport::TestCase
   }.freeze
 
   class FakeAnalysis
-    attr_reader :transcript_segments, :structured_feedback, :score, :summary, :stored_indices
+    attr_reader :transcript_segments, :structured_feedback, :episode_score, :summary, :stored_indices
 
-    def initialize(segments: SAMPLE_SEGMENTS, feedback: SAMPLE_FEEDBACK, score: 7.5)
+    def initialize(segments: SAMPLE_SEGMENTS, feedback: SAMPLE_FEEDBACK, episode_score: 7.5)
       @transcript_segments = segments
       @structured_feedback = feedback
-      @score               = score
+      @episode_score       = episode_score
       @summary             = "Strong outcome orientation, weak communication structure."
       @stored_indices      = nil
     end
@@ -62,8 +62,8 @@ class SegmentHighlightServiceTest < ActiveSupport::TestCase
     assert_equal [], result
   end
 
-  test "returns empty array when score is blank" do
-    analysis = FakeAnalysis.new(score: nil)
+  test "returns empty array when episode_score is blank" do
+    analysis = FakeAnalysis.new(episode_score: nil)
     result   = SegmentHighlightService.new(analysis: analysis, client: fake_client([ 1, 2 ])).call
     assert_equal [], result
   end

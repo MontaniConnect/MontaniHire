@@ -78,7 +78,7 @@
 <% end %>
 
 <%# Score card — 3 panels %>
-<% if @cv_analysis.score.present? %>
+<% if @cv_analysis.cv_fit_score.present? %>
   <% fb       = @cv_analysis.structured_feedback %>
   <% adj      = fb["cv_fit_adjustments"] || {} %>
   <% reqs     = Array(fb["cv_requirements_coverage"]) %>

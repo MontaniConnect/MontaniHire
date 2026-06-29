@@ -1,6 +1,6 @@
 class ClaudeAnalysisService
   MODEL          = "claude-sonnet-4-6"
-  PROMPT_VERSION = "2026-06-24-v10"
+  PROMPT_VERSION = "2026-06-29-v11"
 
   SYSTEM_PROMPT = <<~PROMPT
     You are an expert HR analyst evaluating a candidate's preliminary interview transcript against a specific job role.
@@ -43,7 +43,6 @@ class ClaudeAnalysisService
 
     Return a JSON object with exactly these keys:
     - "recommendation": "comprehensive" | "substantive" | "superficial"
-    - "score": a number from 0 to 10 (one decimal place) reflecting overall candidate quality — holistic assessment including communication, depth, and impression
     - "summary": 1-2 sentences maximum. Must contain exactly two elements:
         (1) Key Strength: a highly specific, data-driven behavioural spike or culture add grounded in transcript evidence — not generic praise (e.g. "demonstrated strong pattern recognition by working backward from a failed project", not "great communicator")
         (2) Core Weakness / Decisive Factor: a real, unmasked friction point or growth area linked to a specific self-awareness signal, unguarded moment, or red flag in the interview (e.g. "was subtly dismissive during scheduling", "lacks deep Python experience but is proactively taking a course") — no ruinous empathy, no fake weaknesses like "perfectionism"
@@ -135,7 +134,6 @@ class ClaudeAnalysisService
     jd_fit_score = JdFitScoreCalculator.new(coverage: result.dig("structured_feedback", "jd_requirements_coverage")).score
 
     @analysis.update!(
-      score: result["score"],
       summary: result["summary"],
       structured_feedback: result["structured_feedback"].merge(
         "recommendation"            => result["recommendation"],
@@ -173,11 +171,11 @@ class ClaudeAnalysisService
 
   def cv_screening_context
     cv = candidate&.cv_analysis
-    return nil unless cv&.structured_feedback.present? && cv.score.present?
+    return nil unless cv&.structured_feedback.present? && cv.cv_fit_score.present?
 
     fb = cv.structured_feedback
     lines = []
-    lines << "CV Fit Score: #{fb['cv_fit_score']}/10 (formula-derived) · CV Score: #{cv.score}/10 (holistic)" if fb["cv_fit_score"].present?
+    lines << "CV Fit Score: #{fb['cv_fit_score']}/10" if fb["cv_fit_score"].present?
     lines << "CV Recommendation: #{fb['recommendation']}" if fb["recommendation"].present?
     lines << "Decision rationale: #{fb['decision_rationale']}" if fb["decision_rationale"].present?
 
@@ -246,15 +244,16 @@ class ClaudeAnalysisService
     pool = VideoAnalysis.joins(:job_role)
                         .where(job_role: role, status: "completed")
                         .where.not(id: @analysis.id)
-                        .where.not(score: nil)
 
     return nil if pool.empty?
 
-    all_scores = pool.map { |va| va.score.to_f }
-    all_jd     = pool.filter_map { |va| va.structured_feedback&.dig("jd_fit_score")&.to_f }
+    all_scores = pool.filter_map(&:episode_score).map(&:to_f)
+    return nil if all_scores.empty?
 
-    lines = [ "Score range across all #{pool.count} completed interview#{"s" if pool.count != 1} for this role:" ]
-    lines << "  Score — min: #{all_scores.min}, max: #{all_scores.max}, avg: #{(all_scores.sum / all_scores.size).round(1)}"
+    all_jd = pool.filter_map { |va| va.structured_feedback&.dig("jd_fit_score")&.to_f }
+
+    lines = [ "Episode Score range across #{all_scores.size} completed interview#{"s" if all_scores.size != 1} for this role:" ]
+    lines << "  Episode Score — min: #{all_scores.min}, max: #{all_scores.max}, avg: #{(all_scores.sum / all_scores.size).round(1)}"
     lines << "  JD fit — min: #{all_jd.min}, max: #{all_jd.max}, avg: #{(all_jd.sum / all_jd.size).round(1)}" if all_jd.any?
     lines << "Use these ranges to calibrate scores relative to the full candidate pool."
 

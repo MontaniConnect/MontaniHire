@@ -133,7 +133,7 @@ class VideoAnalysesController < AuthenticatedController
       transcript: analysis.transcript,
       summary: analysis.summary,
       structured_feedback: analysis.structured_feedback,
-      score: analysis.score,
+      score: analysis.episode_score,
       error_message: analysis.error_message,
       created_at: analysis.created_at,
       updated_at: analysis.updated_at
