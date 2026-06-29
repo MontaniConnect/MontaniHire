@@ -87,11 +87,18 @@ class UserGoogleTokenTest < ActiveSupport::TestCase
   private
 
   def with_token_response(body_hash)
+    original_id     = ENV["GOOGLE_CLIENT_ID"]
+    original_secret = ENV["GOOGLE_CLIENT_SECRET"]
+    ENV["GOOGLE_CLIENT_ID"]     = "fake_client_id"
+    ENV["GOOGLE_CLIENT_SECRET"] = "fake_client_secret"
+
     original = Net::HTTP.method(:post_form)
     fake     = Struct.new(:body).new(body_hash.to_json)
     Net::HTTP.define_singleton_method(:post_form) { |*| fake }
     yield
   ensure
     Net::HTTP.define_singleton_method(:post_form, &original)
+    ENV["GOOGLE_CLIENT_ID"]     = original_id
+    ENV["GOOGLE_CLIENT_SECRET"] = original_secret
   end
 end
