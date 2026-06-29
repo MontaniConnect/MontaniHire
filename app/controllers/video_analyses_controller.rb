@@ -24,7 +24,7 @@ class VideoAnalysesController < AuthenticatedController
 
     respond_to do |format|
       format.html
-      format.json { render json: @video_analyses.map { |a| serialize(a) } }
+      format.json { render json: @video_analyses.map { |a| serialize_summary(a) } }
     end
   end
 
@@ -39,7 +39,7 @@ class VideoAnalysesController < AuthenticatedController
       VideoProcessingJob.perform_later(@video_analysis.id)
       respond_to do |format|
         format.html { redirect_to video_analysis_path(@video_analysis) }
-        format.json { render json: serialize(@video_analysis), status: :created }
+        format.json { render json: serialize_summary(@video_analysis), status: :created }
       end
     else
       @video_analyses = current_organization.video_analyses.includes(:job_role).order(created_at: :desc)
@@ -123,23 +123,34 @@ class VideoAnalysesController < AuthenticatedController
     end
   end
 
+  def serialize_summary(analysis)
+    {
+      id:             analysis.id,
+      status:         analysis.status,
+      score:          analysis.episode_score,
+      episode_score:  analysis.episode_score,
+      created_at:     analysis.created_at,
+      drive_file_name: analysis.drive_file_name || analysis.display_name
+    }
+  end
+
   def serialize(analysis)
     if analysis.error_message.present?
       Rails.logger.error "[VideoAnalysesController] VideoAnalysis #{analysis.id} processing failed: #{analysis.error_message}"
     end
     {
-      id: analysis.id,
-      candidate_name: analysis.candidate_name,
-      filename: analysis.display_name,
-      job_role: analysis.job_role&.title,
-      status: analysis.status,
-      transcript: analysis.transcript,
-      summary: analysis.summary,
+      id:                  analysis.id,
+      candidate_name:      analysis.candidate_name,
+      filename:            analysis.display_name,
+      job_role:            analysis.job_role&.title,
+      status:              analysis.status,
+      transcript:          analysis.transcript,
+      summary:             analysis.summary,
       structured_feedback: analysis.structured_feedback,
-      score: analysis.episode_score,
-      error_message: analysis.error_message.present? ? "Processing failed — contact support if this persists" : nil,
-      created_at: analysis.created_at,
-      updated_at: analysis.updated_at
+      score:               analysis.episode_score,
+      error_message:       analysis.error_message.present? ? "Processing failed — contact support if this persists" : nil,
+      created_at:          analysis.created_at,
+      updated_at:          analysis.updated_at
     }
   end
 end
