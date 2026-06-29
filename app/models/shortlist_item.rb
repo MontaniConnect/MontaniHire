@@ -32,7 +32,8 @@ class ShortlistItem < ApplicationRecord
     candidate&.score ||
       cv_analysis&.cv_fit_score ||
       video_analysis&.episode_score ||
-      shareable&.score
+      (shareable.is_a?(CvAnalysis)    ? shareable.cv_fit_score    : nil) ||
+      (shareable.is_a?(VideoAnalysis) ? shareable.episode_score   : nil)
   end
 
   def summary
