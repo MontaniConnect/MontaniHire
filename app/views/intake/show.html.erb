@@ -58,7 +58,6 @@
            ].each do |val, lbl| %>
           <label style="display: flex; align-items: center; gap: 0.6rem; cursor: pointer; font-size: 0.93rem; font-weight: 400;">
             <input type="radio" name="job_source" value="<%= val %>" required
-                   onchange="document.getElementById('job-source-other-wrap').style.display = this.value === 'others' ? 'block' : 'none'"
                    style="width: 15px; height: 15px; flex-shrink: 0;">
             <%= lbl %>
           </label>
@@ -85,8 +84,7 @@
             <div style="display: flex; flex-wrap: wrap; gap: 0.4rem;">
               <% day_slots.each do |slot| %>
                 <label style="cursor: pointer;">
-                  <input type="radio" name="slot_starts_at" value="<%= slot.iso8601 %>" required style="display: none;"
-                         onchange="document.querySelectorAll('.slot-btn').forEach(b => b.classList.remove('slot-active')); this.parentElement.querySelector('.slot-btn').classList.add('slot-active')">
+                  <input type="radio" name="slot_starts_at" value="<%= slot.iso8601 %>" required style="display: none;">
                   <span class="slot-btn" style="display: inline-block; padding: 0.35rem 0.75rem; border: 1px solid #ddd;
                         border-radius: 6px; font-size: 0.85rem; background: #fff; transition: all 0.1s;">
                     <%= slot.strftime("%-I:%M %p") %>
@@ -112,6 +110,19 @@
 
 <% end %>
 
+<script nonce="<%= content_security_policy_nonce %>">
+  document.querySelectorAll("input[name=job_source]").forEach(function(radio) {
+    radio.addEventListener("change", function() {
+      document.getElementById("job-source-other-wrap").style.display = this.value === "others" ? "block" : "none";
+    });
+  });
+  document.querySelectorAll("input[name=slot_starts_at]").forEach(function(radio) {
+    radio.addEventListener("change", function() {
+      document.querySelectorAll(".slot-btn").forEach(function(b) { b.classList.remove("slot-active") });
+      this.parentElement.querySelector(".slot-btn").classList.add("slot-active");
+    });
+  });
+</script>
 <style>
   .slot-btn:hover { border-color: #555; background: #f5f5f5; }
   .slot-active { border-color: #1a1a1a !important; background: #1a1a1a !important; color: #fff !important; }

@@ -50,8 +50,7 @@
                    font-size: 0.9rem; color: #aaa; pointer-events: none;">🔍</span>
     </div>
     <% if @clients.any? %>
-      <select name="client_id"
-              onchange="this.form.job_role_id.value=''; this.form.submit();"
+      <select name="client_id" id="cand-client-select"
               style="padding: 0.55rem 0.75rem; border: 1px solid #ddd; border-radius: 6px;
                      font-size: 0.9rem; background: #fff; color: #555; outline: none; width: 180px; flex-shrink: 0;">
         <option value="">All clients</option>
@@ -270,3 +269,13 @@
     </p>
   </div>
 <% end %>
+
+<script nonce="<%= content_security_policy_nonce %>">
+  var _candClientSel = document.getElementById("cand-client-select");
+  if (_candClientSel) {
+    _candClientSel.addEventListener("change", function() {
+      this.form.job_role_id.value = "";
+      this.form.submit();
+    });
+  }
+</script>

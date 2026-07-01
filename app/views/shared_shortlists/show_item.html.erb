@@ -97,9 +97,8 @@
         <div style="display: flex; gap: 0.75rem; align-items: flex-start;
                     padding: 0.5rem 0.6rem; border-radius: 6px; border: 1px solid #f0f0f0;
                     cursor: <%= _has_video ? "pointer" : "default" %>; transition: background 0.15s;"
-             onclick="jumpTo(<%= start_s.round(1) %>, <%= idx %>)"
-             onmouseover="this.style.background='#fafafa'"
-             onmouseout="this.style.background=''">
+             data-start="<%= start_s.round(1) %>" data-seg-idx="<%= idx %>"
+             class="js-key-moment">
           <span style="font-size: 0.72rem; font-weight: 700; color: #fff; background: #1a1a1a;
                        border-radius: 4px; padding: 0.2rem 0.5rem; white-space: nowrap;
                        flex-shrink: 0; margin-top: 0.15rem; font-variant-numeric: tabular-nums;">
@@ -140,14 +139,12 @@
         <label style="flex: 1; min-width: 90px; cursor: pointer;">
           <input type="radio" name="client_status" value="<%= val %>"
                  <%= "checked" if selected %> style="display: none;"
-                 onchange="this.closest('form').requestSubmit();">
+                 class="js-status-radio">
           <div data-decision="<%= val %>"
+               data-hover-bg="<%= c[:hover_bg] %>" data-hover-border="<%= c[:border] %>"
+               data-hover-color="<%= c[:color] %>" data-active-bg="<%= c[:active_bg] %>"
                style="padding: 0.55rem 0.75rem; border: 2px solid <%= selected ? c[:border] : '#ddd' %>; border-radius: 6px; font-size: 0.88rem; font-weight: 600; text-align: center; transition: background 0.15s, border-color 0.15s;
                       <%= selected ? "background: #{c[:bg]}; color: #{c[:color]};" : "color: #555;" %>"
-               onmouseover="if(!this.dataset.selected) { this.style.background='<%= c[:hover_bg] %>'; this.style.borderColor='<%= c[:border] %>'; this.style.color='<%= c[:color] %>'; }"
-               onmouseout="if(!this.dataset.selected) { this.style.background=''; this.style.borderColor='#ddd'; this.style.color='#555'; }"
-               onmousedown="if(!this.dataset.selected) { this.style.background='<%= c[:active_bg] %>'; }"
-               onmouseup="if(!this.dataset.selected) { this.style.background='<%= c[:hover_bg] %>'; }"
                <%= "data-selected=true" if selected %>>
             <%= label %>
           </div>
@@ -159,12 +156,11 @@
       <div style="display: flex; gap: 0.25rem; flex-direction: row-reverse; justify-content: flex-end;">
         <% (1..5).reverse_each do |i| %>
           <label style="cursor: pointer; font-size: 1.6rem; color: #d1d5db; line-height: 1;"
-                 onmouseenter="highlightStars(this, <%= i %>)"
-                 onmouseleave="resetStars(this.closest('div'))">
+                 class="js-star-label" data-star-pos="<%= i %>">
             <input type="radio" name="client_rating" value="<%= i %>"
                    <%= "checked" if @item.client_rating == i %>
                    style="display: none;"
-                   onchange="resetStars(this.closest('div'))">
+                   class="js-star-radio">
             ★
           </label>
         <% end %>
@@ -259,6 +255,53 @@
       l.style.color = idx < rating ? "#f59e0b" : "#d1d5db"
     })
   }
+
+  document.querySelectorAll(".js-key-moment").forEach(function(div) {
+    div.addEventListener("click", function() {
+      jumpTo(parseFloat(this.dataset.start), parseInt(this.dataset.segIdx))
+    })
+    div.addEventListener("mouseover", function() { this.style.background = "#fafafa" })
+    div.addEventListener("mouseout", function() { this.style.background = "" })
+  })
+
+  document.querySelectorAll(".js-status-radio").forEach(function(radio) {
+    radio.addEventListener("change", function() { this.closest("form").requestSubmit() })
+  })
+
+  document.querySelectorAll("[data-decision]").forEach(function(div) {
+    div.addEventListener("mouseover", function() {
+      if (!this.dataset.selected) {
+        this.style.background = this.dataset.hoverBg
+        this.style.borderColor = this.dataset.hoverBorder
+        this.style.color = this.dataset.hoverColor
+      }
+    })
+    div.addEventListener("mouseout", function() {
+      if (!this.dataset.selected) {
+        this.style.background = ""
+        this.style.borderColor = "#ddd"
+        this.style.color = "#555"
+      }
+    })
+    div.addEventListener("mousedown", function() {
+      if (!this.dataset.selected) { this.style.background = this.dataset.activeBg }
+    })
+    div.addEventListener("mouseup", function() {
+      if (!this.dataset.selected) { this.style.background = this.dataset.hoverBg }
+    })
+  })
+
+  document.querySelectorAll(".js-star-label").forEach(function(label) {
+    label.addEventListener("mouseenter", function() {
+      highlightStars(this, parseInt(this.dataset.starPos))
+    })
+    label.addEventListener("mouseleave", function() {
+      resetStars(this.closest("div"))
+    })
+  })
+  document.querySelectorAll(".js-star-radio").forEach(function(radio) {
+    radio.addEventListener("change", function() { resetStars(this.closest("div")) })
+  })
 
   document.addEventListener("DOMContentLoaded", function() {
     document.querySelectorAll("input[name=client_rating]").forEach(function(input) {

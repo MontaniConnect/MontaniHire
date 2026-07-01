@@ -79,12 +79,12 @@
                  placeholder="e.g. 3+ years Salesforce Sales Cloud experience"
                  style="flex: 1; padding: 0.4rem 0.6rem; border: 1px solid #ddd; border-radius: 6px;
                         font-size: 0.88rem; font-family: inherit;">
-          <button type="button" onclick="this.closest('div').remove(); renumberReqs();"
+          <button type="button" class="js-remove-req"
                   style="font-size: 0.8rem; color: #bbb; background: none; border: none; cursor: pointer; padding: 0 0.2rem;">✕</button>
         </div>
       <% end %>
     </div>
-    <button type="button" onclick="addReq()"
+    <button type="button" id="add-req-btn"
             style="font-size: 0.78rem; color: #555; background: #f5f5f5; border: 1px solid #ddd;
                    border-radius: 6px; padding: 0.25rem 0.7rem; cursor: pointer;">+ Add requirement</button>
 
@@ -111,12 +111,12 @@
                  placeholder="e.g. Salesforce CPQ or Billing experience"
                  style="flex: 1; padding: 0.4rem 0.6rem; border: 1px solid #ddd; border-radius: 6px;
                         font-size: 0.88rem; font-family: inherit;">
-          <button type="button" onclick="this.closest('div').remove(); renumberNth();"
+          <button type="button" class="js-remove-nth"
                   style="font-size: 0.8rem; color: #bbb; background: none; border: none; cursor: pointer; padding: 0 0.2rem;">✕</button>
         </div>
       <% end %>
     </div>
-    <button type="button" onclick="addNth()"
+    <button type="button" id="add-nth-btn"
             style="font-size: 0.78rem; color: #555; background: #f5f5f5; border: 1px solid #ddd;
                    border-radius: 6px; padding: 0.25rem 0.7rem; cursor: pointer;">+ Add nice-to-have</button>
 
@@ -196,9 +196,8 @@
       div.style.cssText = 'display:flex;align-items:center;gap:0.4rem;';
       div.innerHTML = `<span style="font-size:0.72rem;color:#bbb;min-width:1.2rem;text-align:right;flex-shrink:0;">${idx}.</span>
         <input type="text" name="job_role[nice_to_have_requirements][]" placeholder="e.g. experience with enterprise SaaS platforms"
-               oninput="updateNthWarning()"
                style="flex:1;padding:0.4rem 0.6rem;border:1px solid #ddd;border-radius:6px;font-size:0.88rem;font-family:inherit;">
-        <button type="button" onclick="this.closest('div').remove();renumberNth();updateNthWarning();"
+        <button type="button" class="js-remove-nth"
                 style="font-size:0.8rem;color:#bbb;background:none;border:none;cursor:pointer;padding:0 0.2rem;">✕</button>`;
       list.appendChild(div);
       updateNthWarning();
@@ -210,9 +209,15 @@
       });
     }
 
-    document.querySelectorAll('#nth-list input[type=text]').forEach(input => {
-      input.addEventListener('input', updateNthWarning);
+    document.getElementById('nth-list').addEventListener('input', function(e) {
+      if (e.target.matches('input[type=text]')) updateNthWarning();
     });
+    document.getElementById('nth-list').addEventListener('click', function(e) {
+      if (e.target.tagName === 'BUTTON') {
+        e.target.closest('div').remove(); renumberNth(); updateNthWarning();
+      }
+    });
+    document.getElementById('add-nth-btn').addEventListener('click', addNth);
     updateNthWarning();
 
     function addReq() {
@@ -222,9 +227,8 @@
       div.style.cssText = 'display:flex;align-items:center;gap:0.4rem;';
       div.innerHTML = `<span style="font-size:0.72rem;color:#bbb;min-width:1.2rem;text-align:right;flex-shrink:0;">${idx}.</span>
         <input type="text" name="job_role[must_have_requirements][]" placeholder="e.g. REST/SOAP API integration"
-               oninput="updateReqWarning()"
                style="flex:1;padding:0.4rem 0.6rem;border:1px solid #ddd;border-radius:6px;font-size:0.88rem;font-family:inherit;">
-        <button type="button" onclick="this.closest('div').remove();renumberReqs();updateReqWarning();"
+        <button type="button" class="js-remove-req"
                 style="font-size:0.8rem;color:#bbb;background:none;border:none;cursor:pointer;padding:0 0.2rem;">✕</button>`;
       list.appendChild(div);
       updateReqWarning();
@@ -236,15 +240,15 @@
       });
     }
 
-    document.querySelectorAll('#req-list input[type=text]').forEach(input => {
-      input.addEventListener('input', updateReqWarning);
+    document.getElementById('req-list').addEventListener('input', function(e) {
+      if (e.target.matches('input[type=text]')) updateReqWarning();
     });
-    document.querySelectorAll('#req-list button').forEach(btn => {
-      const orig = btn.getAttribute('onclick') || '';
-      if (orig.includes('remove')) {
-        btn.setAttribute('onclick', orig.replace('renumberReqs();', 'renumberReqs();updateReqWarning();'));
+    document.getElementById('req-list').addEventListener('click', function(e) {
+      if (e.target.tagName === 'BUTTON') {
+        e.target.closest('div').remove(); renumberReqs(); updateReqWarning();
       }
     });
+    document.getElementById('add-req-btn').addEventListener('click', addReq);
     updateReqWarning();
   </script>
 
@@ -279,7 +283,7 @@
                      id="sw_<%= key %>"
                      value="<%= sw_current[key] %>"
                      min="0" max="100" step="1"
-                     oninput="updateSwTotal()"
+                     class="js-sw-input"
                      style="width: 64px; padding: 0.35rem 0.5rem; border: 1px solid #ddd; border-radius: 6px;
                             font-size: 0.88rem; text-align: right; font-variant-numeric: tabular-nums;">
               <span style="font-size: 0.82rem; color: #aaa;">%</span>
@@ -309,6 +313,9 @@
         }
       }
 
+      document.querySelectorAll('.js-sw-input').forEach(function(input) {
+        input.addEventListener('input', updateSwTotal);
+      });
       document.addEventListener('DOMContentLoaded', function() { updateSwTotal(); });
     </script>
   <% end %>

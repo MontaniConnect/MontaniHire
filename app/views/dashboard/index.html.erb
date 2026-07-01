@@ -3,7 +3,7 @@
 
 <div style="display: inline-flex; gap: 0.5rem; align-items: center; margin-bottom: 1.5rem;">
   <% if @clients.any? %>
-    <select id="dash-client" onchange="dashFilter()"
+    <select id="dash-client"
             style="padding: 0.45rem 0.75rem; border: 1px solid #ddd; border-radius: 6px;
                    font-size: 0.85rem; background: #fff; color: #555; outline: none; width: auto;">
       <option value="">All clients</option>
@@ -23,7 +23,7 @@
     <% end %>
   </select>
   <% if @client_id.present? || @job_role_id.present? %>
-    <button onclick="dashFilter()" class="btn" style="padding: 0.45rem 0.9rem; font-size: 0.85rem;">Filter</button>
+    <button id="dash-filter-btn" class="btn" style="padding: 0.45rem 0.9rem; font-size: 0.85rem;">Filter</button>
     <%= link_to "Clear", dashboard_path,
           style: "font-size: 0.85rem; color: #555; text-decoration: none; padding: 0.45rem 0.75rem;
                   border: 1px solid #ddd; border-radius: 6px; background: #fff;" %>
@@ -39,6 +39,10 @@
     if (r && r.value && r.style.display !== 'none') p.set('job_role_id', r.value);
     window.location = '<%= dashboard_path %>' + (p.toString() ? '?' + p.toString() : '');
   }
+  var _dc = document.getElementById("dash-client");
+  if (_dc) { _dc.addEventListener("change", dashFilter); }
+  var _dfb = document.getElementById("dash-filter-btn");
+  if (_dfb) { _dfb.addEventListener("click", dashFilter); }
 </script>
 
 <%# ── Funnel strip ── %>

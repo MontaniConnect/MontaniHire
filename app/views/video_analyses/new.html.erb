@@ -36,12 +36,12 @@
       </div>
 
       <div style="display: flex; gap: 0; margin-bottom: 1.25rem; border-bottom: 2px solid #f0f0f0;">
-        <button type="button" id="tab-upload" onclick="switchTab('upload')"
+        <button type="button" id="tab-upload"
                 style="padding: 0.5rem 1rem; font-size: 0.85rem; font-weight: 600; border: none; background: none;
                        cursor: pointer; border-bottom: 2px solid #1a1a1a; margin-bottom: -2px; color: #1a1a1a;">
           Upload File
         </button>
-        <button type="button" id="tab-drive" onclick="switchTab('drive')"
+        <button type="button" id="tab-drive"
                 style="padding: 0.5rem 1rem; font-size: 0.85rem; font-weight: 600; border: none; background: none;
                        cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -2px; color: #999;">
           From Google Drive
@@ -139,4 +139,6 @@
       buttons[p].style.color = p === tab ? "#1a1a1a" : "#999"
     })
   }
+  document.getElementById("tab-upload").addEventListener("click", function() { switchTab("upload") })
+  document.getElementById("tab-drive").addEventListener("click", function() { switchTab("drive") })
 </script>

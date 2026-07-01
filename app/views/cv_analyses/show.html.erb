@@ -42,7 +42,7 @@
             style: "background: #555; padding: 0.45rem 0.9rem; font-size: 0.85rem;" %>
     <% end %>
     <% if @cv_analysis.completed? %>
-      <button onclick="window.print()"
+      <button id="cv-print-btn"
               class="btn"
               style="background: #555; padding: 0.45rem 0.9rem; font-size: 0.85rem;">
         ↓ Export PDF
@@ -545,3 +545,8 @@
 <div class="no-print" style="margin-top: 0.5rem;">
   <%= link_to "← Back to candidates", cv_analyses_path, style: "color: #555; font-size: 0.9rem;" %>
 </div>
+
+<script nonce="<%= content_security_policy_nonce %>">
+  var _cvPrintBtn = document.getElementById("cv-print-btn");
+  if (_cvPrintBtn) { _cvPrintBtn.addEventListener("click", function() { window.print() }) }
+</script>

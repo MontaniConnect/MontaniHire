@@ -33,7 +33,7 @@
   <%# Action buttons %>
   <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: flex-start;">
     <% if @video_analysis.completed? %>
-      <button onclick="window.print()"
+      <button id="va-print-btn"
               class="btn"
               style="background: #555; padding: 0.45rem 0.9rem; font-size: 0.85rem;">
         ↓ Export PDF
@@ -82,7 +82,7 @@
               <div style="margin-bottom: 0.65rem;">
                 <label style="font-size: 0.78rem; font-weight: 500; color: #555; display: block; margin-bottom: 0.3rem;">Shortlist</label>
                 <select style="width: 100%; padding: 0.45rem 0.6rem; border: 1px solid #ddd; border-radius: 6px; font-size: 0.88rem; background: #fff;"
-                        onchange="document.getElementById('sl-add-va-<%= @video_analysis.id %>').action='/shortlists/'+this.value+'/shortlist_items'">
+                        data-form-id="sl-add-va-<%= @video_analysis.id %>">
                   <% shortlists.each do |sl| %>
                     <option value="<%= sl.id %>"><%= sl.title %></option>
                   <% end %>
@@ -310,3 +310,13 @@
 <div class="no-print" style="margin-top: 0.5rem;">
   <%= link_to "← Back to candidates", video_analyses_path, style: "color: #555; font-size: 0.9rem;" %>
 </div>
+
+<script nonce="<%= content_security_policy_nonce %>">
+  var _vaPrintBtn = document.getElementById("va-print-btn");
+  if (_vaPrintBtn) { _vaPrintBtn.addEventListener("click", function() { window.print() }) }
+  document.querySelectorAll("select[data-form-id]").forEach(function(sel) {
+    sel.addEventListener("change", function() {
+      document.getElementById(sel.dataset.formId).action = "/shortlists/" + sel.value + "/shortlist_items";
+    });
+  });
+</script>

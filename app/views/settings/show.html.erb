@@ -27,7 +27,7 @@
               <% else %>
                 <%= form_with url: member_path(member), method: :patch,
                       html: { style: "display: inline-flex; align-items: center; gap: 0.4rem;" } do |f| %>
-                  <select name="role" onchange="this.form.submit()"
+                  <select name="role" class="js-autosubmit"
                           style="font-size: 0.78rem; padding: 0.2rem 0.4rem; border: 1px solid #ddd;
                                  border-radius: 4px; background: #f9f9f9; cursor: pointer;">
                     <option value="member" <%= "selected" if member.member? %>>Member</option>
@@ -66,9 +66,9 @@
             </div>
             <div style="display: flex; align-items: center; gap: 0.5rem; flex-shrink: 0;">
               <input type="text" value="<%= join_url(invite.token) %>" readonly
+                     class="js-copy-invite"
                      style="font-size: 0.75rem; padding: 0.3rem 0.5rem; border: 1px solid #ddd; border-radius: 5px;
                             width: 260px; color: #555; background: #fafafa; font-family: monospace;"
-                     onclick="this.select(); document.execCommand('copy'); this.blur(); this.nextElementSibling.textContent='Copied!';"
                      title="Click to copy">
               <span style="font-size: 0.72rem; color: #888; min-width: 40px;"></span>
               <%= button_to invite_path(invite), method: :delete,
@@ -284,7 +284,7 @@
           <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; font-weight: 500; font-size: 0.9rem; margin: 0;">
             <input type="checkbox" name="days[<%= day %>][enabled]" value="1"
                    <%= "checked" if cfg["enabled"] %>
-                   onchange="toggleDay('<%= day %>', this.checked)"
+                   data-day="<%= day %>" class="js-toggle-day"
                    style="width: 15px; height: 15px;">
             <%= label %>
           </label>
@@ -311,4 +311,18 @@
     times.style.pointerEvents = enabled ? "" : "none"
     row.style.background = enabled ? "#fff" : "#fafafa"
   }
+  document.querySelectorAll(".js-autosubmit").forEach(function(sel) {
+    sel.addEventListener("change", function() { this.form.submit() })
+  })
+  document.querySelectorAll(".js-copy-invite").forEach(function(input) {
+    input.addEventListener("click", function() {
+      this.select()
+      document.execCommand("copy")
+      this.blur()
+      this.nextElementSibling.textContent = "Copied!"
+    })
+  })
+  document.querySelectorAll(".js-toggle-day").forEach(function(cb) {
+    cb.addEventListener("change", function() { toggleDay(this.dataset.day, this.checked) })
+  })
 </script>

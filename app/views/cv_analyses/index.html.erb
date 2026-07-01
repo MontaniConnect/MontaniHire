@@ -44,7 +44,6 @@
         Bulk upload
       </button>
       <button type="button" id="cv-tab-drive"
-              onclick="cvSwitchToDrive()"
               style="padding: 0.5rem 1rem; font-size: 0.88rem; font-weight: 500; border: none; border-bottom: 2px solid transparent; margin-bottom: -2px; background: none; cursor: pointer; color: #888;">
         From Google Drive
       </button>
@@ -205,6 +204,17 @@
     })
   }
 
+  document.getElementById("cv-tab-drive").addEventListener("click", cvSwitchToDrive)
+
+  document.addEventListener("DOMContentLoaded", function() {
+    document.querySelectorAll("tr[data-href]").forEach(function(row) {
+      row.addEventListener("click", function() { window.location = row.dataset.href })
+    })
+    document.querySelectorAll("td.js-stop-prop").forEach(function(td) {
+      td.addEventListener("click", function(e) { e.stopPropagation() })
+    })
+  })
+
   <% if @cv_analysis&.drive_file_id.present? %>
   document.addEventListener("DOMContentLoaded", function() { cvSwitchToDrive() })
   <% end %>
@@ -242,7 +252,7 @@
           </thead>
           <tbody>
             <% analyses.each do |ca| %>
-              <tr style="cursor: pointer;" onclick="window.location='<%= cv_analysis_path(ca) %>'">
+              <tr style="cursor: pointer;" data-href="<%= cv_analysis_path(ca) %>">
                 <td style="font-weight: 500;"><%= ca.display_name.titleize %></td>
                 <td>
                   <% cf = ca.cv_fit_score %>
@@ -260,7 +270,7 @@
                 </td>
                 <td><span class="badge badge-<%= ca.status %>"><%= ca.status %></span></td>
                 <td style="color: #999; font-size: 0.85rem;"><%= time_ago_in_words(ca.created_at) %> ago</td>
-                <td onclick="event.stopPropagation();" style="text-align: right;">
+                <td class="js-stop-prop" style="text-align: right;">
                   <%= button_to cv_analysis_path(ca), method: :delete,
                         form: { data: { turbo_confirm: "Remove #{ca.display_name.titleize}? This cannot be undone." } },
                         style: "background: none; border: none; cursor: pointer; color: #ccc; font-size: 1rem; padding: 0.25rem 0.5rem; line-height: 1;",

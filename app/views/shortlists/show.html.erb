@@ -27,8 +27,7 @@
         <%= shared_shortlist_url(@shortlist.token) %>
       </code>
     </div>
-    <button
-      onclick="navigator.clipboard.writeText(document.getElementById('share-link').textContent.trim()).then(function(){var b=this;b.textContent='Copied!';setTimeout(function(){b.textContent='Copy link'},1500)}.bind(this))"
+    <button id="copy-link-btn"
       class="btn" style="padding: 0.45rem 0.9rem; font-size: 0.85rem; white-space: nowrap;">
       Copy link
     </button>
@@ -160,3 +159,16 @@
 <div style="margin-top: 1rem;">
   <%= link_to "← All shortlists", shortlists_path, style: "color: #555; font-size: 0.9rem;" %>
 </div>
+
+<script nonce="<%= content_security_policy_nonce %>">
+  var _copyBtn = document.getElementById("copy-link-btn");
+  if (_copyBtn) {
+    _copyBtn.addEventListener("click", function() {
+      var link = document.getElementById("share-link").textContent.trim();
+      navigator.clipboard.writeText(link).then(function() {
+        _copyBtn.textContent = "Copied!";
+        setTimeout(function() { _copyBtn.textContent = "Copy link" }, 1500);
+      });
+    });
+  }
+</script>
